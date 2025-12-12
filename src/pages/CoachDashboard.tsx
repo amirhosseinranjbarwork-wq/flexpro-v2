@@ -21,6 +21,7 @@ const PanelLoadingFallback = () => (
 import UserModal from '../components/UserModal';
 import PrintModal from '../components/PrintModal';
 import ClientInfoPanel from '../components/ClientInfoPanel';
+import SupabaseDebug from '../components/SupabaseDebug';
 import type { UserId, UserInput, Client } from '../types/index';
 import { fetchClientById, fetchWorkoutPlansByClient, isSupabaseReady, getOrCreateCoachCode, upsertClient } from '../lib/supabaseApi';
 import { supabase } from '../lib/supabaseClient';
@@ -65,6 +66,7 @@ import {
   TrendingUp,
   Target,
   Calendar,
+  Database,
   Activity,
   Zap,
   Heart,
@@ -294,6 +296,7 @@ const CoachDashboard: React.FC = () => {
   const [editingUserId, setEditingUserId] = useState<UserId | null>(null);
   const [clientProfile, setClientProfile] = useState<Client | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [isSupabaseDebugOpen, setIsSupabaseDebugOpen] = useState(false);
   const [deletingRequestId, setDeletingRequestId] = useState<string | null>(null);
   const [coachCode, setCoachCode] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -735,6 +738,17 @@ const CoachDashboard: React.FC = () => {
                 )}
               </motion.button>
               
+              {/* Supabase Debug */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setIsSupabaseDebugOpen(true)}
+                className="p-2.5 rounded-xl hover:bg-[var(--glass-bg)] transition"
+                title="بررسی اتصالات Supabase"
+              >
+                <Database size={20} className="text-blue-500" />
+              </motion.button>
+
               {/* Theme Toggle */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -2068,6 +2082,12 @@ const CoachDashboard: React.FC = () => {
           onDownload={downloadPDF}
         />
       )}
+
+      {/* Supabase Debug Modal */}
+      <SupabaseDebug
+        isOpen={isSupabaseDebugOpen}
+        onClose={() => setIsSupabaseDebugOpen(false)}
+      />
     </div>
   );
 };

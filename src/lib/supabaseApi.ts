@@ -16,7 +16,7 @@ import type {
   ApiResponse,
   ProfileData
 } from '../types/index';
-import { supabase, isSupabaseEnabled } from './supabaseClient';
+import { supabase, isSupabaseEnabled, checkSupabaseHealth } from './supabaseClient';
 
 // ========== Centralized Error Handling ==========
 interface ErrorContext {
@@ -333,11 +333,34 @@ export const removeTemplate = async (
   }
 };
 
+// Utility function to ensure Supabase is ready
+export const ensureSupabaseReady = async (): Promise<boolean> => {
+  if (!isSupabaseEnabled) {
+    if (import.meta.env.DEV) {
+      console.warn('Supabase is not enabled - check environment variables');
+    }
+    return false;
+  }
+
+  try {
+    const isHealthy = await checkSupabaseHealth();
+    if (!isHealthy && import.meta.env.DEV) {
+      console.warn('Supabase health check failed - connection may be unstable');
+    }
+    return isHealthy;
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error('Error checking Supabase health:', error);
+    }
+    return false;
+  }
+};
+
 export const isSupabaseReady = isSupabaseEnabled;
 
 // ========== Clients API ==========
 export const fetchClientsByCoach = async (coachId: string): Promise<ApiResponse<Client[]>> => {
-  if (!isSupabaseEnabled || !supabase) {
+  if (!await ensureSupabaseReady()) {
     return createApiResponse<Client[]>([], null);
   }
 
@@ -381,7 +404,7 @@ export const fetchClientById = async (clientId: string): Promise<ApiResponse<Cli
     // Ignore localStorage errors
   }
   
-  if (!isSupabaseEnabled || !supabase) {
+  if (!await ensureSupabaseReady()) {
     return createApiResponse<Client | null>(null, null);
   }
   
@@ -476,7 +499,7 @@ export const createClient = async (
 export const upsertClient = async (
   payload: Partial<Client> & { id: string; coach_id: string }
 ): Promise<ApiResponse<Client>> => {
-  if (!isSupabaseEnabled || !supabase) {
+  if (!await ensureSupabaseReady()) {
     return createApiResponse<Client>(
       null,
       new Error('Supabase unavailable')
@@ -510,6 +533,7 @@ export const updateClient = async (
   id: string,
   payload: Partial<Client> & { coach_id?: string; profile_data?: ProfileData }
 ): Promise<Client> => {
+  // Always save to localStorage first
   const effectiveCoachId = payload.coach_id || id;
   const safeProfileData: ProfileData | undefined = payload.profile_data ? { ...payload.profile_data } : undefined;
   
@@ -535,7 +559,7 @@ export const updateClient = async (
     // ignore
   }
   
-  if (!isSupabaseEnabled || !supabase) {
+  if (!await ensureSupabaseReady()) {
     return clientData;
   }
   
@@ -595,7 +619,7 @@ export const deleteClient = async (id: string): Promise<ApiResponse<void>> => {
 export const fetchWorkoutPlansByClient = async (
   clientId: string
 ): Promise<ApiResponse<WorkoutPlanFromDB[]>> => {
-  if (!isSupabaseEnabled || !supabase) {
+  if (!await ensureSupabaseReady()) {
     return createApiResponse<WorkoutPlanFromDB[]>([], null);
   }
 
@@ -1122,9 +1146,9 @@ export const fetchRequestsByCoach = async (coachId: string): Promise<ProgramRequ
   } catch {
     // Ignore errors
   }
-  
+
   // If Supabase is not available, return localStorage data
-  if (!isSupabaseEnabled || !supabase) {
+  if (!await ensureSupabaseReady()) {
     return localRequests;
   }
   
@@ -1164,9 +1188,9 @@ export const fetchRequestsByClient = async (clientId: string): Promise<ProgramRe
   } catch {
     // Ignore errors
   }
-  
+
   // If Supabase is not available, return localStorage data
-  if (!isSupabaseEnabled || !supabase) {
+  if (!await ensureSupabaseReady()) {
     return localRequests;
   }
   
@@ -1209,7 +1233,7 @@ export const updateRequestStatus = async (
     };
     syncRequestToLocal(updated);
   }
-  if (!isSupabaseEnabled || !supabase) {
+  if (!await ensureSupabaseReady()) {
     return createApiResponse<void>(undefined, null);
   }
   

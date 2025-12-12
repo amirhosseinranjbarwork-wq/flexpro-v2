@@ -223,6 +223,8 @@ USING (coach_id = auth.uid()::text);
 -- Drop existing policies if they exist
 DROP POLICY IF EXISTS "Users can view their own profile" ON profiles;
 DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can insert their own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can delete their own profile" ON profiles;
 
 -- Policy: Users can view their own profile
 CREATE POLICY "Users can view their own profile"
@@ -232,6 +234,16 @@ USING (auth.uid()::text = id);
 -- Policy: Users can update their own profile
 CREATE POLICY "Users can update their own profile"
 ON profiles FOR UPDATE
+USING (auth.uid()::text = id);
+
+-- Policy: Users can insert their own profile
+CREATE POLICY "Users can insert their own profile"
+ON profiles FOR INSERT
+WITH CHECK (auth.uid()::text = id);
+
+-- Policy: Users can delete their own profile
+CREATE POLICY "Users can delete their own profile"
+ON profiles FOR DELETE
 USING (auth.uid()::text = id);
 
 -- ============================================
