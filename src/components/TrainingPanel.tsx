@@ -166,6 +166,7 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
   const [warmupExercises, setWarmupExercises] = useState<Record<string, string[]> | null>(null);
   const [cooldownExercises, setCooldownExercises] = useState<Record<string, string[]> | null>(null);
   const [warning, setWarning] = useState(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // سنسورها برای drag & drop
   const sensors = useSensors(
@@ -192,6 +193,10 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
       setCardioExercises(cardEx);
       setWarmupExercises(warmEx);
       setCooldownExercises(coolEx);
+      setDataLoaded(true);
+    }).catch(error => {
+      console.error('Failed to load exercise data:', error);
+      setDataLoaded(true); // Set to true even on error to prevent infinite loading
     });
   }, []);
 
@@ -416,6 +421,20 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
   };
 
   const workoutItems = activeUser.plans?.workouts?.[day] || [];
+
+  // Show loading state until data is loaded
+  if (!dataLoaded) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-center p-8 bg-[var(--glass-bg)] rounded-2xl border border-[var(--glass-border)]">
+          <div className="text-center space-y-4">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[var(--accent-color)] border-r-transparent"></div>
+            <p className="text-sm text-[var(--text-secondary)]">در حال بارگذاری داده‌های تمرینی...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
