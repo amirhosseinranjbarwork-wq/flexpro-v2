@@ -583,7 +583,7 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
                   <div className="grid grid-cols-2 gap-2">
                     <select className="input-glass text-xs" value={formData.muscle} onChange={e => setFormData({ ...formData, muscle: e.target.value, subMuscle: '' })}>
                       <option value="">عضله...</option>
-                      {Object.keys(resistanceExercises).map(m => <option key={m} value={m}>{m}</option>)}
+                      {resistanceExercises ? Object.keys(resistanceExercises).map(m => <option key={m} value={m}>{m}</option>) : null}
                     </select>
                     <select className="input-glass text-xs" value={formData.subMuscle} onChange={e => setFormData({ ...formData, subMuscle: e.target.value })}>
                       <option value="">ناحیه...</option>
