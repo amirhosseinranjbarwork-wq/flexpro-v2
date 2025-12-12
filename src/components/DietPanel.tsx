@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import { ShoppingBag, GripVertical, Trash2, Search, Copy, Plus, Dumbbell, Moon, UtensilsCrossed } from 'lucide-react';
 import type { DietItem } from '../types/index';
 import toast from 'react-hot-toast';
