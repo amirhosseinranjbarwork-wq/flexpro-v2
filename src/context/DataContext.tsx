@@ -375,17 +375,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userId = userData.id ?? makeId();
         const newUser = migrateUser({ ...userData, id: userId });
 
-        if (isSupabaseReady) {
-          const clientPayload = clientPayloadFromUser(newUser, coachId);
-          const workoutPayload = workoutPlanPayloadFromUser(newUser, coachId);
-
-          await Promise.all([
-            upsertClient(clientPayload as Client),
-            upsertWorkoutPlan(workoutPayload as WorkoutPlanFromDB)
-          ]);
-        }
-
-        // Update local state
+        // Update local state first for better UX
         setUsers(prev => {
           const idx = prev.findIndex(u => u.id === newUser.id);
           if (idx > -1) {
@@ -396,16 +386,32 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return [...prev, newUser];
         });
 
-        // Refresh data from server to ensure consistency
-        await refreshData();
+        if (isSupabaseReady) {
+          const clientPayload = clientPayloadFromUser(newUser, coachId);
+          const workoutPayload = workoutPlanPayloadFromUser(newUser, coachId);
+
+          const results = await Promise.allSettled([
+            upsertClient(clientPayload as Client),
+            upsertWorkoutPlan(workoutPayload as WorkoutPlanFromDB)
+          ]);
+
+          // Check for errors and log them, but don't revert local state
+          results.forEach((result, index) => {
+            if (result.status === 'rejected') {
+              console.error(`Failed to save ${index === 0 ? 'client' : 'workout plan'}:`, result.reason);
+            }
+          });
+        }
 
         toast.success('اطلاعات با موفقیت ذخیره شد');
       } catch (error) {
         console.error('Failed to save user:', error);
         toast.error('خطا در ذخیره اطلاعات');
+        // Revert local state on critical error
+        setUsers(prev => prev.filter(u => u.id !== userData.id));
       }
     },
-    [hasPermission, auth?.user?.id, isSupabaseReady, refreshData]
+    [hasPermission, auth?.user?.id, isSupabaseReady]
   );
 
   const updateActiveUser = useCallback(
