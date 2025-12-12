@@ -1,14 +1,14 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  User, 
-  Heart, 
-  Ruler, 
-  Phone, 
-  Mail, 
-  MapPin, 
-  Briefcase, 
-  GraduationCap, 
+import {
+  User,
+  Heart,
+  Ruler,
+  Phone,
+  Mail,
+  MapPin,
+  Briefcase,
+  GraduationCap,
   Calendar,
   Activity,
   Target,
@@ -17,7 +17,11 @@ import {
   Pill,
   AlertTriangle,
   FileText,
-  Scale
+  Scale,
+  Dumbbell,
+  ChefHat,
+  Plus,
+  ArrowRight
 } from 'lucide-react';
 import type { Client, User as UserType } from '../types/index';
 import LoadingSpinner from './LoadingSpinner';
@@ -25,9 +29,10 @@ import LoadingSpinner from './LoadingSpinner';
 interface ClientInfoPanelProps {
   client: Client | null;
   loading?: boolean;
+  onNavigateToTab?: (tab: 'training' | 'nutrition' | 'supplements') => void;
 }
 
-const ClientInfoPanel: React.FC<ClientInfoPanelProps> = ({ client, loading }) => {
+const ClientInfoPanel: React.FC<ClientInfoPanelProps> = ({ client, loading, onNavigateToTab }) => {
   const profileData = useMemo(() => {
     if (!client?.profile_data) return null;
     return client.profile_data as UserType;
@@ -256,6 +261,88 @@ const ClientInfoPanel: React.FC<ClientInfoPanelProps> = ({ client, loading }) =>
                 <span>آخرین به‌روزرسانی: {new Date(client.updated_at).toLocaleDateString('fa-IR')}</span>
               </>
             )}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Quick Actions for Programming */}
+      {onNavigateToTab && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-8"
+        >
+          <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+            <Target size={20} className="text-[var(--accent-color)]" />
+            اقدامات سریع برنامه‌نویسی
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onNavigateToTab('training')}
+              className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-blue-500/10 to-blue-600/10 border border-blue-500/30 hover:border-blue-500/50 transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white">
+                  <Dumbbell size={18} />
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-[var(--text-primary)]">برنامه تمرینی</p>
+                  <p className="text-xs text-[var(--text-secondary)]">طراحی برنامه هفتگی</p>
+                </div>
+              </div>
+              <ArrowRight size={18} className="text-blue-500 group-hover:translate-x-1 transition-transform" />
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onNavigateToTab('nutrition')}
+              className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 to-emerald-600/10 border border-emerald-500/30 hover:border-emerald-500/50 transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white">
+                  <UtensilsCrossed size={18} />
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-[var(--text-primary)]">رژیم غذایی</p>
+                  <p className="text-xs text-[var(--text-secondary)]">تجویز تغذیه</p>
+                </div>
+              </div>
+              <ArrowRight size={18} className="text-emerald-500 group-hover:translate-x-1 transition-transform" />
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onNavigateToTab('supplements')}
+              className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-purple-600/10 border border-purple-500/30 hover:border-purple-500/50 transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white">
+                  <Pill size={18} />
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-[var(--text-primary)]">مکمل‌ها</p>
+                  <p className="text-xs text-[var(--text-secondary)]">تجویز مکمل</p>
+                </div>
+              </div>
+              <ArrowRight size={18} className="text-purple-500 group-hover:translate-x-1 transition-transform" />
+            </motion.button>
+          </div>
+
+          <div className="mt-4 flex justify-center">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onNavigateToTab('training')}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[var(--accent-color)] to-[var(--accent-secondary)] text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+            >
+              <Plus size={18} />
+              شروع برنامه‌نویسی
+            </motion.button>
           </div>
         </motion.div>
       )}

@@ -22,16 +22,16 @@ import UserModal from '../components/UserModal';
 import PrintModal from '../components/PrintModal';
 import ClientInfoPanel from '../components/ClientInfoPanel';
 import type { UserId, UserInput, Client } from '../types/index';
-import { fetchClientById, fetchWorkoutPlansByClient, isSupabaseReady, getOrCreateCoachCode, fetchRequestsByCoach, updateRequestStatus, upsertClient } from '../lib/supabaseApi';
+import { fetchClientById, fetchWorkoutPlansByClient, isSupabaseReady, getOrCreateCoachCode, upsertClient } from '../lib/supabaseApi';
 import { supabase } from '../lib/supabaseClient';
 import { mapClientToUser } from '../context/DataContext';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sun, 
-  Moon, 
-  LogOut, 
-  Menu, 
+import {
+  Sun,
+  Moon,
+  LogOut,
+  Menu,
   X,
   User as UserIcon,
   Users,
@@ -69,7 +69,8 @@ import {
   Zap,
   Heart,
   Star,
-  BarChart3
+  BarChart3,
+  Trash
 } from 'lucide-react';
 import type { ProgramRequest } from '../types/index';
 
@@ -114,7 +115,7 @@ const GlowCard: React.FC<{
     }}
   >
     <div 
-      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
       style={{
         background: `radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), ${glowColor}15, transparent 40%)`
       }}
@@ -140,7 +141,7 @@ const StatCard: React.FC<{
   >
     {/* Background Gradient */}
     <div 
-      className="absolute -top-1/2 -right-1/2 w-full h-full rounded-full opacity-20 group-hover:opacity-30 transition-opacity"
+      className="absolute -top-1/2 -right-1/2 w-full h-full rounded-full opacity-20 group-hover:opacity-30 transition-opacity pointer-events-none"
       style={{ background: gradient }}
     />
     
@@ -261,7 +262,22 @@ const EmptyState: React.FC<{
 const CoachDashboard: React.FC = () => {
   const { user, signOut } = useAuth();
   const { theme, toggleTheme, printData, closePrintModal, downloadPDF } = useUI();
-  const { users, activeUser, saveUser, deleteUser, updateActiveUser, backupData, restoreData, setActiveUserId } = useData();
+  const {
+    users,
+    requests,
+    activeUser,
+    activeUserId,
+    saveUser,
+    deleteUser,
+    acceptRequest,
+    rejectRequest,
+    deleteRequest,
+    updateActiveUser,
+    backupData,
+    restoreData,
+    setActiveUserId,
+    refreshData
+  } = useData();
   
   // ========== State ==========
   const [currentTab, setCurrentTab] = useState<TabType>(() => {
@@ -278,7 +294,7 @@ const CoachDashboard: React.FC = () => {
   const [editingUserId, setEditingUserId] = useState<UserId | null>(null);
   const [clientProfile, setClientProfile] = useState<Client | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
-  const [requests, setRequests] = useState<ProgramRequest[]>([]);
+  const [deletingRequestId, setDeletingRequestId] = useState<string | null>(null);
   const [coachCode, setCoachCode] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -340,8 +356,6 @@ const CoachDashboard: React.FC = () => {
     // بارگذاری کد مربی
     getOrCreateCoachCode(user.id).then(setCoachCode);
 
-    // بارگذاری درخواست‌ها
-    fetchRequestsByCoach(user.id).then(setRequests);
   }, [user?.id]);
 
   // بارگذاری پروفایل از Supabase به صورت جداگانه
@@ -394,8 +408,6 @@ const CoachDashboard: React.FC = () => {
   }, [activeUser, studentsSubTab, updateActiveUser]);
 
   // ========== Computed ==========
-  const pendingRequests = useMemo(() => requests.filter(r => r.status === 'pending'), [requests]);
-  const acceptedRequests = useMemo(() => requests.filter(r => r.status === 'accepted'), [requests]);
   
   const filteredUsers = useMemo(() => {
     let result = users;
@@ -426,6 +438,9 @@ const CoachDashboard: React.FC = () => {
   }, [filteredUsers, currentPage]);
 
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+
+  const pendingRequests = useMemo(() => requests.filter(r => r.status === 'pending'), [requests]);
+  const acceptedRequests = useMemo(() => requests.filter(r => r.status === 'accepted'), [requests]);
 
   const stats = useMemo(() => ({
     totalStudents: users.length,
@@ -465,65 +480,26 @@ const CoachDashboard: React.FC = () => {
   };
 
   const handleAcceptRequest = useCallback(async (req: ProgramRequest) => {
-    if (!user?.id) return;
+    await acceptRequest(req);
 
-    try {
-      const res = await updateRequestStatus(req.id, 'accepted');
-      if (res.error) throw res.error;
-
-      if (req.client_data) {
-        const clientData = req.client_data as Record<string, unknown>;
-        const clientName = String(req.client_name || clientData.name || 'شاگرد');
-
-        const newUserData: UserInput = {
-          name: clientName,
-          id: req.client_id,
-          coach_id: user.id,
-          gender: typeof clientData.gender === 'string' ? clientData.gender : undefined,
-          age: typeof clientData.age === 'number' ? Number(clientData.age) : undefined,
-          height: typeof clientData.height === 'number' ? Number(clientData.height) : undefined,
-          weight: typeof clientData.weight === 'number' ? Number(clientData.weight) : undefined,
-          phone: typeof clientData.phone === 'string' ? clientData.phone : undefined,
-          email: typeof clientData.email === 'string' ? clientData.email : undefined,
-          plans: { workouts: {}, diet: [], dietRest: [], supps: [], prog: [] }
-        };
-        saveUser(newUserData);
-
-        if (isSupabaseReady) {
-          await upsertClient({
-            id: req.client_id,
-            coach_id: user.id,
-            full_name: clientName,
-            profile_data: newUserData,
-            profile_completed: true
-          });
-        }
-      }
-
-      const updated = await fetchRequestsByCoach(user.id);
-      setRequests(updated);
-      toast.success('درخواست تأیید شد و شاگرد به لیست اضافه شد');
-    } catch (error) {
-      if (import.meta.env.DEV) console.error('Error accepting request:', error);
-      toast.error('خطا در تأیید درخواست');
-    }
-  }, [user?.id, saveUser, isSupabaseReady]);
+    // Navigate to student info tab
+    setActiveUserId(req.client_id);
+    setStudentsSubTab('info');
+    setCurrentTab('students');
+  }, [acceptRequest]);
 
   const handleRejectRequest = useCallback(async (req: ProgramRequest) => {
-    if (!user?.id) return;
+    await rejectRequest(req);
+  }, [rejectRequest]);
 
+  const handleDeleteRequest = useCallback(async (req: ProgramRequest) => {
+    setDeletingRequestId(req.id);
     try {
-      const res = await updateRequestStatus(req.id, 'rejected');
-      if (res.error) throw res.error;
-
-      const updated = await fetchRequestsByCoach(user.id);
-      setRequests(updated);
-      toast.success('درخواست رد شد');
-    } catch (error) {
-      if (import.meta.env.DEV) console.error('Error rejecting request:', error);
-      toast.error('خطا در رد درخواست');
+      await deleteRequest(req.id);
+    } finally {
+      setDeletingRequestId(null);
     }
-  }, [user?.id]);
+  }, [deleteRequest]);
 
   const handleOpenUserModal = (id?: UserId | null) => {
     setEditingUserId(id ?? null);
@@ -819,7 +795,7 @@ const CoachDashboard: React.FC = () => {
               >
                 {/* Welcome Message */}
                 <motion.div variants={itemVariants} className="glass-card p-6 rounded-2xl border border-[var(--glass-border)] relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-64 h-64 rounded-full bg-gradient-to-br from-[var(--accent-color)]/20 to-transparent blur-3xl" />
+                <div className="absolute top-0 left-0 w-64 h-64 rounded-full bg-gradient-to-br from-[var(--accent-color)]/20 to-transparent blur-3xl pointer-events-none" />
                   <div className="relative">
                     <h3 className="text-2xl font-black mb-2">
                       سلام {coachProfile.fullName?.split(' ')[0] || 'مربی'} عزیز! 👋
@@ -1173,59 +1149,122 @@ const CoachDashboard: React.FC = () => {
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: idx * 0.05 }}
                             >
-                              <GlowCard className={activeUser?.id === u.id ? 'ring-2 ring-[var(--accent-color)]' : ''}>
+                              <GlowCard className={`cursor-pointer ${activeUserId === u.id ? 'ring-2 ring-[var(--accent-color)]' : ''}`}>
                                 <div className="p-4">
-                                  <div className="flex items-start gap-3 mb-4">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--accent-color)] to-[var(--accent-secondary)] flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                                      {u.name.charAt(0)}
-                                    </div>
+                                  {/* Header with avatar and basic info */}
+                                  <div className="flex items-start gap-3 mb-3">
+                                    <motion.div
+                                      className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--accent-color)] to-[var(--accent-secondary)] flex items-center justify-center text-white font-bold text-lg shadow-lg"
+                                      whileHover={{ scale: 1.1 }}
+                                    >
+                                      {u.name.charAt(0).toUpperCase()}
+                                    </motion.div>
                                     <div className="flex-1 min-w-0">
-                                      <p className="font-bold truncate">{u.name}</p>
+                                      <h3 className="font-bold text-[var(--text-primary)] truncate">{u.name}</h3>
                                       <p className="text-xs text-[var(--text-secondary)] truncate">
-                                        {u.phone || u.email || '—'}
+                                        {u.phone || u.email || 'اطلاعات تماس موجود نیست'}
                                       </p>
                                     </div>
                                   </div>
-                                  
-                                  <div className="flex items-center gap-2 mb-4">
-                                    <span className="px-2 py-1 rounded-lg bg-[var(--glass-bg)] text-xs text-[var(--text-secondary)]">
-                                      {u.level || 'سطح نامشخص'}
+
+                                  {/* Status badges */}
+                                  <div className="flex flex-wrap items-center gap-2 mb-4">
+                                    <span className={`px-2 py-1 rounded-lg text-xs font-medium ${
+                                      u.level === 'beginner' ? 'bg-green-500/20 text-green-600 dark:text-green-400' :
+                                      u.level === 'intermediate' ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400' :
+                                      u.level === 'advanced' ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400' :
+                                      u.level === 'pro' ? 'bg-red-500/20 text-red-600 dark:text-red-400' :
+                                      'bg-gray-500/20 text-gray-600 dark:text-gray-400'
+                                    }`}>
+                                      {u.level === 'beginner' ? 'مبتدی' :
+                                       u.level === 'intermediate' ? 'متوسط' :
+                                       u.level === 'advanced' ? 'پیشرفته' :
+                                       u.level === 'pro' ? 'حرفه‌ای' :
+                                       u.level || 'سطح نامشخص'}
                                     </span>
+
+                                    {u.gender && (
+                                      <span className="px-2 py-1 rounded-lg bg-purple-500/20 text-xs text-purple-600 dark:text-purple-400">
+                                        {u.gender === 'male' ? 'آقا' : 'خانم'}
+                                      </span>
+                                    )}
+
                                     {Object.keys(u.plans?.workouts || {}).length > 0 && (
                                       <span className="px-2 py-1 rounded-lg bg-emerald-500/20 text-xs text-emerald-600 dark:text-emerald-400">
                                         برنامه فعال
                                       </span>
                                     )}
+
+                                    {u.age && (
+                                      <span className="px-2 py-1 rounded-lg bg-blue-500/20 text-xs text-blue-600 dark:text-blue-400">
+                                        {u.age} سال
+                                      </span>
+                                    )}
                                   </div>
-                                  
+
+                                  {/* Action buttons */}
                                   <div className="flex items-center gap-2">
                                     <motion.button
-                                      whileHover={{ scale: 1.1 }}
-                                      whileTap={{ scale: 0.9 }}
-                                      onClick={() => handleSelectUser(u.id)}
-                                      className="flex-1 p-2.5 rounded-xl bg-[var(--accent-color)]/10 text-[var(--accent-color)] hover:bg-[var(--accent-color)]/20 transition"
-                                      title="مشاهده"
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleSelectUser(u.id);
+                                      }}
+                                      className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-[var(--accent-color)]/10 text-[var(--accent-color)] hover:bg-[var(--accent-color)]/20 transition text-sm font-medium"
+                                      title="مشاهده پروفایل"
                                     >
-                                      <Eye size={18} className="mx-auto" />
+                                      <Eye size={16} />
+                                      مشاهده
                                     </motion.button>
                                     <motion.button
-                                      whileHover={{ scale: 1.1 }}
-                                      whileTap={{ scale: 0.9 }}
-                                      onClick={() => handleOpenUserModal(u.id)}
-                                      className="flex-1 p-2.5 rounded-xl bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition"
-                                      title="ویرایش"
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOpenUserModal(u.id);
+                                      }}
+                                      className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition"
+                                      title="ویرایش اطلاعات"
                                     >
-                                      <Edit size={18} className="mx-auto" />
+                                      <Edit size={16} />
                                     </motion.button>
                                     <motion.button
-                                      whileHover={{ scale: 1.1 }}
-                                      whileTap={{ scale: 0.9 }}
-                                      onClick={() => deleteUser(u.id)}
-                                      className="flex-1 p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition"
-                                      title="حذف"
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        deleteUser(u.id);
+                                      }}
+                                      className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition"
+                                      title="حذف شاگرد"
                                     >
-                                      <Trash2 size={18} className="mx-auto" />
+                                      <Trash2 size={16} />
                                     </motion.button>
+                                  </div>
+
+                                  {/* Quick stats */}
+                                  <div className="mt-3 pt-3 border-t border-[var(--glass-border)]">
+                                    <div className="grid grid-cols-3 gap-2 text-center">
+                                      <div className="text-xs">
+                                        <div className="font-bold text-[var(--text-primary)]">
+                                          {Object.keys(u.plans?.workouts || {}).length}
+                                        </div>
+                                        <div className="text-[var(--text-secondary)]">جلسه</div>
+                                      </div>
+                                      <div className="text-xs">
+                                        <div className="font-bold text-[var(--text-primary)]">
+                                          {u.plans?.diet?.length || 0}
+                                        </div>
+                                        <div className="text-[var(--text-secondary)]">وعده</div>
+                                      </div>
+                                      <div className="text-xs">
+                                        <div className="font-bold text-[var(--text-primary)]">
+                                          {u.plans?.supps?.length || 0}
+                                        </div>
+                                        <div className="text-[var(--text-secondary)]">مکمل</div>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
                               </GlowCard>
@@ -1356,6 +1395,27 @@ const CoachDashboard: React.FC = () => {
                                     </motion.button>
                                   </div>
                                 )}
+
+                                {(req.status === 'accepted' || req.status === 'rejected') && (
+                                  <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => handleDeleteRequest(req)}
+                                    disabled={deletingRequestId === req.id}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gray-500/10 text-gray-500 font-semibold hover:bg-gray-500/20 transition disabled:opacity-50"
+                                  >
+                                    {deletingRequestId === req.id ? (
+                                      <motion.div
+                                        animate={{ rotate: 360 }}
+                                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                                        className="w-4 h-4 border-2 border-gray-500/30 border-t-gray-500 rounded-full"
+                                      />
+                                    ) : (
+                                      <Trash2 size={18} />
+                                    )}
+                                    حذف درخواست
+                                  </motion.button>
+                                )}
                               </div>
                             </GlowCard>
                           </motion.div>
@@ -1368,7 +1428,14 @@ const CoachDashboard: React.FC = () => {
                 {/* Client Info */}
                 {studentsSubTab === 'info' && (
                   activeUser ? (
-                    <ClientInfoPanel client={clientProfile} loading={profileLoading} />
+                    <ClientInfoPanel
+                      client={clientProfile}
+                      loading={profileLoading}
+                      onNavigateToTab={(tab) => {
+                        setCurrentTab(tab);
+                        // Keep activeUser selected for the new tab
+                      }}
+                    />
                   ) : (
                     <EmptyState
                       icon={<FileText size={40} />}
@@ -1383,11 +1450,52 @@ const CoachDashboard: React.FC = () => {
 
             {/* ==================== Training Tab ==================== */}
             {currentTab === 'training' && (
-              <motion.div key="training" {...scaleIn}>
+              <motion.div key="training" {...scaleIn} className="space-y-6">
                 {activeUser ? (
-                  <Suspense fallback={<PanelLoadingFallback />}>
-                    <TrainingPanel activeUser={activeUser} onUpdateUser={updateActiveUser} />
-                  </Suspense>
+                  <>
+                    {/* Student Header */}
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="glass-card p-4 rounded-2xl border border-[var(--glass-border)]"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--accent-color)] to-[var(--accent-secondary)] flex items-center justify-center text-white font-bold text-lg">
+                            {activeUser.name.charAt(0)}
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-bold text-[var(--text-primary)]">{activeUser.name}</h3>
+                            <p className="text-sm text-[var(--text-secondary)]">
+                              {activeUser.level || 'سطح نامشخص'} • {activeUser.gender === 'male' ? 'آقا' : 'خانم'} • {activeUser.age} سال
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => { setCurrentTab('students'); setStudentsSubTab('info'); }}
+                            className="px-4 py-2 rounded-xl bg-[var(--accent-color)]/10 text-[var(--accent-color)] hover:bg-[var(--accent-color)]/20 transition font-semibold text-sm"
+                          >
+                            مشاهده اطلاعات
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setActiveUserId(null)}
+                            className="px-4 py-2 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition font-semibold text-sm"
+                          >
+                            تغییر شاگرد
+                          </motion.button>
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    <Suspense fallback={<PanelLoadingFallback />}>
+                      <TrainingPanel activeUser={activeUser} onUpdateUser={updateActiveUser} />
+                    </Suspense>
+                  </>
                 ) : (
                   <EmptyState
                     icon={<Dumbbell size={40} />}
@@ -1401,11 +1509,52 @@ const CoachDashboard: React.FC = () => {
 
             {/* ==================== Nutrition Tab ==================== */}
             {currentTab === 'nutrition' && (
-              <motion.div key="nutrition" {...scaleIn}>
+              <motion.div key="nutrition" {...scaleIn} className="space-y-6">
                 {activeUser ? (
-                  <Suspense fallback={<PanelLoadingFallback />}>
-                    <DietPanel activeUser={activeUser} onUpdateUser={updateActiveUser} />
-                  </Suspense>
+                  <>
+                    {/* Student Header */}
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="glass-card p-4 rounded-2xl border border-[var(--glass-border)]"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--accent-color)] to-[var(--accent-secondary)] flex items-center justify-center text-white font-bold text-lg">
+                            {activeUser.name.charAt(0)}
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-bold text-[var(--text-primary)]">{activeUser.name}</h3>
+                            <p className="text-sm text-[var(--text-secondary)]">
+                              {activeUser.level || 'سطح نامشخص'} • {activeUser.gender === 'male' ? 'آقا' : 'خانم'} • {activeUser.age} سال
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => { setCurrentTab('students'); setStudentsSubTab('info'); }}
+                            className="px-4 py-2 rounded-xl bg-[var(--accent-color)]/10 text-[var(--accent-color)] hover:bg-[var(--accent-color)]/20 transition font-semibold text-sm"
+                          >
+                            مشاهده اطلاعات
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setActiveUserId(null)}
+                            className="px-4 py-2 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition font-semibold text-sm"
+                          >
+                            تغییر شاگرد
+                          </motion.button>
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    <Suspense fallback={<PanelLoadingFallback />}>
+                      <DietPanel activeUser={activeUser} onUpdateUser={updateActiveUser} />
+                    </Suspense>
+                  </>
                 ) : (
                   <EmptyState
                     icon={<UtensilsCrossed size={40} />}
@@ -1419,11 +1568,52 @@ const CoachDashboard: React.FC = () => {
 
             {/* ==================== Supplements Tab ==================== */}
             {currentTab === 'supplements' && (
-              <motion.div key="supplements" {...scaleIn}>
+              <motion.div key="supplements" {...scaleIn} className="space-y-6">
                 {activeUser ? (
-                  <Suspense fallback={<PanelLoadingFallback />}>
-                    <SupplementsPanel activeUser={activeUser} onUpdateUser={updateActiveUser} />
-                  </Suspense>
+                  <>
+                    {/* Student Header */}
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="glass-card p-4 rounded-2xl border border-[var(--glass-border)]"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--accent-color)] to-[var(--accent-secondary)] flex items-center justify-center text-white font-bold text-lg">
+                            {activeUser.name.charAt(0)}
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-bold text-[var(--text-primary)]">{activeUser.name}</h3>
+                            <p className="text-sm text-[var(--text-secondary)]">
+                              {activeUser.level || 'سطح نامشخص'} • {activeUser.gender === 'male' ? 'آقا' : 'خانم'} • {activeUser.age} سال
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => { setCurrentTab('students'); setStudentsSubTab('info'); }}
+                            className="px-4 py-2 rounded-xl bg-[var(--accent-color)]/10 text-[var(--accent-color)] hover:bg-[var(--accent-color)]/20 transition font-semibold text-sm"
+                          >
+                            مشاهده اطلاعات
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setActiveUserId(null)}
+                            className="px-4 py-2 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition font-semibold text-sm"
+                          >
+                            تغییر شاگرد
+                          </motion.button>
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    <Suspense fallback={<PanelLoadingFallback />}>
+                      <SupplementsPanel activeUser={activeUser} onUpdateUser={updateActiveUser} />
+                    </Suspense>
+                  </>
                 ) : (
                   <EmptyState
                     icon={<Pill size={40} />}
@@ -1437,11 +1627,52 @@ const CoachDashboard: React.FC = () => {
 
             {/* ==================== Print Tab ==================== */}
             {currentTab === 'print' && (
-              <motion.div key="print" {...scaleIn}>
+              <motion.div key="print" {...scaleIn} className="space-y-6">
                 {activeUser ? (
-                  <Suspense fallback={<PanelLoadingFallback />}>
-                    <ProfilePanel activeUser={activeUser} onUpdateUser={updateActiveUser} />
-                  </Suspense>
+                  <>
+                    {/* Student Header */}
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="glass-card p-4 rounded-2xl border border-[var(--glass-border)]"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--accent-color)] to-[var(--accent-secondary)] flex items-center justify-center text-white font-bold text-lg">
+                            {activeUser.name.charAt(0)}
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-bold text-[var(--text-primary)]">{activeUser.name}</h3>
+                            <p className="text-sm text-[var(--text-secondary)]">
+                              {activeUser.level || 'سطح نامشخص'} • {activeUser.gender === 'male' ? 'آقا' : 'خانم'} • {activeUser.age} سال
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => { setCurrentTab('students'); setStudentsSubTab('info'); }}
+                            className="px-4 py-2 rounded-xl bg-[var(--accent-color)]/10 text-[var(--accent-color)] hover:bg-[var(--accent-color)]/20 transition font-semibold text-sm"
+                          >
+                            مشاهده اطلاعات
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setActiveUserId(null)}
+                            className="px-4 py-2 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition font-semibold text-sm"
+                          >
+                            تغییر شاگرد
+                          </motion.button>
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    <Suspense fallback={<PanelLoadingFallback />}>
+                      <ProfilePanel activeUser={activeUser} onUpdateUser={updateActiveUser} />
+                    </Suspense>
+                  </>
                 ) : (
                   <EmptyState
                     icon={<Printer size={40} />}

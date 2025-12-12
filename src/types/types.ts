@@ -190,7 +190,7 @@ export interface PrintData {
 // ========== Supabase Database Types ==========
 export interface Client {
   id: string;
-  coach_id: string;
+  coach_id: string; // UUID from profiles table
   full_name: string;
   gender?: string;
   age?: string;
@@ -198,7 +198,7 @@ export interface Client {
   weight?: string;
   goal?: string;
   notes?: string;
-  profile_data?: User;
+  profile_data?: ProfileData;
   profile_completed?: boolean;
   created_at?: string;
   updated_at?: string;
@@ -206,8 +206,8 @@ export interface Client {
 
 export interface WorkoutPlanFromDB {
   id: string;
-  coach_id: string;
-  client_id: string;
+  coach_id: string; // UUID from profiles table
+  client_id: string; // References clients.id
   title?: string;
   description?: string;
   plan_data: UserPlans;
@@ -219,7 +219,7 @@ export interface ProgramRequest {
   id: string;
   client_id: string;
   client_name?: string;
-  coach_id: string;
+  coach_id: string; // Coach code (text)
   coach_code: string;
   request_type: 'training' | 'diet' | 'supplements' | 'all';
   status: 'pending' | 'accepted' | 'rejected' | 'completed';
@@ -263,7 +263,9 @@ export interface AppContextType {
 // ========== Context Types (continued) ==========
 export interface DataContextType {
   users: User[];
+  requests: ProgramRequest[];
   activeUser: User | null;
+  activeUserId: UserId | null;
   templates: Template[];
   currentRole: Role;
   currentAccountId: UserId | null;
@@ -271,8 +273,11 @@ export interface DataContextType {
   setCurrentAccountId: (id: UserId | null) => void;
   setActiveUserId: (id: UserId | null) => void;
   hasPermission: (action: PermissionAction, targetUserId?: UserId | null) => boolean;
-  saveUser: (user: UserInput) => void;
-  deleteUser: (id: UserId) => void;
+  saveUser: (user: UserInput) => Promise<void>;
+  deleteUser: (id: UserId) => Promise<void>;
+  acceptRequest: (request: ProgramRequest) => Promise<void>;
+  rejectRequest: (request: ProgramRequest) => Promise<void>;
+  deleteRequest: (requestId: string) => Promise<void>;
   updateActiveUser: (user: User) => void;
   saveTemplate: (name: string, workout: User['plans']['workouts'][number]) => void;
   deleteTemplate: (id: UserId) => void;

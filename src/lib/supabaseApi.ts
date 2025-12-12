@@ -5,6 +5,7 @@
  * with proper error handling and standardized response patterns.
  */
 
+import { toast } from 'react-hot-toast';
 import type {
   Template,
   User,
@@ -16,6 +17,90 @@ import type {
   ProfileData
 } from '../types/index';
 import { supabase, isSupabaseEnabled } from './supabaseClient';
+
+// ========== Centralized Error Handling ==========
+interface ErrorContext {
+  operation: string;
+  userMessage?: string;
+  showToast?: boolean;
+  logError?: boolean;
+}
+
+class SupabaseErrorHandler {
+  static handle(error: any, context: ErrorContext): ApiResponse<any> {
+    const { operation, userMessage, showToast = true, logError = true } = context;
+
+    // Log error for debugging
+    if (logError && import.meta.env.DEV) {
+      console.error(`${operation} failed:`, error);
+    }
+
+    // Show user-friendly message
+    if (showToast) {
+      const message = userMessage ||
+        this.getUserFriendlyMessage(error, operation);
+      toast.error(message);
+    }
+
+    return {
+      data: null,
+      error: {
+        message: error?.message || 'Unknown error',
+        code: error?.code || 'UNKNOWN_ERROR',
+        details: error
+      }
+    };
+  }
+
+  private static getUserFriendlyMessage(error: any, operation: string): string {
+    // Network errors
+    if (!navigator.onLine) {
+      return 'اتصال اینترنت شما قطع است';
+    }
+
+    // Authentication errors
+    if (error?.message?.includes('JWT') || error?.message?.includes('auth')) {
+      return 'لطفاً دوباره وارد شوید';
+    }
+
+    // Permission errors
+    if (error?.code === 'PGRST116' || error?.message?.includes('permission')) {
+      return 'دسترسی لازم برای این عملیات را ندارید';
+    }
+
+    // Duplicate key errors
+    if (error?.code === '23505' || error?.message?.includes('duplicate')) {
+      return 'این اطلاعات قبلاً ثبت شده است';
+    }
+
+    // Foreign key constraint errors
+    if (error?.code === '23503') {
+      return 'نمی‌توان این مورد را حذف کرد زیرا در جای دیگری استفاده شده';
+    }
+
+    // Generic operation-specific messages
+    const operationMessages: Record<string, string> = {
+      'save user': 'خطا در ذخیره اطلاعات کاربر',
+      'delete user': 'خطا در حذف کاربر',
+      'fetch users': 'خطا در بارگذاری لیست کاربران',
+      'save template': 'خطا در ذخیره الگو',
+      'fetch templates': 'خطا در بارگذاری الگوها',
+      'create request': 'خطا در ارسال درخواست',
+      'fetch requests': 'خطا در بارگذاری درخواست‌ها'
+    };
+
+    return operationMessages[operation.toLowerCase()] ||
+           'خطایی رخ داده است. لطفاً دوباره تلاش کنید';
+  }
+
+  static success(message: string): void {
+    toast.success(message);
+  }
+
+  static info(message: string): void {
+    toast.info(message);
+  }
+}
 
 // ========== Constants ==========
 const tableUsers = 'users';
@@ -462,17 +547,19 @@ export const updateClient = async (
       .maybeSingle();
     
     if (error) {
-      if (import.meta.env.DEV) {
-        console.error('updateClient supabase error', error);
-      }
+      SupabaseErrorHandler.handle(error, {
+        operation: 'update client',
+        userMessage: 'خطا در بروزرسانی اطلاعات مشتری'
+      });
       return clientData;
     }
-    
+
     return (data as Client) || clientData;
   } catch (err) {
-    if (import.meta.env.DEV) {
-      console.error('updateClient error', err);
-    }
+    SupabaseErrorHandler.handle(err, {
+      operation: 'update client',
+      userMessage: 'خطا در بروزرسانی اطلاعات مشتری'
+    });
     return clientData;
   }
 };
@@ -908,6 +995,77 @@ export const findCoachByCode = async (
 };
 
 // ========== Program Requests API ==========
+const readLocalRequests = (key: string): ProgramRequest[] => {
+  try {
+    const saved = localStorage.getItem(key);
+    if (!saved) return [];
+    return JSON.parse(saved) as ProgramRequest[];
+  } catch {
+    return [];
+  }
+};
+
+const writeLocalRequests = (key: string, list: ProgramRequest[]): void => {
+  try {
+    localStorage.setItem(key, JSON.stringify(list));
+  } catch {
+    // ignore
+  }
+};
+
+const upsertRequestInKey = (key: string, req: ProgramRequest): void => {
+  const list = readLocalRequests(key);
+  const idx = list.findIndex(r => r.id === req.id);
+  if (idx > -1) {
+    list[idx] = { ...list[idx], ...req };
+  } else {
+    list.unshift(req);
+  }
+  writeLocalRequests(key, list);
+};
+
+const syncRequestToLocal = (req: ProgramRequest): ProgramRequest => {
+  upsertRequestInKey(`program_requests_${req.client_id}`, req);
+  upsertRequestInKey(`coach_requests_${req.coach_id}`, req);
+  return req;
+};
+
+const findLocalRequestById = (requestId: string): ProgramRequest | null => {
+  try {
+    const keys = Object.keys(localStorage).filter(
+      k => k.startsWith('program_requests_') || k.startsWith('coach_requests_')
+    );
+    for (const key of keys) {
+      const found = readLocalRequests(key).find(r => r.id === requestId);
+      if (found) return found;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+};
+
+const removeRequestFromLocal = (requestId: string, coachId?: string, clientId?: string): void => {
+  const keys = new Set<string>();
+  if (clientId) keys.add(`program_requests_${clientId}`);
+  if (coachId) keys.add(`coach_requests_${coachId}`);
+  if (keys.size === 0) {
+    try {
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('program_requests_') || key.startsWith('coach_requests_')) {
+          keys.add(key);
+        }
+      });
+    } catch {
+      // ignore
+    }
+  }
+  keys.forEach(key => {
+    const filtered = readLocalRequests(key).filter(r => r.id !== requestId);
+    writeLocalRequests(key, filtered);
+  });
+};
+
 export const createProgramRequest = async (
   request: Omit<ProgramRequest, 'id' | 'created_at' | 'updated_at'>
 ): Promise<ProgramRequest> => {
@@ -919,23 +1077,7 @@ export const createProgramRequest = async (
     updated_at: new Date().toISOString()
   };
   
-  // Always save to localStorage
-  try {
-    const key = `program_requests_${request.client_id}`;
-    const existing = localStorage.getItem(key);
-    const requests: ProgramRequest[] = existing ? JSON.parse(existing) : [];
-    requests.unshift(newRequest);
-    localStorage.setItem(key, JSON.stringify(requests));
-    
-    // Save to coach's request list
-    const coachKey = `coach_requests_${request.coach_id}`;
-    const coachExisting = localStorage.getItem(coachKey);
-    const coachRequests: ProgramRequest[] = coachExisting ? JSON.parse(coachExisting) : [];
-    coachRequests.unshift(newRequest);
-    localStorage.setItem(coachKey, JSON.stringify(coachRequests));
-  } catch {
-    // Ignore localStorage errors
-  }
+  syncRequestToLocal(newRequest);
   
   // If Supabase is available, save there too
   if (isSupabaseEnabled && supabase) {
@@ -947,18 +1089,21 @@ export const createProgramRequest = async (
         .maybeSingle();
       
       if (error) {
-        if (import.meta.env.DEV) {
-          console.error('createProgramRequest supabase error', error);
-        }
-        // Error occurred but saved to localStorage, so continue
+        SupabaseErrorHandler.handle(error, {
+          operation: 'create request',
+          userMessage: 'درخواست ارسال شد اما ممکن است تأخیر در پردازش داشته باشد'
+        });
       }
       if (data) {
-        return data as ProgramRequest;
+        const stored = data as ProgramRequest;
+        syncRequestToLocal(stored);
+        return stored;
       }
     } catch (err) {
-      if (import.meta.env.DEV) {
-        console.error('createProgramRequest error', err);
-      }
+      SupabaseErrorHandler.handle(err, {
+        operation: 'create request',
+        userMessage: 'درخواست ارسال شد اما ممکن است تأخیر در پردازش داشته باشد'
+      });
     }
   }
   
@@ -991,16 +1136,17 @@ export const fetchRequestsByCoach = async (coachId: string): Promise<ProgramRequ
       .order('created_at', { ascending: false });
     
     if (error || !data) {
-      if (import.meta.env.DEV) {
-        console.error('fetchRequestsByCoach error', error);
-      }
+      SupabaseErrorHandler.handle(error, {
+        operation: 'fetch requests',
+        showToast: false // Don't show toast for fetch operations
+      });
       return localRequests;
     }
     
-    // Merge with localStorage and remove duplicates
-    const dbIds = new Set(data.map(r => r.id));
+    const dbRequests = (data as ProgramRequest[]).map(syncRequestToLocal);
+    const dbIds = new Set(dbRequests.map(r => r.id));
     const uniqueLocal = localRequests.filter(r => !dbIds.has(r.id));
-    return [...(data as ProgramRequest[]), ...uniqueLocal];
+    return [...dbRequests, ...uniqueLocal];
   } catch {
     return localRequests;
   }
@@ -1038,10 +1184,10 @@ export const fetchRequestsByClient = async (clientId: string): Promise<ProgramRe
       return localRequests;
     }
     
-    // Merge with localStorage and remove duplicates
-    const dbIds = new Set(data.map(r => r.id));
+    const dbRequests = (data as ProgramRequest[]).map(syncRequestToLocal);
+    const dbIds = new Set(dbRequests.map(r => r.id));
     const uniqueLocal = localRequests.filter(r => !dbIds.has(r.id));
-    return [...(data as ProgramRequest[]), ...uniqueLocal];
+    return [...dbRequests, ...uniqueLocal];
   } catch {
     return localRequests;
   }
@@ -1050,10 +1196,21 @@ export const fetchRequestsByClient = async (clientId: string): Promise<ProgramRe
 export const updateRequestStatus = async (
   requestId: string,
   status: ProgramRequest['status'],
-  response?: string
+  response?: string,
+  request?: ProgramRequest
 ): Promise<ApiResponse<void>> => {
+  const target = request || findLocalRequestById(requestId);
+  if (target) {
+    const updated: ProgramRequest = {
+      ...target,
+      status,
+      coach_response: response ?? target.coach_response,
+      updated_at: new Date().toISOString()
+    };
+    syncRequestToLocal(updated);
+  }
   if (!isSupabaseEnabled || !supabase) {
-    return createApiResponse<void>(null, null);
+    return createApiResponse<void>(undefined, null);
   }
   
   try {
@@ -1065,16 +1222,22 @@ export const updateRequestStatus = async (
       payload.coach_response = response;
     }
     
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('program_requests')
       .update(payload)
-      .eq('id', requestId);
+      .eq('id', requestId)
+      .select()
+      .maybeSingle();
     
     if (error) {
       return createApiResponse<void>(
         null,
         handleSupabaseError(error, 'updateRequestStatus')
       );
+    }
+    
+    if (data) {
+      syncRequestToLocal(data as ProgramRequest);
     }
     
     return createApiResponse<void>(undefined, null);
@@ -1084,5 +1247,46 @@ export const updateRequestStatus = async (
       handleSupabaseError(err, 'updateRequestStatus')
     );
   }
+};
+
+export const deleteProgramRequestLocally = (
+  requestId: string,
+  coachId?: string,
+  clientId?: string
+): void => {
+  removeRequestFromLocal(requestId, coachId, clientId);
+};
+
+export const deleteProgramRequest = async (
+  requestId: string,
+  coachId?: string,
+  clientId?: string
+): Promise<ApiResponse<void>> => {
+  // Delete from localStorage first
+  deleteProgramRequestLocally(requestId, coachId, clientId);
+
+  // Delete from Supabase if available
+  if (isSupabaseEnabled && supabase) {
+    try {
+      const { error } = await supabase
+        .from('program_requests')
+        .delete()
+        .eq('id', requestId);
+
+      if (error) {
+        return createApiResponse<void>(
+          null,
+          handleSupabaseError(error, 'deleteProgramRequest')
+        );
+      }
+    } catch (err) {
+      return createApiResponse<void>(
+        null,
+        handleSupabaseError(err, 'deleteProgramRequest')
+      );
+    }
+  }
+
+  return createApiResponse<void>(undefined, null);
 };
 

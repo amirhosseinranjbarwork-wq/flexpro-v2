@@ -71,12 +71,11 @@ USING (
   )
 );
 
--- Policy: Coaches can insert clients
+-- Policy: Coaches can insert clients (only their own clients)
 CREATE POLICY "Coaches can insert clients"
 ON users FOR INSERT
 WITH CHECK (
   coach_id = auth.uid()::text
-  OR id::text = auth.uid()::text
 );
 
 -- Policy: Coaches can delete their clients

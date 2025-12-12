@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import DOMPurify from 'dompurify';
 import type { PrintData } from '../types';
 
 // تابع escape برای جلوگیری از XSS
@@ -31,6 +32,22 @@ const allowedAttrs = new Set([
 const unsafeProtocols = ['javascript:', 'data:', 'vbscript:'];
 
 const sanitizeHTML = (html: string): string => {
+  if (!html || typeof html !== 'string') return '';
+
+  // Use DOMPurify for comprehensive sanitization
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['div', 'p', 'span', 'strong', 'em', 'b', 'i', 'u', 'ul', 'ol', 'li',
+                   'table', 'thead', 'tbody', 'tr', 'th', 'td', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                   'br', 'hr', 'section', 'article', 'header', 'footer', 'main', 'nav'],
+    ALLOWED_ATTR: ['class', 'id', 'title', 'dir', 'lang', 'aria-label', 'role', 'colspan', 'rowspan', 'data-label', 'style'],
+    ALLOW_DATA_ATTR: false,
+    FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button'],
+    FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover', 'onmouseout', 'onkeydown', 'onkeyup']
+  });
+};
+
+// Legacy sanitization function (kept for compatibility but not used)
+const legacySanitizeHTML = (html: string): string => {
   if (!html || typeof html !== 'string') return '';
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const stack: Element[] = Array.from(doc.body.children);
