@@ -5,6 +5,7 @@
  * with proper error handling and standardized response patterns.
  */
 
+import { toast } from 'react-hot-toast';
 import type {
   Template,
   User,
@@ -16,6 +17,90 @@ import type {
   ProfileData
 } from '../types/index';
 import { supabase, isSupabaseEnabled } from './supabaseClient';
+
+// ========== Centralized Error Handling ==========
+interface ErrorContext {
+  operation: string;
+  userMessage?: string;
+  showToast?: boolean;
+  logError?: boolean;
+}
+
+class SupabaseErrorHandler {
+  static handle(error: any, context: ErrorContext): ApiResponse<any> {
+    const { operation, userMessage, showToast = true, logError = true } = context;
+
+    // Log error for debugging
+    if (logError && import.meta.env.DEV) {
+      console.error(`${operation} failed:`, error);
+    }
+
+    // Show user-friendly message
+    if (showToast) {
+      const message = userMessage ||
+        this.getUserFriendlyMessage(error, operation);
+      toast.error(message);
+    }
+
+    return {
+      data: null,
+      error: {
+        message: error?.message || 'Unknown error',
+        code: error?.code || 'UNKNOWN_ERROR',
+        details: error
+      }
+    };
+  }
+
+  private static getUserFriendlyMessage(error: any, operation: string): string {
+    // Network errors
+    if (!navigator.onLine) {
+      return 'اتصال اینترنت شما قطع است';
+    }
+
+    // Authentication errors
+    if (error?.message?.includes('JWT') || error?.message?.includes('auth')) {
+      return 'لطفاً دوباره وارد شوید';
+    }
+
+    // Permission errors
+    if (error?.code === 'PGRST116' || error?.message?.includes('permission')) {
+      return 'دسترسی لازم برای این عملیات را ندارید';
+    }
+
+    // Duplicate key errors
+    if (error?.code === '23505' || error?.message?.includes('duplicate')) {
+      return 'این اطلاعات قبلاً ثبت شده است';
+    }
+
+    // Foreign key constraint errors
+    if (error?.code === '23503') {
+      return 'نمی‌توان این مورد را حذف کرد زیرا در جای دیگری استفاده شده';
+    }
+
+    // Generic operation-specific messages
+    const operationMessages: Record<string, string> = {
+      'save user': 'خطا در ذخیره اطلاعات کاربر',
+      'delete user': 'خطا در حذف کاربر',
+      'fetch users': 'خطا در بارگذاری لیست کاربران',
+      'save template': 'خطا در ذخیره الگو',
+      'fetch templates': 'خطا در بارگذاری الگوها',
+      'create request': 'خطا در ارسال درخواست',
+      'fetch requests': 'خطا در بارگذاری درخواست‌ها'
+    };
+
+    return operationMessages[operation.toLowerCase()] ||
+           'خطایی رخ داده است. لطفاً دوباره تلاش کنید';
+  }
+
+  static success(message: string): void {
+    toast.success(message);
+  }
+
+  static info(message: string): void {
+    toast.info(message);
+  }
+}
 
 // ========== Constants ==========
 const tableUsers = 'users';
@@ -462,17 +547,19 @@ export const updateClient = async (
       .maybeSingle();
     
     if (error) {
-      if (import.meta.env.DEV) {
-        console.error('updateClient supabase error', error);
-      }
+      SupabaseErrorHandler.handle(error, {
+        operation: 'update client',
+        userMessage: 'خطا در بروزرسانی اطلاعات مشتری'
+      });
       return clientData;
     }
-    
+
     return (data as Client) || clientData;
   } catch (err) {
-    if (import.meta.env.DEV) {
-      console.error('updateClient error', err);
-    }
+    SupabaseErrorHandler.handle(err, {
+      operation: 'update client',
+      userMessage: 'خطا در بروزرسانی اطلاعات مشتری'
+    });
     return clientData;
   }
 };
@@ -947,18 +1034,19 @@ export const createProgramRequest = async (
         .maybeSingle();
       
       if (error) {
-        if (import.meta.env.DEV) {
-          console.error('createProgramRequest supabase error', error);
-        }
-        // Error occurred but saved to localStorage, so continue
+        SupabaseErrorHandler.handle(error, {
+          operation: 'create request',
+          userMessage: 'درخواست ارسال شد اما ممکن است تأخیر در پردازش داشته باشد'
+        });
       }
       if (data) {
         return data as ProgramRequest;
       }
     } catch (err) {
-      if (import.meta.env.DEV) {
-        console.error('createProgramRequest error', err);
-      }
+      SupabaseErrorHandler.handle(err, {
+        operation: 'create request',
+        userMessage: 'درخواست ارسال شد اما ممکن است تأخیر در پردازش داشته باشد'
+      });
     }
   }
   
@@ -991,9 +1079,10 @@ export const fetchRequestsByCoach = async (coachId: string): Promise<ProgramRequ
       .order('created_at', { ascending: false });
     
     if (error || !data) {
-      if (import.meta.env.DEV) {
-        console.error('fetchRequestsByCoach error', error);
-      }
+      SupabaseErrorHandler.handle(error, {
+        operation: 'fetch requests',
+        showToast: false // Don't show toast for fetch operations
+      });
       return localRequests;
     }
     

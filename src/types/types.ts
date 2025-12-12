@@ -190,7 +190,7 @@ export interface PrintData {
 // ========== Supabase Database Types ==========
 export interface Client {
   id: string;
-  coach_id: string;
+  coach_id: string; // UUID from profiles table
   full_name: string;
   gender?: string;
   age?: string;
@@ -206,8 +206,8 @@ export interface Client {
 
 export interface WorkoutPlanFromDB {
   id: string;
-  coach_id: string;
-  client_id: string;
+  coach_id: string; // UUID from profiles table
+  client_id: string; // References clients.id
   title?: string;
   description?: string;
   plan_data: UserPlans;
@@ -219,7 +219,7 @@ export interface ProgramRequest {
   id: string;
   client_id: string;
   client_name?: string;
-  coach_id: string;
+  coach_id: string; // Coach code (text)
   coach_code: string;
   request_type: 'training' | 'diet' | 'supplements' | 'all';
   status: 'pending' | 'accepted' | 'rejected' | 'completed';

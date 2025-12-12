@@ -156,9 +156,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return [];
   }, []);
 
-  // Initialize state - use lazy initialization to avoid calling getInitialUsers/getInitialTemplates on every render
-  const [users, setUsers] = useState<User[]>(() => isSupabaseReady ? [] : getInitialUsers());
-  const [templates, setTemplates] = useState<Template[]>(() => isSupabaseReady ? [] : getInitialTemplates());
+  // Initialize state - always start empty, load from Supabase
+  const [users, setUsers] = useState<User[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [activeUserId, setActiveUserId] = useState<UserId | null>(null);
   const [currentRole, setCurrentRole] = useState<Role>(() => {
     const saved = localStorage.getItem(ROLE_KEY) as Role | null;
@@ -171,11 +171,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const isFirstRender = useRef<boolean>(true);
 
-  // Fetch data from Supabase (primary source)
+  // Fetch data from Supabase (single source of truth)
   const refreshData = useCallback(async () => {
-    if (!isSupabaseReady) return;
-    const coachId = auth?.user?.id;
-    if (!coachId) return;
+    if (!isSupabaseReady || !auth?.user?.id) {
+      // If Supabase is not ready or no user, clear data
+      setUsers([]);
+      setTemplates([]);
+      return;
+    }
+
+    const coachId = auth.user.id;
 
     try {
       const [clientsResponse, plansResponse, templatesResponse] = await Promise.all([
@@ -184,87 +189,71 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fetchTemplatesRemote(coachId)
       ]);
 
-      // Handle clients
+      // Handle errors gracefully
+      if (clientsResponse.error) {
+        console.error('Failed to fetch clients:', clientsResponse.error);
+      }
+      if (plansResponse.error) {
+        console.error('Failed to fetch workout plans:', plansResponse.error);
+      }
+      if (templatesResponse.error) {
+        console.error('Failed to fetch templates:', templatesResponse.error);
+      }
+
+      // Process data
       const remoteClients = clientsResponse.data || [];
       const remotePlans = plansResponse.data || [];
       const remoteTemplates = templatesResponse.data || [];
 
-      if (clientsResponse.error) {
-        if (import.meta.env.DEV) {
-          console.error('fetchClientsByCoach error', clientsResponse.error);
-        }
-      }
-
-      if (plansResponse.error) {
-        if (import.meta.env.DEV) {
-          console.error('fetchWorkoutPlansByCoach error', plansResponse.error);
-        }
-      }
-
-      if (templatesResponse.error) {
-        if (import.meta.env.DEV) {
-          console.error('fetchTemplates error', templatesResponse.error);
-        }
-      }
-
+      // Map clients to users with their plans
       const planMap = new Map(remotePlans.map(p => [p.client_id, p]));
       const mappedUsers = remoteClients.map(c => mapClientToUser(c, planMap.get(c.id)));
 
-      if (mappedUsers.length > 0) {
-        setUsers(mappedUsers);
-        // Cache in localStorage as backup
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify({ users: mappedUsers, templates: remoteTemplates || [] }));
-        } catch (e) {
-          if (import.meta.env.DEV) console.warn('Failed to backup to localStorage', e);
-        }
-      } else {
-        const legacyUsersResponse = await fetchUsersRemote(coachId);
-        const legacyUsers = legacyUsersResponse.data || [];
-        if (legacyUsers.length > 0) {
-          const migrated = legacyUsers.map(u => migrateUser(u));
-          setUsers(migrated);
-          try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({ users: migrated, templates: remoteTemplates || [] }));
-          } catch (e) {
-            if (import.meta.env.DEV) console.warn('Failed to backup to localStorage', e);
-          }
-        } else {
-          const localUsers = getInitialUsers();
-          const localTemplates = getInitialTemplates();
-          setUsers(localUsers);
-          setTemplates(localTemplates);
-        }
+      // Update state
+      setUsers(mappedUsers);
+      setTemplates(remoteTemplates);
+
+      // Cache successful data for offline mode (optional enhancement)
+      try {
+        const cacheData = {
+          users: mappedUsers,
+          templates: remoteTemplates,
+          timestamp: Date.now()
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cacheData));
+      } catch (e) {
+        console.warn('Failed to cache data:', e);
       }
 
-      if (remoteTemplates.length > 0) {
-        setTemplates(remoteTemplates);
-      } else {
-        const localTemplates = getInitialTemplates();
-        setTemplates(localTemplates);
-      }
-    } catch (e) {
-      if (import.meta.env.DEV) console.error('Supabase fetch error, falling back to localStorage', e);
-      const localUsers = getInitialUsers();
-      const localTemplates = getInitialTemplates();
-      if (localUsers.length > 0 || localTemplates.length > 0) {
-        setUsers(localUsers);
-        setTemplates(localTemplates);
-        toast.error('خطا در اتصال به سرور. از داده‌های محلی استفاده می‌شود.');
+    } catch (error) {
+      console.error('Critical error fetching data from Supabase:', error);
+      toast.error('خطا در بارگذاری داده‌ها از سرور');
+
+      // Attempt to load from cache as last resort
+      try {
+        const cached = localStorage.getItem(STORAGE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.users) setUsers(parsed.users.map(migrateUser));
+          if (parsed.templates) setTemplates(parsed.templates);
+          toast.warning('داده‌های ذخیره‌شده محلی بارگذاری شد');
+        }
+      } catch (cacheError) {
+        console.error('Failed to load cached data:', cacheError);
       }
     }
-  }, [auth?.user?.id, getInitialUsers, getInitialTemplates]);
+  }, [auth?.user?.id]);
 
-  // Load data on mount and when auth changes
+  // Load data when Supabase is ready and user is authenticated
   useEffect(() => {
-    if (!isSupabaseReady) {
-      return;
+    if (isSupabaseReady && auth?.user?.id) {
+      refreshData();
+    } else {
+      // Clear data when offline or not authenticated
+      setUsers([]);
+      setTemplates([]);
     }
-    const timer = setTimeout(() => {
-    refreshData();
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [auth?.user?.id, refreshData]);
+  }, [isSupabaseReady, auth?.user?.id, refreshData]);
 
   // Save role and account ID to localStorage
   useEffect(() => {
@@ -276,25 +265,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [currentRole, currentAccountId]);
 
-  // Save to localStorage (only if Supabase is not ready, and after first render)
+  // Cache data for offline mode (only when online)
   useEffect(() => {
-    if (isSupabaseReady) return;
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
+    if (!isSupabaseReady || users.length === 0) return;
 
     const timeoutId = setTimeout(() => {
       try {
-        const data = JSON.stringify({ users, templates });
-        localStorage.setItem(STORAGE_KEY, data);
+        const cacheData = {
+          users,
+          templates,
+          timestamp: Date.now()
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cacheData));
       } catch (e) {
-        console.error('خطا در ذخیره داده‌ها:', e);
+        console.warn('Failed to cache data for offline mode:', e);
       }
-    }, 500);
+    }, 1000); // Debounced caching
 
     return () => clearTimeout(timeoutId);
-  }, [users, templates]);
+  }, [users, templates, isSupabaseReady]);
 
   const activeUser = useMemo(() => {
     if (activeUserId == null) return null;
@@ -358,28 +347,49 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 
   const saveUser = useCallback(
-    (userData: UserInput) => {
+    async (userData: UserInput) => {
       if (!hasPermission('manageUsers', userData.id ?? null)) {
         toast.error('دسترسی مربی لازم است');
         return;
       }
-      const userId = userData.id ?? Date.now();
-      const newUser = migrateUser({ ...userData, id: userId });
 
-      setUsers(prev => {
-        const idx = prev.findIndex(u => u.id === newUser.id);
-        if (idx > -1) {
-          const updated = [...prev];
-          updated[idx] = { ...prev[idx], ...newUser };
-          return updated;
-        }
-        return [...prev, newUser];
-      });
+      if (!isSupabaseReady || !auth?.user?.id) {
+        toast.error('اتصال به سرور برقرار نیست');
+        return;
+      }
 
-      syncUserToSupabase(newUser);
-      toast.success('اطلاعات با موفقیت ذخیره شد');
+      try {
+        const coachId = auth.user.id;
+        const userId = userData.id ?? makeId();
+        const newUser = migrateUser({ ...userData, id: userId });
+
+        // Save to Supabase
+        const clientPayload = clientPayloadFromUser(newUser, coachId);
+        const workoutPayload = workoutPlanPayloadFromUser(newUser, coachId);
+
+        await Promise.all([
+          upsertClient(clientPayload as Client),
+          upsertWorkoutPlan(workoutPayload as WorkoutPlanFromDB)
+        ]);
+
+        // Update local state
+        setUsers(prev => {
+          const idx = prev.findIndex(u => u.id === newUser.id);
+          if (idx > -1) {
+            const updated = [...prev];
+            updated[idx] = newUser;
+            return updated;
+          }
+          return [...prev, newUser];
+        });
+
+        toast.success('اطلاعات با موفقیت ذخیره شد');
+      } catch (error) {
+        console.error('Failed to save user:', error);
+        toast.error('خطا در ذخیره اطلاعات');
+      }
     },
-    [hasPermission, syncUserToSupabase]
+    [hasPermission, auth?.user?.id, isSupabaseReady]
   );
 
   const updateActiveUser = useCallback(
@@ -391,12 +401,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 
   const deleteUser = useCallback(
-    (id: UserId) => {
+    async (id: UserId) => {
       if (!hasPermission('manageUsers', id)) {
         toast.error('دسترسی مربی لازم است');
         return;
       }
-      Swal.fire({
+
+      const result = await Swal.fire({
         title: 'آیا مطمئن هستید؟',
         text: 'اطلاعات این شاگرد غیرقابل بازگشت خواهد بود!',
         icon: 'warning',
@@ -407,39 +418,40 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         cancelButtonText: 'لغو',
         background: theme === 'dark' ? '#1e293b' : '#fff',
         color: theme === 'dark' ? '#fff' : '#000'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          setUsers(prev => prev.filter(u => u.id !== id));
-          if (isSupabaseReady) {
-            const coachId = auth?.user?.id;
-            const planId = planIdForClient(String(id));
-            Promise.all([
-              deleteWorkoutPlan(planId),
-              deleteClient(String(id)),
-              removeUserRemote(id, coachId)
-            ]).then(([planRes, clientRes, userRes]) => {
-              if (planRes.error && import.meta.env.DEV) {
-                console.error('supabase delete plan', planRes.error);
-              }
-              if (clientRes.error && import.meta.env.DEV) {
-                console.error('supabase delete client', clientRes.error);
-              }
-              if (userRes.error && import.meta.env.DEV) {
-                console.error('supabase delete user', userRes.error);
-              }
-            });
-          }
-          if (activeUserId === id) setActiveUserId(null);
-          Swal.fire({
-            title: 'حذف شد!',
-            icon: 'success',
-            timer: 1500,
-            showConfirmButton: false,
-            background: theme === 'dark' ? '#1e293b' : '#fff',
-            color: theme === 'dark' ? '#fff' : '#000'
-          });
-        }
       });
+
+      if (result.isConfirmed) {
+        try {
+          // Update local state immediately for better UX
+          setUsers(prev => prev.filter(u => u.id !== id));
+          if (activeUserId === id) setActiveUserId(null);
+
+          // Delete from Supabase
+          if (isSupabaseReady && auth?.user?.id) {
+            const coachId = auth.user.id;
+            const planId = planIdForClient(String(id));
+
+            const [planRes, clientRes] = await Promise.all([
+              deleteWorkoutPlan(planId),
+              deleteClient(String(id))
+            ]);
+
+            if (planRes.error) {
+              console.error('Failed to delete workout plan:', planRes.error);
+            }
+            if (clientRes.error) {
+              console.error('Failed to delete client:', clientRes.error);
+            }
+
+            toast.success('شاگرد با موفقیت حذف شد');
+          }
+        } catch (error) {
+          console.error('Failed to delete user:', error);
+          toast.error('خطا در حذف شاگرد');
+          // Revert local state on error
+          await refreshData();
+        }
+      }
     },
     [hasPermission, theme, auth?.user?.id, activeUserId]
   );
