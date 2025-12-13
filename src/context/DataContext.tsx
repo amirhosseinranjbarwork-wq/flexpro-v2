@@ -31,8 +31,16 @@ import {
   deleteWorkoutPlan,
   fetchRequestsByCoach,
   updateRequestStatus,
-  deleteProgramRequest
+  deleteProgramRequest,
+  searchFoods,
+  searchExercises,
+  getAllFoods,
+  getAllExercises,
+  getFoodCategories,
+  getMuscleGroups,
+  getExerciseTypes
 } from '../lib/supabaseApi';
+import { Food, Exercise } from '../types/database';
 import { useAuth } from './AuthContext';
 import { useUI } from './UIContext';
 
@@ -782,7 +790,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resetSystem,
         backupData,
         restoreData,
-        refreshData
+        refreshData,
+        // New database functions
+        searchFoods,
+        searchExercises,
+        getAllFoods,
+        getAllExercises,
+        getFoodCategories,
+        getMuscleGroups,
+        getExerciseTypes
       }}
     >
       {children}

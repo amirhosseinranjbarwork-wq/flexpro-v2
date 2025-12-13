@@ -286,6 +286,14 @@ export interface DataContextType {
   backupData: () => void;
   restoreData: (file: File) => void;
   refreshData: () => Promise<void>;
+  // New database functions
+  searchFoods: (query: string, category?: string, limit?: number, offset?: number) => Promise<any>;
+  searchExercises: (query: string, muscleGroup?: string, type?: string, limit?: number, offset?: number) => Promise<any>;
+  getAllFoods: () => Promise<any>;
+  getAllExercises: () => Promise<any>;
+  getFoodCategories: () => Promise<string[]>;
+  getMuscleGroups: () => Promise<string[]>;
+  getExerciseTypes: () => Promise<string[]>;
 }
 
 // ========== API Response Types ==========
