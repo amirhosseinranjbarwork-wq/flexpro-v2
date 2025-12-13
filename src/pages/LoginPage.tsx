@@ -5,6 +5,7 @@ import { useRole } from '../hooks/useRole';
 import { toast } from 'react-hot-toast';
 import { Link, useNavigate } from 'react-router-dom';
 import { Sun, Moon, Loader2, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import LightRays from '../components/backgrounds/LightRays';
 
 const LoginPage: React.FC = () => {
   const { signInWithPassword, signOut, loading, user } = useAuth();
@@ -78,8 +79,10 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex items-center justify-center px-3 sm:px-4 py-4 sm:py-8 transition-colors">
-      <div className="w-full max-w-md glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 relative animate-fade-in">
+    <>
+      <LightRays speed="slow" intensity="normal" />
+      <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex items-center justify-center px-3 sm:px-4 py-4 sm:py-8 transition-colors relative z-10">
+        <div className="w-full max-w-md glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 relative animate-fade-in">
         <button
           type="button"
           onClick={toggleTheme}
@@ -219,6 +222,7 @@ const LoginPage: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

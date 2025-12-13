@@ -280,7 +280,8 @@ const CoachDashboard: React.FC = () => {
     setActiveUserId,
     refreshData
   } = useData();
-  
+
+
   // ========== State ==========
   const [currentTab, setCurrentTab] = useState<TabType>(() => {
     const saved = localStorage.getItem('coach_current_tab');
@@ -303,6 +304,13 @@ const CoachDashboard: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<'name' | 'date'>('name');
   const itemsPerPage = 8;
+
+  // Compute activeUser locally to ensure it updates immediately
+  const localActiveUser = useMemo(() => {
+    if (activeUserId == null) return null;
+    const targetId = String(activeUserId);
+    return users.find(u => String(u.id) === targetId) || null;
+  }, [users, activeUserId]);
   
   // پروفایل مربی
   const [coachProfile, setCoachProfile] = useState({
@@ -324,6 +332,20 @@ const CoachDashboard: React.FC = () => {
     website: ''
   });
   const [savingProfile, setSavingProfile] = useState(false);
+
+  // Ensure data is loaded when component mounts
+  React.useEffect(() => {
+    if (user?.id) {
+      refreshData();
+    }
+  }, [user?.id, refreshData]);
+
+  // Also refresh data when currentTab changes to students
+  React.useEffect(() => {
+    if (currentTab === 'students' && user?.id) {
+      refreshData();
+    }
+  }, [currentTab, user?.id, refreshData]);
 
   // ========== Effects ==========
   // ذخیره وضعیت تب در localStorage
@@ -388,12 +410,12 @@ const CoachDashboard: React.FC = () => {
 
   // بارگذاری اطلاعات شاگرد انتخاب شده
   useEffect(() => {
-    if (!activeUser || studentsSubTab !== 'info') return;
-    
+    if (!localActiveUser || studentsSubTab !== 'info') return;
+
     setProfileLoading(true);
     Promise.all([
-      fetchClientById(String(activeUser.id)),
-      fetchWorkoutPlansByClient(String(activeUser.id))
+      fetchClientById(String(localActiveUser.id)),
+      fetchWorkoutPlansByClient(String(localActiveUser.id))
     ])
       .then(([clientRes, plansRes]) => {
         if (clientRes.data) {
@@ -408,7 +430,7 @@ const CoachDashboard: React.FC = () => {
         if (import.meta.env.DEV) console.error('Error fetching client', err);
       })
       .finally(() => setProfileLoading(false));
-  }, [activeUser, studentsSubTab, updateActiveUser]);
+  }, [localActiveUser, studentsSubTab, updateActiveUser]);
 
   // ========== Computed ==========
   
@@ -514,13 +536,22 @@ const CoachDashboard: React.FC = () => {
     setEditingUserId(null);
   };
 
-  const handleSaveUserForm = (data: UserInput) => {
-    saveUser(data);
+  const handleSaveUserForm = async (data: UserInput) => {
+    await saveUser(data);
+
+    // Force a small delay to ensure Supabase has processed the data
+    setTimeout(() => {
+      if (user?.id) {
+        refreshData();
+      }
+    }, 1000);
+
     handleCloseUserModal();
   };
 
   const handleSelectUser = useCallback((id: UserId) => {
     setActiveUserId(id);
+    // Always try to go to info tab - the UI will show loading if data isn't ready
     setStudentsSubTab('info');
     setCurrentTab('students');
   }, []);
@@ -1083,7 +1114,7 @@ const CoachDashboard: React.FC = () => {
                   {[
                     { id: 'list' as StudentsSubTab, label: 'لیست شاگردان', icon: <Users size={16} /> },
                     { id: 'requests' as StudentsSubTab, label: 'درخواست‌ها', icon: <Bell size={16} />, badge: pendingRequests.length },
-                    { id: 'info' as StudentsSubTab, label: 'اطلاعات شاگرد', icon: <FileText size={16} />, disabled: !activeUser },
+                    { id: 'info' as StudentsSubTab, label: 'اطلاعات شاگرد', icon: <FileText size={16} />, disabled: !localActiveUser },
                   ].map(tab => (
                     <motion.button
                       key={tab.id}
@@ -1163,7 +1194,10 @@ const CoachDashboard: React.FC = () => {
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: idx * 0.05 }}
                             >
-                              <GlowCard className={`cursor-pointer ${activeUserId === u.id ? 'ring-2 ring-[var(--accent-color)]' : ''}`}>
+                              <GlowCard
+                                className={`cursor-pointer ${activeUserId === u.id ? 'ring-2 ring-[var(--accent-color)]' : ''}`}
+                                onClick={() => handleSelectUser(u.id)}
+                              >
                                 <div className="p-4">
                                   {/* Header with avatar and basic info */}
                                   <div className="flex items-start gap-3 mb-3">
@@ -1441,7 +1475,7 @@ const CoachDashboard: React.FC = () => {
 
                 {/* Client Info */}
                 {studentsSubTab === 'info' && (
-                  activeUser ? (
+                  localActiveUser ? (
                     <ClientInfoPanel
                       client={clientProfile}
                       loading={profileLoading}

@@ -14,8 +14,9 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({ form }) => {
     return amount * duration;
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fa-IR').format(amount);
+  const formatCurrency = (amount: number | string) => {
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    return new Intl.NumberFormat('fa-IR').format(numAmount || 0);
   };
 
   return (
@@ -37,7 +38,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({ form }) => {
               <input
                 type="number"
                 value={formData.financial?.amount || ''}
-                onChange={(e) => updateNestedField('financial', 'amount', Number(e.target.value))}
+                onChange={(e) => updateNestedField('financial', 'amount', e.target.value)}
                 className={`input-glass pr-8 ${errors.financial ? 'border-red-500' : ''}`}
                 placeholder="۱۰۰,۰۰۰"
                 min="0"
@@ -55,7 +56,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({ form }) => {
               <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)]" />
               <select
                 value={formData.financial?.duration || 1}
-                onChange={(e) => updateNestedField('financial', 'duration', Number(e.target.value))}
+                onChange={(e) => updateNestedField('financial', 'duration', parseInt(e.target.value) || 1)}
                 className="input-glass pr-8"
               >
                 <option value="1">۱ ماه</option>
@@ -105,7 +106,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({ form }) => {
             سابقه ورزشی
           </label>
           <select
-            value={formData.exp}
+            value={formData.exp || ''}
             onChange={(e) => updateField('exp', e.target.value)}
             className="input-glass"
           >
@@ -122,7 +123,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({ form }) => {
             سطح فعلی تناسب اندام
           </label>
           <select
-            value={formData.level}
+            value={formData.level || 'beginner'}
             onChange={(e) => updateField('level', e.target.value)}
             className="input-glass"
           >
@@ -141,7 +142,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({ form }) => {
           </label>
           <input
             type="text"
-            value={formData.job}
+            value={formData.job || ''}
             onChange={(e) => updateField('job', e.target.value)}
             className="input-glass"
             placeholder="شغل فعلی"
@@ -153,7 +154,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({ form }) => {
             سطح فعالیت شغلی
           </label>
           <select
-            value={formData.activity}
+            value={formData.activity || '1.2'}
             onChange={(e) => updateField('activity', e.target.value)}
             className="input-glass"
           >
@@ -215,9 +216,11 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({ form }) => {
             {Array.from({ length: formData.financial?.duration || 1 }, (_, index) => {
               const monthNumber = index + 1;
               const paymentDate = formData.financial?.startDate
-                ? new Date(new Date(formData.financial.startDate).setMonth(
-                    new Date(formData.financial.startDate).getMonth() + index
-                  ))
+                ? (() => {
+                    const date = new Date(formData.financial!.startDate!);
+                    date.setMonth(date.getMonth() + index);
+                    return date;
+                  })()
                 : null;
 
               return (
@@ -247,4 +250,5 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({ form }) => {
     </div>
   );
 };
+
 

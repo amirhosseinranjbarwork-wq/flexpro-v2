@@ -21,7 +21,7 @@ export const IdentityTab: React.FC<IdentityTabProps> = ({ form }) => {
             <User className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-secondary)]" />
             <input
               type="text"
-              value={formData.name}
+              value={formData.name || ''}
               onChange={(e) => updateField('name', e.target.value)}
               className={`input-glass pr-10 ${errors.name ? 'border-red-500' : ''}`}
               placeholder="نام کامل را وارد کنید"
@@ -38,7 +38,7 @@ export const IdentityTab: React.FC<IdentityTabProps> = ({ form }) => {
             <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-secondary)]" />
             <input
               type="tel"
-              value={formData.phone}
+              value={formData.phone || ''}
               onChange={(e) => updateField('phone', e.target.value)}
               className={`input-glass pr-10 ${errors.phone ? 'border-red-500' : ''}`}
               placeholder="۰۹۱۲۳۴۵۶۷۸۹"
@@ -55,7 +55,7 @@ export const IdentityTab: React.FC<IdentityTabProps> = ({ form }) => {
             <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-secondary)]" />
             <input
               type="email"
-              value={formData.email}
+              value={formData.email || ''}
               onChange={(e) => updateField('email', e.target.value)}
               className={`input-glass pr-10 ${errors.email ? 'border-red-500' : ''}`}
               placeholder="email@example.com"
@@ -69,7 +69,7 @@ export const IdentityTab: React.FC<IdentityTabProps> = ({ form }) => {
             جنسیت
           </label>
           <select
-            value={formData.gender}
+            value={formData.gender || 'male'}
             onChange={(e) => updateField('gender', e.target.value)}
             className="input-glass"
           >
@@ -88,7 +88,7 @@ export const IdentityTab: React.FC<IdentityTabProps> = ({ form }) => {
           <div className="relative">
             <GraduationCap className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-secondary)]" />
             <select
-              value={formData.education}
+              value={formData.education || ''}
               onChange={(e) => updateField('education', e.target.value)}
               className="input-glass pr-10"
             >
@@ -111,7 +111,7 @@ export const IdentityTab: React.FC<IdentityTabProps> = ({ form }) => {
           <div className="relative">
             <Heart className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-secondary)]" />
             <select
-              value={formData.maritalStatus}
+              value={formData.maritalStatus || 'single'}
               onChange={(e) => updateField('maritalStatus', e.target.value)}
               className="input-glass pr-10"
             >
@@ -132,7 +132,7 @@ export const IdentityTab: React.FC<IdentityTabProps> = ({ form }) => {
         <div className="relative">
           <MapPin className="absolute right-3 top-3 w-5 h-5 text-[var(--text-secondary)]" />
           <textarea
-            value={formData.address}
+            value={formData.address || ''}
             onChange={(e) => updateField('address', e.target.value)}
             className="input-glass pr-10 min-h-[80px] resize-none"
             placeholder="آدرس کامل را وارد کنید"
@@ -143,4 +143,5 @@ export const IdentityTab: React.FC<IdentityTabProps> = ({ form }) => {
     </div>
   );
 };
+
 

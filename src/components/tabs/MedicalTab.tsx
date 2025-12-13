@@ -113,7 +113,7 @@ export const MedicalTab: React.FC<MedicalTabProps> = ({ form }) => {
           داروهای مصرفی
         </label>
         <textarea
-          value={formData.medications}
+          value={formData.medications || ''}
           onChange={(e) => updateField('medications', e.target.value)}
           className="input-glass min-h-[100px] resize-none"
           placeholder="نام داروها، دوز و زمان مصرف را وارد کنید..."
@@ -128,7 +128,7 @@ export const MedicalTab: React.FC<MedicalTabProps> = ({ form }) => {
             کیفیت خواب
           </label>
           <select
-            value={formData.sleep}
+            value={formData.sleep || 'fair'}
             onChange={(e) => updateField('sleep', e.target.value)}
             className="input-glass"
           >
@@ -144,7 +144,7 @@ export const MedicalTab: React.FC<MedicalTabProps> = ({ form }) => {
             مصرف دخانیات
           </label>
           <select
-            value={formData.smoke}
+            value={formData.smoke || 'no'}
             onChange={(e) => updateField('smoke', e.target.value)}
             className="input-glass"
           >
@@ -160,7 +160,7 @@ export const MedicalTab: React.FC<MedicalTabProps> = ({ form }) => {
             مصرف الکل
           </label>
           <select
-            value={formData.alcohol}
+            value={formData.alcohol || 'no'}
             onChange={(e) => updateField('alcohol', e.target.value)}
             className="input-glass"
           >
@@ -176,7 +176,7 @@ export const MedicalTab: React.FC<MedicalTabProps> = ({ form }) => {
             مصرف کافئین
           </label>
           <select
-            value={formData.caffeine}
+            value={formData.caffeine || 'no'}
             onChange={(e) => updateField('caffeine', e.target.value)}
             className="input-glass"
           >
@@ -195,7 +195,7 @@ export const MedicalTab: React.FC<MedicalTabProps> = ({ form }) => {
           آلرژی‌ها و حساسیت‌ها
         </label>
         <textarea
-          value={formData.allergy}
+          value={formData.allergy || ''}
           onChange={(e) => updateField('allergy', e.target.value)}
           className="input-glass min-h-[80px] resize-none"
           placeholder="مواد غذایی، دارویی یا محیطی که به آن حساسیت دارید..."
@@ -210,7 +210,7 @@ export const MedicalTab: React.FC<MedicalTabProps> = ({ form }) => {
           نکات پزشکی اضافی
         </label>
         <textarea
-          value={formData.notes}
+          value={formData.notes || ''}
           onChange={(e) => updateField('notes', e.target.value)}
           className="input-glass min-h-[100px] resize-none"
           placeholder="هرگونه اطلاعات پزشکی مهم دیگر..."
@@ -220,4 +220,5 @@ export const MedicalTab: React.FC<MedicalTabProps> = ({ form }) => {
     </div>
   );
 };
+
 

@@ -7,7 +7,7 @@ import { useDebounce } from '../hooks/useDebounce';
 const escapeHtml = (text: unknown): string => {
     if (text == null || text === undefined) return '';
     const str = String(text);
-    const map = {
+    const map: Record<string, string> = {
         '&': '&amp;',
         '<': '&lt;',
         '>': '&gt;',

@@ -499,6 +499,22 @@ export const createClient = async (
 export const upsertClient = async (
   payload: Partial<Client> & { id: string; coach_id: string }
 ): Promise<ApiResponse<Client>> => {
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      sessionId: 'debug-session',
+      runId: 'run1',
+      hypothesisId: 'H2',
+      location: 'supabaseApi.ts:upsertClient:start',
+      message: 'upsertClient called',
+      data: { id: payload.id, coach_id: payload.coach_id },
+      timestamp: Date.now()
+    })
+  }).catch(() => {});
+  // #endregion
+
   if (!await ensureSupabaseReady()) {
     return createApiResponse<Client>(
       null,
@@ -514,12 +530,43 @@ export const upsertClient = async (
       .maybeSingle();
     
     if (error || !data) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'H2',
+          location: 'supabaseApi.ts:upsertClient:error',
+          message: 'upsertClient error',
+          data: { error: error?.message || 'unknown' },
+          timestamp: Date.now()
+        })
+      }).catch(() => {});
+      // #endregion
       return createApiResponse<Client>(
         null,
         handleSupabaseError(error ?? new Error('upsertClient failed'), 'upsertClient')
       );
     }
     
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'H2',
+        location: 'supabaseApi.ts:upsertClient:success',
+        message: 'upsertClient success',
+        data: { id: data.id },
+        timestamp: Date.now()
+      })
+    }).catch(() => {});
+    // #endregion
+
     return createApiResponse<Client>(data as Client, null);
   } catch (err) {
     return createApiResponse<Client>(

@@ -28,6 +28,52 @@ ALTER TABLE IF EXISTS program_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS profiles ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
+-- Create missing tables/columns if not present
+-- ============================================
+
+-- program_requests table (coach/client requests)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_schema = 'public' AND table_name = 'program_requests'
+  ) THEN
+    CREATE TABLE public.program_requests (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      client_id UUID NOT NULL REFERENCES auth.users(id),
+      coach_id UUID NOT NULL REFERENCES auth.users(id),
+      coach_code TEXT,
+      request_type TEXT NOT NULL DEFAULT 'all', -- training | diet | supplements | all
+      status TEXT NOT NULL DEFAULT 'pending',   -- pending | accepted | rejected | completed
+      client_name TEXT,
+      client_data JSONB,
+      coach_response TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE INDEX idx_program_requests_coach ON public.program_requests(coach_id, created_at DESC);
+    CREATE INDEX idx_program_requests_client ON public.program_requests(client_id, created_at DESC);
+  END IF;
+END$$;
+
+-- profiles columns (phone, coach_code) if missing
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' AND table_name = 'profiles' AND column_name = 'phone'
+  ) THEN
+    ALTER TABLE public.profiles ADD COLUMN phone TEXT;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' AND table_name = 'profiles' AND column_name = 'coach_code'
+  ) THEN
+    ALTER TABLE public.profiles ADD COLUMN coach_code TEXT;
+  END IF;
+END$$;
+
+-- ============================================
 -- RLS Policies for 'users' table
 -- ============================================
 

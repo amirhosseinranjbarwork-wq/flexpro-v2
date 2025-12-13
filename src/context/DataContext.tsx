@@ -177,9 +177,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Fetch data from Supabase (single source of truth)
   const refreshData = useCallback(async () => {
-    if (!isSupabaseReady || !auth?.user?.id) {
+    if (!auth?.user?.id) {
       setUsers(getInitialUsers());
       setTemplates(getInitialTemplates());
+      setRequests([]);
+      return;
+    }
+
+    if (!isSupabaseReady) {
+      setUsers(getInitialUsers());
+      setTemplates(getInitialTemplates());
+      setRequests([]);
       return;
     }
 
@@ -360,6 +368,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const saveUser = useCallback(
     async (userData: UserInput) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'H1',
+          location: 'DataContext.tsx:saveUser:start',
+          message: 'saveUser called',
+          data: {
+            userId: userData.id ?? null,
+            coachId: auth?.user?.id ?? null,
+            hasPermission: hasPermission('manageUsers', userData.id ?? null)
+          },
+          timestamp: Date.now()
+        })
+      }).catch(() => {});
+      // #endregion
+
       if (!hasPermission('manageUsers', userData.id ?? null)) {
         toast.error('دسترسی مربی لازم است');
         return;
@@ -403,6 +431,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
         }
 
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: 'debug-session',
+            runId: 'run1',
+            hypothesisId: 'H1',
+            location: 'DataContext.tsx:saveUser:afterSupabase',
+            message: 'saveUser after supabase ops',
+            data: {
+              usersCount: users.length + 1,
+              supabaseReady: isSupabaseReady
+            },
+            timestamp: Date.now()
+          })
+        }).catch(() => {});
+        // #endregion
+
         toast.success('اطلاعات با موفقیت ذخیره شد');
       } catch (error) {
         console.error('Failed to save user:', error);
@@ -411,7 +458,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUsers(prev => prev.filter(u => u.id !== userData.id));
       }
     },
-    [hasPermission, auth?.user?.id, isSupabaseReady]
+    [hasPermission, auth?.user?.id, isSupabaseReady, users.length]
   );
 
   const updateActiveUser = useCallback(

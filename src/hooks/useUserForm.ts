@@ -49,10 +49,34 @@ export function useUserForm(initialData?: User | null): UseUserFormReturn {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('identity');
 
+  // Reset form
+  const resetForm = useCallback((data?: User | null) => {
+    if (data) {
+      // Convert User to UserInput format
+      const userInput: UserInput = {
+        ...initialFormState,
+        ...data,
+        // Ensure nested objects exist
+        financial: data.financial ? {
+          startDate: data.financial.startDate || '',
+          duration: data.financial.duration || 1,
+          amount: data.financial.amount || 0
+        } : initialFormState.financial,
+        measurements: { ...initialFormState.measurements, ...(data.measurements || {}) },
+        plans: { ...initialFormState.plans, ...(data.plans || {}) }
+      };
+      setFormData(userInput);
+    } else {
+      setFormData(initialFormState);
+    }
+    setErrors({});
+    setActiveTab('identity');
+  }, []);
+
   // Initialize form with data
   useEffect(() => {
     resetForm(initialData);
-  }, [initialData]);
+  }, [initialData, resetForm]);
 
   // Calculate fitness metrics
   const calculations = useMemo(() => {
@@ -60,7 +84,7 @@ export function useUserForm(initialData?: User | null): UseUserFormReturn {
       weight: parseFloat(String(formData.weight || '')) || 0,
       height: parseFloat(String(formData.height || '')) || 0,
       age: parseFloat(String(formData.age || '')) || 0,
-      gender: formData.gender || 'male',
+      gender: (formData.gender === 'male' || formData.gender === 'female') ? formData.gender : 'male',
       activity: parseFloat(String(formData.activity || '1.55')) || 1.55,
       waist: parseFloat(String(formData.measurements?.waist || '')) || 0,
       hip: parseFloat(String(formData.measurements?.hip || '')) || 0,
@@ -84,8 +108,11 @@ export function useUserForm(initialData?: User | null): UseUserFormReturn {
 
     if (!formData.phone?.trim()) {
       newErrors.phone = 'شماره تلفن الزامی است';
-    } else if (!/^(\+98|0)?9\d{9}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'شماره تلفن معتبر نیست';
+    } else {
+      const cleanPhone = formData.phone.replace(/\s/g, '');
+      if (!/^(\+98|0)?9\d{9}$/.test(cleanPhone)) {
+        newErrors.phone = 'شماره تلفن معتبر نیست (باید با ۰۹ شروع شود)';
+      }
     }
 
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -109,7 +136,7 @@ export function useUserForm(initialData?: User | null): UseUserFormReturn {
     }
 
     // Financial validation
-    if (formData.financial?.amount && formData.financial.amount < 0) {
+    if (formData.financial?.amount && Number(formData.financial.amount) < 0) {
       newErrors.financial = 'مبلغ نمی‌تواند منفی باشد';
     }
 
@@ -157,26 +184,6 @@ export function useUserForm(initialData?: User | null): UseUserFormReturn {
     }
   }, [formData, validateForm]);
 
-  // Reset form
-  const resetForm = useCallback((data?: User | null) => {
-    if (data) {
-      // Convert User to UserInput format
-      const userInput: UserInput = {
-        ...initialFormState,
-        ...data,
-        // Ensure nested objects exist
-        financial: { ...initialFormState.financial, ...(data.financial || {}) },
-        measurements: { ...initialFormState.measurements, ...(data.measurements || {}) },
-        plans: { ...initialFormState.plans, ...(data.plans || {}) }
-      };
-      setFormData(userInput);
-    } else {
-      setFormData(initialFormState);
-    }
-    setErrors({});
-    setActiveTab('identity');
-  }, []);
-
   return {
     formData,
     errors,
@@ -192,4 +199,5 @@ export function useUserForm(initialData?: User | null): UseUserFormReturn {
     resetForm
   };
 }
+
 

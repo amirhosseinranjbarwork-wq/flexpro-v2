@@ -17,15 +17,15 @@ export const AnthropometryTab: React.FC<AnthropometryTabProps> = ({ form }) => {
           <label className="block text-sm font-semibold mb-2 text-[var(--text-primary)]">
             سن (سال) *
           </label>
-          <input
-            type="number"
-            value={formData.age}
-            onChange={(e) => updateField('age', e.target.value)}
-            className={`input-glass ${errors.age ? 'border-red-500' : ''}`}
-            placeholder="25"
-            min="10"
-            max="120"
-          />
+            <input
+              type="number"
+              value={formData.age || ''}
+              onChange={(e) => updateField('age', e.target.value)}
+              className={`input-glass ${errors.age ? 'border-red-500' : ''}`}
+              placeholder="25"
+              min="10"
+              max="120"
+            />
           {errors.age && <p className="text-red-500 text-xs mt-1">{errors.age}</p>}
         </div>
 
@@ -37,7 +37,7 @@ export const AnthropometryTab: React.FC<AnthropometryTabProps> = ({ form }) => {
             <Ruler className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)]" />
             <input
               type="number"
-              value={formData.height}
+              value={formData.height || ''}
               onChange={(e) => updateField('height', e.target.value)}
               className={`input-glass pr-8 ${errors.height ? 'border-red-500' : ''}`}
               placeholder="175"
@@ -57,7 +57,7 @@ export const AnthropometryTab: React.FC<AnthropometryTabProps> = ({ form }) => {
             <Scale className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)]" />
             <input
               type="number"
-              value={formData.weight}
+              value={formData.weight || ''}
               onChange={(e) => updateField('weight', e.target.value)}
               className={`input-glass pr-8 ${errors.weight ? 'border-red-500' : ''}`}
               placeholder="75"
@@ -131,7 +131,7 @@ export const AnthropometryTab: React.FC<AnthropometryTabProps> = ({ form }) => {
             سطح فعالیت روزانه
           </label>
           <select
-            value={formData.activity}
+            value={formData.activity || '1.55'}
             onChange={(e) => updateField('activity', e.target.value)}
             className="input-glass"
           >
@@ -148,7 +148,7 @@ export const AnthropometryTab: React.FC<AnthropometryTabProps> = ({ form }) => {
             هدف تغذیه‌ای
           </label>
           <select
-            value={formData.nutritionGoals}
+            value={formData.nutritionGoals || 'maintenance'}
             onChange={(e) => updateField('nutritionGoals', e.target.value)}
             className="input-glass"
           >
@@ -170,7 +170,7 @@ export const AnthropometryTab: React.FC<AnthropometryTabProps> = ({ form }) => {
           <Calculator className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)]" />
           <input
             type="number"
-            value={formData.bodyFat}
+            value={formData.bodyFat || ''}
             onChange={(e) => updateField('bodyFat', e.target.value)}
             className="input-glass pr-8"
             placeholder="۱۵.۵"
@@ -190,7 +190,7 @@ export const AnthropometryTab: React.FC<AnthropometryTabProps> = ({ form }) => {
           روزهای تمرین در هفته
         </label>
         <select
-          value={formData.days}
+          value={formData.days || '3'}
           onChange={(e) => updateField('days', e.target.value)}
           className="input-glass"
         >
@@ -296,4 +296,5 @@ export const AnthropometryTab: React.FC<AnthropometryTabProps> = ({ form }) => {
     </div>
   );
 };
+
 
