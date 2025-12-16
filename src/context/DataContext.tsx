@@ -196,9 +196,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (!isSupabaseReady) {
-      setUsers(getInitialUsers());
-      setTemplates(getInitialTemplates());
-      setRequests([]);
+      // Don't overwrite local data when Supabase is not ready
+      // Keep existing local data to prevent loss of newly added users
+      console.warn('Supabase not ready, keeping local data');
       return;
     }
 
@@ -769,16 +769,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [hasPermission]
   );
 
-  // Clear data on logout
+  // Clear data on logout - only when user was logged in and now is not
+  const [wasLoggedIn, setWasLoggedIn] = useState(!!auth?.user);
   useEffect(() => {
-    if (auth?.user) return;
-    const timer = setTimeout(() => {
-      setUsers([]);
-      setTemplates([]);
-      setActiveUserId(null);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [auth?.user]);
+    const isLoggedIn = !!auth?.user;
+    if (wasLoggedIn && !isLoggedIn) {
+      // User just logged out - clear data
+      const timer = setTimeout(() => {
+        setUsers([]);
+        setTemplates([]);
+        setActiveUserId(null);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+    setWasLoggedIn(isLoggedIn);
+  }, [auth?.user, wasLoggedIn]);
 
   return (
     <DataContext.Provider

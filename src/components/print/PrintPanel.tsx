@@ -81,7 +81,7 @@ const PrintPanel: React.FC<PrintPanelProps> = ({ user, onGeneratePrint }) => {
         {activeTab === 'programs' && (
           <PrintPrograms
             user={user}
-            onPrint={(type) => handlePrint('program', { programType: type })}
+            onPrint={(type) => handlePrint('program', { programType: type, user })}
           />
         )}
 
