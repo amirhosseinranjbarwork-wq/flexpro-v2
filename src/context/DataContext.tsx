@@ -15,6 +15,16 @@ import type {
   DataContextType,
   ProgramRequest
 } from '../types/index';
+import { supabase } from '../lib/supabaseClient';
+import {
+  searchFoods,
+  searchExercises,
+  getAllFoods,
+  getAllExercises,
+  getFoodCategories,
+  getMuscleGroups,
+  getExerciseTypes
+} from '../lib/database';
 import {
   fetchUsers as fetchUsersRemote,
   fetchTemplates as fetchTemplatesRemote,
@@ -31,14 +41,7 @@ import {
   deleteWorkoutPlan,
   fetchRequestsByCoach,
   updateRequestStatus,
-  deleteProgramRequest,
-  searchFoods,
-  searchExercises,
-  getAllFoods,
-  getAllExercises,
-  getFoodCategories,
-  getMuscleGroups,
-  getExerciseTypes
+  deleteProgramRequest
 } from '../lib/supabaseApi';
 import { Food, Exercise } from '../types/database';
 import { useAuth } from './AuthContext';
@@ -233,8 +236,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const planMap = new Map(remotePlans.map(p => [p.client_id, p]));
       const mappedUsers = remoteClients.map(c => mapClientToUser(c, planMap.get(c.id)));
 
-      // Update state
-      setUsers(mappedUsers);
+      // Update state - merge with existing local users to preserve newly added ones
+      setUsers(prevUsers => {
+        const remoteUserIds = new Set(mappedUsers.map(u => u.id));
+        const existingUsers = prevUsers.filter(u => !remoteUserIds.has(u.id));
+        return [...mappedUsers, ...existingUsers];
+      });
       setTemplates(remoteTemplates);
       setRequests(remoteRequests);
 
@@ -630,7 +637,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (import.meta.env.DEV) console.warn('upsertClient error', err);
           });
 
-          const { supabase } = await import('../lib/supabaseClient');
           await supabase
             .from('profiles')
             .upsert({

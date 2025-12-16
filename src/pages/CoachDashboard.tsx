@@ -539,13 +539,6 @@ const CoachDashboard: React.FC = () => {
   const handleSaveUserForm = async (data: UserInput) => {
     await saveUser(data);
 
-    // Force a small delay to ensure Supabase has processed the data
-    setTimeout(() => {
-      if (user?.id) {
-        refreshData();
-      }
-    }, 1000);
-
     handleCloseUserModal();
   };
 
