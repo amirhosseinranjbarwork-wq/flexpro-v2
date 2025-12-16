@@ -1,63 +1,57 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../utils/cn';
 
-const badgeVariants = cva(
-  "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-all duration-200",
-  {
-    variants: {
-      variant: {
-        default: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
-        primary: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-        secondary: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-        success: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-        warning: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-        error: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-        gradient: "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg",
-      },
-      size: {
-        sm: "px-2 py-0.5 text-xs",
-        md: "px-2.5 py-0.5 text-xs",
-        lg: "px-3 py-1 text-sm",
-      },
-      animated: {
-        true: "animate-pulse",
-        false: "",
-      }
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "md",
-      animated: false,
-    },
-  }
-);
+type BadgeVariant = 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'gradient';
+type BadgeSize = 'sm' | 'md' | 'lg';
 
-export interface BadgeProps
-  extends React.HTMLAttributes<HTMLSpanElement>,
-    VariantProps<typeof badgeVariants> {
+interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
+  variant?: BadgeVariant;
+  size?: BadgeSize;
+  animated?: boolean;
   dot?: boolean;
   removable?: boolean;
   onRemove?: () => void;
 }
 
+const getBadgeClasses = (variant: BadgeVariant, size: BadgeSize, animated: boolean) => {
+  const baseClasses = "inline-flex items-center rounded-full text-xs font-medium transition-all duration-200";
+
+  const variantClasses = {
+    default: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+    primary: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    secondary: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+    success: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    warning: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+    error: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    gradient: "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg",
+  };
+
+  const sizeClasses = {
+    sm: "px-2 py-0.5 text-xs",
+    md: "px-2.5 py-0.5 text-xs",
+    lg: "px-3 py-1 text-sm",
+  };
+
+  return `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${animated ? 'animate-pulse' : ''}`;
+};
+
 const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
   ({
     className,
-    variant,
-    size,
-    animated,
+    variant = 'default',
+    size = 'md',
+    animated = false,
     dot = false,
     removable = false,
     onRemove,
     children,
     ...props
   }, ref) => {
-    return (
-      <motion.span
-        ref={ref}
-        className={cn(badgeVariants({ variant, size, animated }), className)}
+  return (
+    <motion.span
+      ref={ref}
+      className={cn(getBadgeClasses(variant, size, animated), className)}
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.8, opacity: 0 }}

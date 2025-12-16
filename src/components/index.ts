@@ -25,7 +25,6 @@ export {
 // Advanced Skeletons
 export {
   default as AdvancedSkeleton,
-  Skeleton,
   TextSkeleton,
   CardSkeleton,
   ListSkeleton,

@@ -54,33 +54,6 @@ import {
 
 // Import React Bits components
 import { StatCounter, HoverCard, FloatingActionButton, ExpandableFab } from '../components';
-  Trash2,
-  Eye,
-  ChevronLeft,
-  ChevronRight,
-  Settings,
-  Bell,
-  Copy,
-  Phone,
-  Mail,
-  MapPin,
-  Award,
-  Briefcase,
-  GraduationCap,
-  Instagram,
-  MessageCircle,
-  Globe,
-  TrendingUp,
-  Target,
-  Calendar,
-  Database,
-  Activity,
-  Zap,
-  Heart,
-  Star,
-  BarChart3,
-  Trash
-} from 'lucide-react';
 import type { ProgramRequest } from '../types/index';
 
 // ========== Types ==========
