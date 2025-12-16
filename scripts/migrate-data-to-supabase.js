@@ -25,7 +25,17 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
   process.exit(1);
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+// Create client with options to bypass schema cache
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  db: {
+    schema: 'public'
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'migration-script'
+    }
+  }
+});
 
 /**
  * Parse TypeScript file to extract export (handles both export const and export default)

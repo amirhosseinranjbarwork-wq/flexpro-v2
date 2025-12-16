@@ -98,8 +98,157 @@ body::after {
 
 @keyframes gradientShift {
     0% { transform: rotate(0deg) scale(1); }
-    50% { transform: rotate(180deg) scale(1.05); }
+    33% { transform: rotate(120deg) scale(1.02); }
+    66% { transform: rotate(240deg) scale(0.98); }
     100% { transform: rotate(360deg) scale(1); }
+}
+
+/* انیمیشن‌های پیشرفته برای بهبود UX */
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(14, 165, 233, 0.3); }
+    50% { box-shadow: 0 0 30px rgba(14, 165, 233, 0.6), 0 0 40px rgba(14, 165, 233, 0.4); }
+}
+
+@keyframes bounce-in {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.05); }
+    70% { transform: scale(0.9); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slide-up {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes fade-in-scale {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes rotate-in {
+    from { transform: rotate(-180deg) scale(0); opacity: 0; }
+    to { transform: rotate(0deg) scale(1); opacity: 1; }
+}
+
+/* کلاس‌های کاربردی پیشرفته برای بهبود عملکرد و زیبایی */
+.animate-shimmer {
+    position: relative;
+    overflow: hidden;
+}
+
+.animate-shimmer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.4),
+        transparent
+    );
+    animation: shimmer 2s infinite;
+    pointer-events: none;
+}
+
+.animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-bounce-in {
+    animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.animate-slide-up {
+    animation: slide-up 0.5s ease-out;
+}
+
+.animate-fade-in-scale {
+    animation: fade-in-scale 0.4s ease-out;
+}
+
+.animate-rotate-in {
+    animation: rotate-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* بهبود loading states */
+.loading-skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 8px;
+}
+
+.dark .loading-skeleton {
+    background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+    background-size: 200% 100%;
+}
+
+/* بهبود focus states برای accessibility */
+.focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+}
+
+/* کلاس‌های پیشرفته برای buttons */
+.btn-enhanced {
+    @apply relative overflow-hidden transition-all duration-300 ease-out;
+    transform: translateZ(0); /* Force hardware acceleration */
+}
+
+.btn-enhanced::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn-enhanced:active::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* بهبود scrollbars */
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.5);
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.7);
+}
+
+/* بهبود performance با hardware acceleration */
+.gpu-accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
 }
 
 @layer components {
@@ -144,11 +293,66 @@ body::after {
     }
     
     .glass-card {
-        @apply relative rounded-2xl overflow-hidden bg-[var(--glass-bg)] border border-[var(--glass-border)] backdrop-blur-xl;
+        @apply relative rounded-2xl overflow-hidden bg-[var(--glass-bg)] border border-[var(--glass-border)] backdrop-blur-xl gpu-accelerated;
         box-shadow: 0 18px 40px var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,0.25);
-        transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         will-change: transform, box-shadow;
     }
+
+    .glass-card::before {
+        content: '';
+        position: absolute;
+        inset: 1px;
+        border-radius: inherit;
+        background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+    }
+
+    .glass-card::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1), transparent 70%);
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        pointer-events: none;
+        transform: rotate(45deg);
+    }
+
+    .glass-card:hover {
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 25px 50px var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,0.3), 0 0 30px rgba(14, 165, 233, 0.1);
+    }
+
+    .glass-card:hover::before {
+        opacity: 1;
+    }
+
+    .glass-card:hover::after {
+        opacity: 0.6;
+    }
+
+    /* کلاس‌های پیشرفته برای cards */
+    .card-interactive {
+        @apply glass-card cursor-pointer select-none;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .card-interactive:hover {
+        transform: translateY(-4px) scale(1.03);
+        box-shadow: 0 20px 40px var(--glass-shadow), 0 0 20px rgba(14, 165, 233, 0.15);
+    }
+
+    .card-interactive:active {
+        transform: translateY(-2px) scale(1.01);
+        transition-duration: 0.1s;
+    }
+
     .glass-card::after {
         content: '';
         position: absolute;
@@ -227,6 +431,100 @@ body::after {
         transform: translateY(-1px) scale(0.98);
         transition: all 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
+
+    /* دکمه‌های پیشرفته با variants مختلف */
+    .btn-primary {
+        @apply btn-glass bg-gradient-to-r from-blue-500 to-cyan-600 text-white border-blue-400/30;
+        box-shadow: 0 15px 35px rgba(14, 165, 233, 0.3);
+    }
+
+    .btn-primary:hover {
+        @apply from-blue-600 to-cyan-700;
+        box-shadow: 0 20px 40px rgba(14, 165, 233, 0.4), 0 0 30px rgba(14, 165, 233, 0.3);
+    }
+
+    .btn-secondary {
+        @apply btn-glass bg-gradient-to-r from-purple-500 to-pink-600 text-white border-purple-400/30;
+        box-shadow: 0 15px 35px rgba(139, 92, 246, 0.3);
+    }
+
+    .btn-secondary:hover {
+        @apply from-purple-600 to-pink-700;
+        box-shadow: 0 20px 40px rgba(139, 92, 246, 0.4), 0 0 30px rgba(139, 92, 246, 0.3);
+    }
+
+    .btn-success {
+        @apply btn-glass bg-gradient-to-r from-green-500 to-emerald-600 text-white border-green-400/30;
+        box-shadow: 0 15px 35px rgba(34, 197, 94, 0.3);
+    }
+
+    .btn-success:hover {
+        @apply from-green-600 to-emerald-700;
+        box-shadow: 0 20px 40px rgba(34, 197, 94, 0.4), 0 0 30px rgba(34, 197, 94, 0.3);
+    }
+
+    .btn-warning {
+        @apply btn-glass bg-gradient-to-r from-orange-500 to-yellow-600 text-white border-orange-400/30;
+        box-shadow: 0 15px 35px rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-warning:hover {
+        @apply from-orange-600 to-yellow-700;
+        box-shadow: 0 20px 40px rgba(245, 158, 11, 0.4), 0 0 30px rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-danger {
+        @apply btn-glass bg-gradient-to-r from-red-500 to-pink-600 text-white border-red-400/30;
+        box-shadow: 0 15px 35px rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-danger:hover {
+        @apply from-red-600 to-pink-700;
+        box-shadow: 0 20px 40px rgba(239, 68, 68, 0.4), 0 0 30px rgba(239, 68, 68, 0.3);
+    }
+
+    /* دکمه‌های اندازه مختلف */
+    .btn-sm {
+        @apply px-3 py-1.5 text-sm;
+    }
+
+    .btn-lg {
+        @apply px-8 py-4 text-lg;
+    }
+
+    /* دکمه‌های حالت loading */
+    .btn-loading {
+        @apply relative cursor-not-allowed;
+    }
+
+    .btn-loading::after {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        margin: auto;
+        border: 2px solid transparent;
+        border-top-color: currentColor;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    /* دکمه‌های icon-only */
+    .btn-icon {
+        @apply w-10 h-10 p-0 justify-center;
+    }
+
+    .btn-icon-sm {
+        @apply w-8 h-8 p-0 justify-center;
+    }
+
+    .btn-icon-lg {
+        @apply w-12 h-12 p-0 justify-center;
+    }
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 /* اسکرول بار مدرن و زیبا */
@@ -978,3 +1276,4 @@ html {
 }
 
 /* بهبود selection - حذف duplicate */
+}
