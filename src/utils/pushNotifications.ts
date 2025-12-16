@@ -161,9 +161,29 @@ export class PushNotificationManager {
 
 // Create and export a singleton instance
 // You'll need to replace this with your actual VAPID public key
+// Temporary disable push notifications until VAPID keys are configured
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
 
-export const pushNotificationManager = new PushNotificationManager(VAPID_PUBLIC_KEY);
+// Create manager only if VAPID key is available
+let pushNotificationManagerInstance: PushNotificationManager;
+if (VAPID_PUBLIC_KEY && VAPID_PUBLIC_KEY.length > 0) {
+  pushNotificationManagerInstance = new PushNotificationManager(VAPID_PUBLIC_KEY);
+} else {
+  // Create a dummy manager that does nothing
+  pushNotificationManagerInstance = {
+    isSupported: () => false,
+    initialize: async () => {
+      console.warn('Push notifications disabled: VITE_VAPID_PUBLIC_KEY not configured');
+      return null;
+    },
+    subscribe: async () => null,
+    unsubscribe: async () => {},
+    sendNotification: async () => {}
+  } as any;
+}
+
+export const pushNotificationManager = pushNotificationManagerInstance;
+
 
 
 

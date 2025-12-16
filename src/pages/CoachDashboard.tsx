@@ -49,7 +49,8 @@ import {
   Plus,
   Edit,
   Activity,
-  Award
+  Award,
+  BarChart3
 } from 'lucide-react';
 
 // Import React Bits components

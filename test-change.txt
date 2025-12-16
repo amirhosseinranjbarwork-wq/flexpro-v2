@@ -1,0 +1,5 @@
+# Test file for auto git push script
+# This file is created to test the auto git push functionality
+# Delete this file after testing
+
+Created at: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')

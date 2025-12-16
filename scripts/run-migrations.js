@@ -34,7 +34,9 @@ console.log('4. Execute the following migrations in order:\n');
 const migrationsDir = path.join(__dirname, '../supabase/migrations');
 const migrationFiles = [
   '20250116_create_exercises_foods_tables.sql',
-  '20250116_add_super_admin_flag.sql'
+  '20250116_add_super_admin_flag.sql',
+  '20250116_add_auth_functions.sql',
+  '20250116_add_program_requests_table.sql'
 ];
 
 migrationFiles.forEach((file, index) => {
