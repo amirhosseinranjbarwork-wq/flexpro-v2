@@ -88,14 +88,14 @@ const PrintPanel: React.FC<PrintPanelProps> = ({ user, onGeneratePrint }) => {
         {activeTab === 'report' && (
           <PrintClientReport
             user={user}
-            onPrint={() => handlePrint('client-report', { user })}
+            onPrint={() => handlePrint('client-report', user)}
           />
         )}
 
         {activeTab === 'progress' && (
           <PrintProgress
             user={user}
-            onPrint={() => handlePrint('progress', { user })}
+            onPrint={() => handlePrint('progress', user)}
           />
         )}
       </div>

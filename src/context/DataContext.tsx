@@ -240,41 +240,34 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUsers(prevUsers => {
         const remoteUserIds = new Set(mappedUsers.map(u => u.id));
         const existingUsers = prevUsers.filter(u => !remoteUserIds.has(u.id));
-        return [...mappedUsers, ...existingUsers];
+        const mergedUsers = [...mappedUsers, ...existingUsers];
+
+        // Cache merged data to preserve local changes
+        try {
+          const cacheData = {
+            users: mergedUsers,
+            templates: remoteTemplates,
+            requests: remoteRequests,
+            timestamp: Date.now()
+          };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(cacheData));
+        } catch (e) {
+          console.warn('Failed to cache merged data:', e);
+        }
+
+        return mergedUsers;
       });
+
       setTemplates(remoteTemplates);
       setRequests(remoteRequests);
-
-      // Cache successful data for offline mode (optional enhancement)
-      try {
-        const cacheData = {
-          users: mappedUsers,
-          templates: remoteTemplates,
-          requests: remoteRequests,
-          timestamp: Date.now()
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(cacheData));
-      } catch (e) {
-        console.warn('Failed to cache data:', e);
-      }
 
     } catch (error) {
       console.error('Critical error fetching data from Supabase:', error);
       toast.error('خطا در بارگذاری داده‌ها از سرور');
 
-      // Attempt to load from cache as last resort
-      try {
-        const cached = localStorage.getItem(STORAGE_KEY);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (parsed.users) setUsers(parsed.users.map(migrateUser));
-          if (parsed.templates) setTemplates(parsed.templates);
-          if (parsed.requests) setRequests(parsed.requests);
-          toast.warning('داده‌های ذخیره‌شده محلی بارگذاری شد');
-        }
-      } catch (cacheError) {
-        console.error('Failed to load cached data:', cacheError);
-      }
+      // Keep existing local data - don't overwrite with cache
+      // The users state already contains the most recent data including newly added users
+      toast.warning('داده‌های محلی حفظ شد - اتصال به سرور برقرار نیست');
     }
   }, [auth?.user?.id]);
 

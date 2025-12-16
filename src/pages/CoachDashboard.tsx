@@ -539,12 +539,12 @@ const CoachDashboard: React.FC = () => {
           html = generateProgramHTML(data.user, programType);
           break;
         case 'client-report':
-          title = `گزارش شاگرد - ${data.user.name}`;
-          html = generateClientReportHTML(data.user);
+          title = `گزارش شاگرد - ${data.name}`;
+          html = generateClientReportHTML(data);
           break;
         case 'progress':
-          title = `گزارش پیشرفت - ${data.user.name}`;
-          html = generateProgressHTML(data.user);
+          title = `گزارش پیشرفت - ${data.name}`;
+          html = generateProgressHTML(data);
           break;
         default:
           throw new Error('نوع پرینت نامعتبر');
