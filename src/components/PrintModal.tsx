@@ -93,9 +93,10 @@ interface PrintModalProps {
   data: PrintData | null;
   onClose: () => void;
   onDownload: () => void;
+  onPrint?: () => void;
 }
 
-const PrintModal: React.FC<PrintModalProps> = ({ data, onClose, onDownload }) => {
+const PrintModal: React.FC<PrintModalProps> = ({ data, onClose, onDownload, onPrint }) => {
   const contentRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -118,7 +119,7 @@ const PrintModal: React.FC<PrintModalProps> = ({ data, onClose, onDownload }) =>
     if (!printWindow) return;
     
     // استفاده از textContent برای امنیت بیشتر
-    const title = escapeHtml('FlexPro - چاپ برنامه');
+    const title = escapeHtml(`FlexPro - ${data.title || 'چاپ'}`);
     printWindow.document.write(`
       <!DOCTYPE html>
       <html dir="rtl" lang="fa">
@@ -157,7 +158,7 @@ const PrintModal: React.FC<PrintModalProps> = ({ data, onClose, onDownload }) =>
       {/* هدر */}
       <div className="h-16 glass-panel border-b border-[var(--glass-border)] flex justify-between items-center px-6 shrink-0 rounded-none">
         <h3 className="text-[var(--text-primary)] font-bold flex items-center gap-2 text-lg">
-          <span>🖨️</span> پیش‌نمایش چاپ
+          <span>🖨️</span> پیش‌نمایش: {data.title}
         </h3>
         <div className="flex gap-3">
           <button 
@@ -168,8 +169,8 @@ const PrintModal: React.FC<PrintModalProps> = ({ data, onClose, onDownload }) =>
           >
             📥 دانلود PDF
           </button>
-          <button 
-            onClick={handleBrowserPrint} 
+          <button
+            onClick={onPrint || handleBrowserPrint}
             className="btn-glass bg-[var(--accent-color)] hover:bg-[var(--accent-color)]/90 text-white text-sm border border-[var(--accent-color)]/30 shadow-lg"
             aria-label="پرینت مرورگر"
             type="button"

@@ -31,9 +31,17 @@ export const useRole = (): UseRoleResult => {
     return null;
   }, [user, profile]);
 
+  const derivedProfile = useMemo(() => {
+    // Only return profile if it has a valid role
+    if (profile?.role === 'coach' || profile?.role === 'client') {
+      return profile as { role: Role; coach_code?: string };
+    }
+    return null;
+  }, [profile]);
+
   return {
     role: derivedRole,
-    profile: profile as { role: Role; coach_code?: string } | null,
+    profile: derivedProfile,
     loading,
   };
 };

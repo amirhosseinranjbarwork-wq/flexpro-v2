@@ -20,6 +20,7 @@ const PanelLoadingFallback = () => (
 );
 import UserModal from '../components/UserModal';
 import PrintModal from '../components/PrintModal';
+import PrintPanel from '../components/print/PrintPanel';
 import ClientInfoPanel from '../components/ClientInfoPanel';
 import SupabaseDebug from '../components/SupabaseDebug';
 import type { UserId, UserInput, Client } from '../types/index';
@@ -525,6 +526,206 @@ const CoachDashboard: React.FC = () => {
       setDeletingRequestId(null);
     }
   }, [deleteRequest]);
+
+  const handleGeneratePrint = useCallback(async (type: string, data: any) => {
+    try {
+      let html = '';
+      let title = '';
+
+      switch (type) {
+        case 'program':
+          const { programType } = data;
+          title = `برنامه ${programType === 'workout' ? 'تمرینی' : programType === 'diet' ? 'غذایی' : 'مکمل'} - ${data.user.name}`;
+          html = generateProgramHTML(data.user, programType);
+          break;
+        case 'client-report':
+          title = `گزارش شاگرد - ${data.user.name}`;
+          html = generateClientReportHTML(data.user);
+          break;
+        case 'progress':
+          title = `گزارش پیشرفت - ${data.user.name}`;
+          html = generateProgressHTML(data.user);
+          break;
+        default:
+          throw new Error('نوع پرینت نامعتبر');
+      }
+
+      setPrintData({
+        html,
+        title,
+        type: type as 'program' | 'client-report' | 'progress'
+      });
+    } catch (error) {
+      console.error('Error generating print:', error);
+      toast.error('خطا در تولید فایل پرینت');
+    }
+  }, []);
+
+  // HTML Generation Functions
+  const generateProgramHTML = (user: User, programType: string): string => {
+    let html = `
+      <div style="font-family: 'Vazirmatn', sans-serif; direction: rtl; padding: 40px; background: white;">
+        <div style="text-align: center; margin-bottom: 40px; border-bottom: 3px solid #f59e0b; padding-bottom: 20px;">
+          <h1 style="color: #1f2937; font-size: 28px; margin: 0;">برنامه ${programType === 'workout' ? 'تمرینی' : programType === 'diet' ? 'غذایی' : 'مکمل'}</h1>
+          <h2 style="color: #6b7280; font-size: 20px; margin: 10px 0;">${user.name}</h2>
+          <p style="color: #9ca3af; font-size: 14px;">${new Date().toLocaleDateString('fa-IR')}</p>
+        </div>
+    `;
+
+    if (programType === 'workout' && user.plans?.workouts) {
+      html += '<h3 style="color: #1f2937; margin: 30px 0 20px;">برنامه تمرینی</h3>';
+      Object.entries(user.plans.workouts).forEach(([day, exercises]) => {
+        html += `<div style="margin-bottom: 20px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px;">
+          <h4 style="color: #374151; margin: 0 0 10px;">${day}</h4>`;
+        if (Array.isArray(exercises)) {
+          exercises.forEach((exercise: any) => {
+            html += `<div style="margin-bottom: 8px; padding: 8px; background: #f9fafb; border-radius: 4px;">
+              <strong>${exercise.name || 'تمرین'}</strong> - ${exercise.sets || 0} ست × ${exercise.reps || 0} تکرار
+            </div>`;
+          });
+        }
+        html += '</div>';
+      });
+    }
+
+    if (programType === 'diet' && user.plans?.diet) {
+      html += '<h3 style="color: #1f2937; margin: 30px 0 20px;">برنامه غذایی</h3>';
+      user.plans.diet.forEach((meal: any, index: number) => {
+        html += `<div style="margin-bottom: 20px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px;">
+          <h4 style="color: #374151; margin: 0 0 10px;">وعده ${index + 1}: ${meal.name || 'وعده غذایی'}</h4>
+          <p style="color: #6b7280;">${meal.description || ''}</p>
+        </div>`;
+      });
+    }
+
+    if (programType === 'supplements' && user.plans?.supps) {
+      html += '<h3 style="color: #1f2937; margin: 30px 0 20px;">برنامه مکمل</h3>';
+      user.plans.supps.forEach((supp: any) => {
+        html += `<div style="margin-bottom: 10px; padding: 10px; background: #f0f9ff; border-radius: 6px;">
+          <strong>${supp.name || 'مکمل'}</strong> - ${supp.dosage || ''} ${supp.timing || ''}
+        </div>`;
+      });
+    }
+
+    html += '</div>';
+    return html;
+  };
+
+  const generateClientReportHTML = (user: User): string => {
+    return `
+      <div style="font-family: 'Vazirmatn', sans-serif; direction: rtl; padding: 40px; background: white;">
+        <div style="text-align: center; margin-bottom: 40px; border-bottom: 3px solid #3b82f6; padding-bottom: 20px;">
+          <h1 style="color: #1f2937; font-size: 28px; margin: 0;">گزارش اطلاعات شاگرد</h1>
+          <h2 style="color: #6b7280; font-size: 20px; margin: 10px 0;">${user.name}</h2>
+          <p style="color: #9ca3af; font-size: 14px;">${new Date().toLocaleDateString('fa-IR')}</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 40px;">
+          <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px;">
+            <h3 style="color: #1f2937; margin-bottom: 15px;">اطلاعات شخصی</h3>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>نام:</span><strong>${user.name}</strong></div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>جنسیت:</span><strong>${user.gender === 'male' ? 'آقا' : 'خانم'}</strong></div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>سن:</span><strong>${user.age} سال</strong></div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>قد:</span><strong>${user.height} سانتی‌متر</strong></div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>وزن:</span><strong>${user.weight} کیلوگرم</strong></div>
+            <div style="display: flex; justify-content: space-between;"><span>سطح:</span><strong>${user.level || 'نامشخص'}</strong></div>
+          </div>
+
+          <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px;">
+            <h3 style="color: #1f2937; margin-bottom: 15px;">آمار برنامه‌ها</h3>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>برنامه تمرینی:</span><strong>${user.plans?.workouts ? Object.keys(user.plans.workouts).length : 0}</strong></div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>وعده غذایی:</span><strong>${user.plans?.diet ? user.plans.diet.length : 0}</strong></div>
+            <div style="display: flex; justify-content: space-between;"><span>مکمل غذایی:</span><strong>${user.plans?.supps ? user.plans.supps.length : 0}</strong></div>
+          </div>
+        </div>
+
+        ${user.notes ? `<div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+          <h3 style="color: #1f2937; margin-bottom: 10px;">یادداشت‌ها</h3>
+          <p style="color: #6b7280;">${user.notes}</p>
+        </div>` : ''}
+
+        ${user.nutritionGoals ? `<div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px;">
+          <h3 style="color: #1f2937; margin-bottom: 15px;">اهداف تغذیه‌ای</h3>
+          ${user.nutritionGoals.calories ? `<div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>کالری روزانه:</span><strong>${user.nutritionGoals.calories} kcal</strong></div>` : ''}
+          ${user.nutritionGoals.protein ? `<div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>پروتئین:</span><strong>${user.nutritionGoals.protein}g</strong></div>` : ''}
+          ${user.nutritionGoals.carbs ? `<div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>کربوهیدرات:</span><strong>${user.nutritionGoals.carbs}g</strong></div>` : ''}
+          ${user.nutritionGoals.fat ? `<div style="display: flex; justify-content: space-between;"><span>چربی:</span><strong>${user.nutritionGoals.fat}g</strong></div>` : ''}
+        </div>` : ''}
+      </div>
+    `;
+  };
+
+  const generateProgressHTML = (user: User): string => {
+    const calculateBMI = () => {
+      if (!user.height || !user.weight) return null;
+      const heightInMeters = user.height / 100;
+      return (user.weight / (heightInMeters * heightInMeters)).toFixed(1);
+    };
+
+    const bmi = calculateBMI();
+    const getBMICategory = (bmi: number) => {
+      if (bmi < 18.5) return 'کم‌وزن';
+      if (bmi < 25) return 'طبیعی';
+      if (bmi < 30) return 'اضافه وزن';
+      if (bmi < 35) return 'چاقی درجه ۱';
+      if (bmi < 40) return 'چاقی درجه ۲';
+      return 'چاقی درجه ۳';
+    };
+
+    return `
+      <div style="font-family: 'Vazirmatn', sans-serif; direction: rtl; padding: 40px; background: white;">
+        <div style="text-align: center; margin-bottom: 40px; border-bottom: 3px solid #10b981; padding-bottom: 20px;">
+          <h1 style="color: #1f2937; font-size: 28px; margin: 0;">گزارش پیشرفت و شاخص‌ها</h1>
+          <h2 style="color: #6b7280; font-size: 20px; margin: 10px 0;">${user.name}</h2>
+          <p style="color: #9ca3af; font-size: 14px;">${new Date().toLocaleDateString('fa-IR')}</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px;">
+          <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; text-align: center;">
+            <div style="font-size: 32px; font-weight: bold; color: #3b82f6; margin-bottom: 10px;">${bmi || 'N/A'}</div>
+            <div style="color: #6b7280; font-size: 14px;">شاخص توده بدنی (BMI)</div>
+            ${bmi ? `<div style="color: #9ca3af; font-size: 12px; margin-top: 5px;">${getBMICategory(parseFloat(bmi))}</div>` : ''}
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; text-align: center;">
+            <div style="font-size: 32px; font-weight: bold; color: #06b6d4; margin-bottom: 10px;">${user.height || 'N/A'}</div>
+            <div style="color: #6b7280; font-size: 14px;">قد (cm)</div>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; text-align: center;">
+            <div style="font-size: 32px; font-weight: bold; color: #10b981; margin-bottom: 10px;">${user.weight || 'N/A'}</div>
+            <div style="color: #6b7280; font-size: 14px;">وزن (kg)</div>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; text-align: center;">
+            <div style="font-size: 32px; font-weight: bold; color: #8b5cf6; margin-bottom: 10px;">${user.age || 'N/A'}</div>
+            <div style="color: #6b7280; font-size: 14px;">سن</div>
+          </div>
+        </div>
+
+        ${bmi ? `<div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);">
+          <h3 style="color: #1e40af; margin-bottom: 10px;">تحلیل BMI</h3>
+          <p style="color: #3730a3;">شاخص توده بدنی شما ${bmi} است که در دسته ${getBMICategory(parseFloat(bmi))} قرار می‌گیرد.</p>
+        </div>` : ''}
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px;">
+            <h3 style="color: #065f46; margin-bottom: 10px;">وضعیت تغذیه</h3>
+            <p style="color: #047857;">
+              ${user.plans?.diet && user.plans.diet.length > 0
+                ? `شما ${user.plans.diet.length} وعده غذایی برنامه‌ریزی شده دارید.`
+                : 'هیچ برنامه غذایی برنامه‌ریزی شده‌ای وجود ندارد.'}
+            </p>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px;">
+            <h3 style="color: #7c3aed; margin-bottom: 10px;">وضعیت تمرینی</h3>
+            <p style="color: #6d28d9;">
+              ${user.plans?.workouts && Object.keys(user.plans.workouts).length > 0
+                ? `شما ${Object.keys(user.plans.workouts).length} برنامه تمرینی دارید.`
+                : 'هیچ برنامه تمرینی برنامه‌ریزی شده‌ای وجود ندارد.'}
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+  };
 
   const handleOpenUserModal = (id?: UserId | null) => {
     setEditingUserId(id ?? null);
@@ -1710,9 +1911,8 @@ const CoachDashboard: React.FC = () => {
                       </div>
                     </motion.div>
 
-                    <Suspense fallback={<PanelLoadingFallback />}>
-                      <ProfilePanel activeUser={activeUser} onUpdateUser={updateActiveUser} />
-                    </Suspense>
+                    {/* Print Panel */}
+                    <PrintPanel user={activeUser} onGeneratePrint={handleGeneratePrint} />
                   </>
                 ) : (
                   <EmptyState

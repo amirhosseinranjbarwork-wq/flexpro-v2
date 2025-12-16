@@ -185,6 +185,8 @@ export type PrintType = 'training' | 'nutrition' | 'supplements' | 'profile';
 
 export interface PrintData {
   html: string;
+  title: string;
+  type: 'program' | 'client-report' | 'progress';
 }
 
 // ========== Supabase Database Types ==========
