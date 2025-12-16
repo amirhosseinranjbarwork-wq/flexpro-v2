@@ -5,8 +5,8 @@ echo ============================================
 echo.
 
 REM Get current timestamp
-for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set datetime=%%I
-set timestamp=%datetime:~0,4%-%datetime:~4,2%-%datetime:~6,2% %datetime:~8,2%:%datetime:~10,2%:%datetime:~12,2%
+for /f "tokens=2-4 delims=/ " %%a in ("%date%") do set timestamp=%%c-%%a-%%b
+for /f "tokens=1-2 delims=: " %%a in ("%time%") do set timestamp=%timestamp%_%%a-%%b
 
 echo Starting auto-update process...
 echo Timestamp: %timestamp%
