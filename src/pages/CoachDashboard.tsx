@@ -71,7 +71,8 @@ import {
   Phone,
   Star,
   Target,
-  Zap
+  Zap,
+  Trash2
 } from 'lucide-react';
 
 // Import React Bits components
