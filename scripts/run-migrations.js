@@ -36,7 +36,8 @@ const migrationFiles = [
   '20250116_create_exercises_foods_tables.sql',
   '20250116_add_super_admin_flag.sql',
   '20250116_add_auth_functions.sql',
-  '20250116_add_program_requests_table.sql'
+  '20250116_add_program_requests_table.sql',
+  '20250116_add_profile_columns.sql'
 ];
 
 migrationFiles.forEach((file, index) => {
