@@ -1,137 +1,19 @@
-import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
-import { Save, FolderOpen, AlertTriangle, Plus, GripVertical, Trash2, Search, Dumbbell, Download } from 'lucide-react';
+import { Save, AlertTriangle, Plus, Search, Dumbbell, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { User, WorkoutItem, WorkoutMode } from '../types/index';
 import EmptyState from './EmptyState';
 import { useDebounce } from '../hooks/useDebounce';
 import SavePlanModal from './SavePlanModal';
 import TemplateLoader from './TemplateLoader';
-
-interface SortableRowProps {
-  item: WorkoutItem;
-  idx: number;
-  day: number;
-  onDelete: (idx: number) => void;
-  canEdit: boolean;
-}
-
-const SortableRow: React.FC<SortableRowProps> = memo(({ item, idx: _idx, day, onDelete, canEdit }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: `${day}-${_idx}` });
-  
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition: transition || 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 1000 : 1,
-  };
-
-  return (
-    <tr ref={setNodeRef} style={style} className="hover:bg-gradient-to-r hover:from-[var(--accent-color)]/8 hover:to-transparent group border-b border-[var(--glass-border)]/50 transition-all duration-500">
-      <td className="p-3 text-center">
-        <button 
-          {...attributes} 
-          {...listeners} 
-          className="cursor-grab active:cursor-grabbing p-2 hover:bg-[var(--accent-color)]/10 rounded-lg transition-all duration-500 group-hover:scale-110"
-          aria-label={`جابجایی ${item.name || 'حرکت'}`}
-          type="button"
-        >
-          <GripVertical size={18} className="text-[var(--text-secondary)] group-hover:text-[var(--accent-color)] transition-colors" aria-hidden="true" />
-        </button>
-      </td>
-      <td className="p-4 align-top">
-        <div className="flex items-center gap-2 flex-wrap mb-2">
-          <span className={`text-[10px] px-2.5 py-1 rounded-lg font-bold border ${
-            item.type === 'cardio' ? 'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30' :
-            item.type === 'corrective' ? 'bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500/30' :
-            item.type === 'warmup' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30' :
-            item.type === 'cooldown' ? 'bg-[var(--accent-color)]/20 text-[var(--accent-color)] border-[var(--accent-color)]/30' :
-            'bg-[var(--accent-color)]/20 text-[var(--accent-color)] border-[var(--accent-color)]/30'
-          }`}>
-            {item.type === 'cardio' ? '🏃 هوازی' : 
-             item.type === 'corrective' ? '🩹 اصلاحی' : 
-             item.type === 'warmup' ? '🔥 گرم' :
-             item.type === 'cooldown' ? '❄️ سرد' :
-             item.type?.toUpperCase() || '💪 مقاومتی'}
-          </span>
-        </div>
-        <div className="font-bold text-[var(--text-primary)] text-sm mt-1.5 mb-1">{item.name}</div>
-        {item.name2 && (
-          <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1 font-semibold bg-yellow-500/10 px-2 py-0.5 rounded inline-block border border-yellow-500/20">
-            + {item.name2}
-          </div>
-        )}
-        {item.name3 && (
-          <div className="text-xs text-purple-600 dark:text-purple-400 mt-1 font-semibold bg-purple-500/10 px-2 py-0.5 rounded inline-block border border-purple-500/20 mr-1">
-            + {item.name3}
-          </div>
-        )}
-        {item.name4 && (
-          <div className="text-xs text-red-600 dark:text-red-400 mt-1 font-semibold bg-red-500/10 px-2 py-0.5 rounded inline-block border border-red-500/20 mr-1">
-            + {item.name4}
-          </div>
-        )}
-        {/* نمایش اطلاعات سیستم‌های خاص */}
-        {item.type === 'dropset' && item.dropCount && (
-          <div className="text-[10px] text-yellow-600 dark:text-yellow-400 mt-1 bg-yellow-500/10 px-2 py-0.5 rounded inline-block">
-            {item.dropCount} درآپ
-          </div>
-        )}
-        {item.type === 'restpause' && item.restPauseTime && (
-          <div className="text-[10px] text-purple-600 dark:text-purple-400 mt-1 bg-purple-500/10 px-2 py-0.5 rounded inline-block">
-            رست-پاز: {item.restPauseTime}ث
-          </div>
-        )}
-        {item.type === 'tempo' && item.tempo && (
-          <div className="text-[10px] text-[var(--accent-color)] mt-1 bg-[var(--accent-color)]/10 px-2 py-0.5 rounded inline-block font-mono">
-            تمپو: {item.tempo}
-          </div>
-        )}
-        {item.type === 'isometric' && item.holdTime && (
-          <div className="text-[10px] text-green-600 dark:text-green-400 mt-1 bg-green-500/10 px-2 py-0.5 rounded inline-block">
-            نگه: {item.holdTime}ث
-          </div>
-        )}
-        {item.note && <div className="text-[10px] text-[var(--text-secondary)] mt-1 bg-[var(--text-primary)]/5 p-1 rounded inline-block">{item.note}</div>}
-      </td>
-      <td className="p-4 text-center">
-        <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--accent-color)]/10 border border-[var(--accent-color)]/20 font-bold text-[var(--accent-color)]">
-          {item.sets || '-'}
-        </div>
-      </td>
-      <td className="p-4 text-center">
-        <div className="inline-flex items-center justify-center min-w-[60px] h-10 rounded-lg bg-[var(--accent-secondary)]/10 border border-[var(--accent-secondary)]/20 font-bold text-[var(--accent-secondary)]">
-          {item.mode === 'cardio' ? `${item.duration} min` : item.reps || '-'}
-        </div>
-      </td>
-      <td className="p-4 text-center">
-        {item.rest ? (
-          <div className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-[var(--text-primary)]/5 border border-[var(--glass-border)] text-xs text-[var(--text-secondary)] font-semibold">
-            {item.rest} {item.restUnit === 'm' ? 'دقیقه' : 'ثانیه'}
-          </div>
-        ) : (
-          <span className="text-[var(--text-secondary)] opacity-50">-</span>
-        )}
-      </td>
-      <td className="p-4 text-center">
-        <button
-          onClick={() => onDelete(_idx)}
-          disabled={!canEdit}
-          className={`text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all duration-300 p-2 hover:bg-red-500/10 rounded-lg hover:scale-110 ${!canEdit ? 'opacity-40 !cursor-not-allowed hover:text-red-400' : ''}`}
-          aria-label={`حذف ${item.name || 'حرکت'}`}
-          aria-disabled={!canEdit}
-          type="button"
-        >
-          <Trash2 size={18} aria-hidden="true" />
-        </button>
-      </td>
-    </tr>
-  );
-});
+import WorkoutDayTabs from './TrainingPanel/WorkoutDayTabs';
+import ExerciseRow from './TrainingPanel/ExerciseRow';
+import AddExerciseForm from './TrainingPanel/AddExerciseForm';
 
 interface TrainingPanelProps {
   activeUser: User;
@@ -158,17 +40,17 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
 
   const [formData, setFormData] = useState(initialFormState);
 
-  const [subMuscles, setSubMuscles] = useState([]);
-  const [exercises, setExercises] = useState([]);
-  const [corrExercisesList, setCorrExercisesList] = useState([]);
+  const [subMuscles, setSubMuscles] = useState<string[]>([]);
+  const [exercises, setExercises] = useState<string[]>([]);
+  const [corrExercisesList, setCorrExercisesList] = useState<string[]>([]);
 
   // داده‌های تمرینی به صورت lazy loaded
   const [resistanceExercises, setResistanceExercises] = useState<Record<string, Record<string, string[]>> | null>(null);
   const [riskyExercises, setRiskyExercises] = useState<Record<string, string[]> | null>(null);
   const [correctiveExercises, setCorrectiveExercises] = useState<Record<string, string[]> | null>(null);
   const [cardioExercises, setCardioExercises] = useState<Record<string, Record<string, string[]>> | null>(null);
-  const [warmupExercises, setWarmupExercises] = useState<Record<string, string[]> | null>(null);
-  const [cooldownExercises, setCooldownExercises] = useState<Record<string, string[]> | null>(null);
+  const [warmupExercises, setWarmupExercises] = useState<string[] | null>(null);
+  const [cooldownExercises, setCooldownExercises] = useState<string[] | null>(null);
   const [warning, setWarning] = useState(null);
   const [dataLoaded, setDataLoaded] = useState(false);
 
@@ -191,7 +73,7 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
       { cardioExercises: cardEx },
       { warmupExercises: warmEx, cooldownExercises: coolEx }
     ]) => {
-      setResistanceExercises(resEx);
+      setResistanceExercises(resEx as any);
       setRiskyExercises(riskEx);
       setCorrectiveExercises(corrEx);
       setCardioExercises(cardEx);
@@ -231,7 +113,7 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (mode === 'resist' && formData.ex1 && activeUser.injuries?.length) {
+      if (mode === 'resist' && formData.ex1 && activeUser.injuries?.length && riskyExercises) {
         let conflict = null;
         activeUser.injuries.forEach(injury => {
           if (riskyExercises[injury]?.includes(formData.ex1)) conflict = `هشدار: مضر برای "${injury}"`;
@@ -240,7 +122,7 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
       } else setWarning(null);
     }, 0);
     return () => clearTimeout(timer);
-  }, [formData.ex1, activeUser.injuries, mode]);
+  }, [formData.ex1, activeUser.injuries, mode, riskyExercises]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -267,7 +149,7 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
   }, [exercises, debouncedSearch]);
 
   // هندلر جابجایی - استفاده از useCallback برای بهینه‌سازی
-  const handleDragEnd = useCallback((event: { active: { id: string }; over: { id: string } | null }) => {
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     if (!canEdit) return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -401,7 +283,7 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
     if (name) saveTemplate(name, activeUser.plans.workouts[day]);
   };
 
-  const handleLoadTemplate = (t) => {
+  const handleLoadTemplate = (t: any) => {
     if (!canEdit) {
       toast.error('دسترسی مربی لازم است');
       return;
@@ -773,7 +655,7 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
                   {formData.cCategory && (
                     <select className="input-glass font-bold" value={formData.cType} onChange={e => setFormData({ ...formData, cType: e.target.value })}>
                       <option value="">انتخاب نوع...</option>
-                      {cardioExercises && cardioExercises[formData.cCategory]?.map(ex => <option key={ex} value={ex}>{ex}</option>)}
+                      {cardioExercises && (cardioExercises[formData.cCategory] as any)?.map((ex: any) => <option key={ex} value={ex}>{ex}</option>)}
                     </select>
                   )}
                   <input className="input-glass" placeholder="زمان (دقیقه)" type="number" value={formData.cTime} onChange={e => setFormData({ ...formData, cTime: e.target.value })} />
@@ -860,7 +742,7 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
                   <tbody className="divide-y divide-[var(--glass-border)]">
                   <SortableContext items={workoutItems.map((_, idx) => `${day}-${idx}`)} strategy={verticalListSortingStrategy}>
                     {workoutItems.map((item, idx) => (
-                      <SortableRow
+                      <ExerciseRow
                         key={`${day}-${idx}`}
                         item={item}
                         idx={idx}
@@ -895,7 +777,7 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
       <TemplateLoader 
         isOpen={showLoadModal} 
         onClose={() => setShowLoadModal(false)} 
-        clientId={activeUser.id}
+        clientId={String(activeUser.id)}
         onTemplateLoaded={() => {
           // Refresh user data after loading template
           onUpdateUser(activeUser);

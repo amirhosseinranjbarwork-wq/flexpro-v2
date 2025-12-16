@@ -207,3 +207,4 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
 };
 
 export default Progress;
+
