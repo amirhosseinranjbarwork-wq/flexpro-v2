@@ -50,7 +50,8 @@ import {
   Edit,
   Activity,
   Award,
-  BarChart3
+  BarChart3,
+  Settings
 } from 'lucide-react';
 
 // Import React Bits components
