@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { supplementsData } from '../data/supplementsData';
+import React, { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { useApp } from '../context/AppContext';
@@ -14,6 +13,163 @@ const SupplementsPanel: React.FC<SupplementsPanelProps> = ({ activeUser, onUpdat
   const { theme, hasPermission } = useApp();
   const canEdit = hasPermission('editProgram', activeUser.id);
   const [formData, setFormData] = useState({ name: '', dose: '', time: '', note: '' });
+
+  // لیست مکمل‌ها (در آینده می‌توان از Supabase بارگذاری کرد)
+  const supplementsData = useMemo(() => [
+    // پروتئین‌ها
+    "پروتئین وی (Whey Protein)",
+    "پروتئین وی ایزوله (Whey Isolate)",
+    "پروتئین وی کنسانتره (Whey Concentrate)",
+    "پروتئین وی هیدرولیزه (Whey Hydrolysate)",
+    "پروتئین کازئین (Casein Protein)",
+    "پروتئین کازئین میسلار (Micellar Casein)",
+    "پروتئین تخم مرغ (Egg Protein)",
+    "پروتئین گوشت (Beef Protein)",
+    "پروتئین سویا (Soy Protein)",
+    "پروتئین نخود (Pea Protein)",
+    "پروتئین برنج (Rice Protein)",
+    "پروتئین کنف (Hemp Protein)",
+    "پروتئین گیاهی ترکیبی (Plant Blend)",
+    "گینر (Mass Gainer)",
+    "گینر کم‌قند (Low-Sugar Mass Gainer)",
+    "گینر پرکربوهیدرات (High-Carb Mass Gainer)",
+
+    // کراتین
+    "کراتین مونوهیدرات (Creatine Monohydrate)",
+    "کراتین اتیل استر (Creatine Ethyl Ester)",
+    "کراتین هیدروکلراید (Creatine HCl)",
+    "کراتین بافر شده (Buffered Creatine)",
+    "کراتین مایکرو (Micronized Creatine)",
+    "کراتین مایع (Liquid Creatine)",
+
+    // آمینو اسیدها
+    "BCAA (اسیدهای آمینه شاخه‌دار)",
+    "BCAA 2:1:1",
+    "BCAA 4:1:1",
+    "BCAA 8:1:1",
+    "EAA (اسیدهای آمینه ضروری)",
+    "گلوتامین (Glutamine)",
+    "گلوتامین پپتید (Glutamine Peptide)",
+    "آرژنین (L-Arginine)",
+    "سیترولین (Citrulline)",
+    "سیترولین مالات (Citrulline Malate)",
+    "تائورین (Taurine)",
+    "گلیسین (Glycine)",
+    "آلانین (Alanine)",
+    "بتا آلانین (Beta-Alanine)",
+    "HMB (هیدروکسی متیل بوتیرات)",
+    "لوسین (Leucine)",
+    "ایزولوسین (Isoleucine)",
+    "والین (Valine)",
+
+    // پری و پست ورک‌اوت
+    "پمپ/پری ورک اوت (Pre-Workout)",
+    "پری ورک‌اوت بدون کافئین (Stim-Free Pre-Workout)",
+    "پست ورک‌اوت (Post-Workout)",
+    "اینتراک (Intra-Workout)",
+
+    // چربی‌سوزها
+    "چربی‌سوز (Fat Burner)",
+    "چربی‌سوز طبیعی (Natural Fat Burner)",
+    "چربی‌سوز بدون کافئین (Caffeine-Free Fat Burner)",
+    "L-کارنیتین (L-Carnitine)",
+    "L-کارنیتین ترت (L-Carnitine L-Tartrate)",
+    "CLA (کنژوگه لینولئیک اسید)",
+    "کافئین (Caffeine)",
+    "کافئین بدون آب (Anhydrous Caffeine)",
+    "گرین تی (Green Tea Extract)",
+    "گرین کافی (Green Coffee)",
+    "پیپرین (Piperine)",
+    "کولین (Choline)",
+
+    // ریکاوری و مفاصل
+    "گلوکوزامین (Glucosamine)",
+    "کندروئیتین (Chondroitin)",
+    "MSM (متیل سولفونیل متان)",
+    "کولاژن (Collagen)",
+    "کولاژن هیدرولیزه (Hydrolyzed Collagen)",
+    "کولاژن مرغ (Chicken Collagen)",
+    "کولاژن ماهی (Fish Collagen)",
+    "کورکومین (Curcumin)",
+    "بروم لین (Bromelain)",
+    "پاپائین (Papain)",
+
+    // ویتامین‌ها و مواد معدنی
+    "ویتامین A",
+    "ویتامین B کمپلکس",
+    "ویتامین B1 (تیامین)",
+    "ویتامین B2 (ریبوفلاوین)",
+    "ویتامین B3 (نیاسین)",
+    "ویتامین B5 (پانتوتنیک اسید)",
+    "ویتامین B6 (پیریدوکسین)",
+    "ویتامین B7 (بیوتین)",
+    "ویتامین B9 (فولیک اسید)",
+    "ویتامین B12 (سیانوکوبالامین)",
+    "ویتامین C (اسکوربیک اسید)",
+    "ویتامین D",
+    "ویتامین D3 (کولکلسیفرول)",
+    "ویتامین E (توکوفرول)",
+    "ویتامین K",
+    "ویتامین K2 (مناکینون)",
+    "کلسیم (Calcium)",
+    "منیزیم (Magnesium)",
+    "روی (Zinc)",
+    "آهن (Iron)",
+    "ید (Iodine)",
+    "سلنیوم (Selenium)",
+    "مس (Copper)",
+    "منگنز (Manganese)",
+    "کروم (Chromium)",
+    "مولیبدن (Molybdenum)",
+
+    // هورمون‌ها و تنظیم‌کننده‌ها
+    "ZMA (روی، منیزیم، ویتامین B6)",
+    "DHEA",
+    "ترستوسترون بوستر (Testosterone Booster)",
+    "PCT (Post Cycle Therapy)",
+    "آرام‌بخش خواب (Sleep Aid)",
+    "مک (Melatonin)",
+    "والرین (Valerian Root)",
+    "5-HTP",
+    "L-تریپتوفان (L-Tryptophan)",
+    "گابا (GABA)",
+    "آشواگاندا (Ashwagandha)",
+    "روتین سانتیلا (Rhodiola Rosea)",
+    "جینسنگ (Ginseng)",
+    "ماکا (Maca)",
+    "DMAE",
+
+    // آنتی‌اکسیدان‌ها و پشتیبانی ایمنی
+    "آنتی‌اکسیدان کمپلکس",
+    "کوآنزیم Q10 (CoQ10)",
+    "آلفا لیپوئیک اسید (ALA)",
+    "NAC (N-Acetyl Cysteine)",
+    "گلوتیون (Glutathione)",
+    "ویتامین C با بایوفلاونوئید",
+    "اکیناسه (Echinacea)",
+    "زینک لوکونات (Zinc Lozenges)",
+    "پروپولیس (Propolis)",
+    "عسل مانوکا (Manuka Honey)",
+
+    // دیگر موارد
+    "پروبیوتیک (Probiotic)",
+    "فیبر (Fiber)",
+    "فیبر محلول (Soluble Fiber)",
+    "فیبر نامحلول (Insoluble Fiber)",
+    "دیژستیو انزیم (Digestive Enzyme)",
+    "بتاکاروتن (Beta-Carotene)",
+    "لیکوپن (Lycopene)",
+    "لوتئین (Lutein)",
+    "زاکسانتین (Zeaxanthin)",
+    "آستاکسانتین (Astaxanthin)",
+    "رزبری کتون (Raspberry Ketone)",
+    "گارسینیا کامبوجیا (Garcinia Cambogia)",
+    "چای سبز (Green Tea)",
+    "چای سیاه (Black Tea)",
+    "چای سفید (White Tea)",
+    "چای اولانگ (Oolong Tea)",
+    "چای روئیبوش (Rooibos Tea)"
+  ], []);
 
   const handleAdd = () => {
     if (!canEdit) {

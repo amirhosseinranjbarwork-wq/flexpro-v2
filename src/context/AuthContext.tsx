@@ -50,10 +50,10 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   const resolveEmail = useCallback(async (identifier: string) => {
     if (!supabase) throw new Error('Supabase auth غیرفعال است');
     if (identifier.includes('@')) return identifier;
-    const { data, error } = await supabase.from('profiles').select('email').eq('username', identifier).limit(1).maybeSingle();
+    const { data, error } = await supabase.rpc('get_email_by_username', { p_username: identifier });
     if (error) throw error;
-    if (!data?.email) throw new Error('نام کاربری یافت نشد');
-    return data.email as string;
+    if (!data) throw new Error('نام کاربری یافت نشد');
+    return data as string;
   }, []);
 
   useEffect(() => {

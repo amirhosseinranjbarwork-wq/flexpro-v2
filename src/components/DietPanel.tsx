@@ -11,6 +11,7 @@ import { useApp } from '../context/AppContext';
 import EmptyState from './EmptyState';
 import { useDebounce } from '../hooks/useDebounce';
 import { DragEndEvent } from '@dnd-kit/core';
+import { useFoods } from '../hooks/useExercises';
 
 interface SortableFoodRowProps {
   item: DietItem;
@@ -79,12 +80,43 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
   const [category, setCategory] = useState('');
   const [foodName, setFoodName] = useState('');
   const [amount, setAmount] = useState('');
-  const [foodsList, setFoodsList] = useState([]);
   const [unit, setUnit] = useState('-');
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 300);
   const [customFood, setCustomFood] = useState({ name: '', cal: '', protein: '', carb: '', fat: '', unit: 'گرم', base: 100 });
-  const [foodData, setFoodData] = useState<Record<string, Record<string, any>> | null>(null);
+
+  // بارگذاری داده‌های غذایی از Supabase
+  const { data: foodsData, isLoading: foodsLoading, error: foodsError } = useFoods();
+
+  // سازماندهی داده‌ها بر اساس ساختار قدیمی برای سازگاری
+  const foodData = useMemo(() => {
+    if (!foodsData) return null;
+
+    const grouped: Record<string, Record<string, any>> = {};
+
+    foodsData.forEach(food => {
+      if (!grouped[food.category]) {
+        grouped[food.category] = {};
+      }
+      grouped[food.category][food.name] = {
+        unit: food.unit,
+        calories: food.calories,
+        protein: food.protein,
+        carbs: food.carbs,
+        fat: food.fat,
+        fiber: food.fiber,
+        sugar: food.sugar,
+        sodium: food.sodium
+      };
+    });
+
+    return grouped;
+  }, [foodsData]);
+
+  const foodsList = useMemo(() => {
+    if (!category || !foodData || !foodData[category]) return [];
+    return Object.keys(foodData[category]);
+  }, [category, foodData]);
 
   // سنسورها برای drag & drop
   const sensors = useSensors(
@@ -92,19 +124,7 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  // بارگذاری داده‌های غذایی به صورت lazy
   useEffect(() => {
-    import('../data/foodData').then(({ foodData: data }) => {
-      setFoodData(data);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (category && foodData && foodData[category]) {
-        setFoodsList(Object.keys(foodData[category]));
-    } else {
-        setFoodsList([]);
-    }
     setFoodName('');
     setUnit('-');
     setSearchTerm('');

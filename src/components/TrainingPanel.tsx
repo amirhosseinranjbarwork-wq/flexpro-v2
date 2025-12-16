@@ -14,6 +14,7 @@ import TemplateLoader from './TemplateLoader';
 import WorkoutDayTabs from './TrainingPanel/WorkoutDayTabs';
 import ExerciseRow from './TrainingPanel/ExerciseRow';
 import AddExerciseForm from './TrainingPanel/AddExerciseForm';
+import { useExercises } from '../hooks/useExercises';
 
 interface TrainingPanelProps {
   activeUser: User;
@@ -44,47 +45,84 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
   const [exercises, setExercises] = useState<string[]>([]);
   const [corrExercisesList, setCorrExercisesList] = useState<string[]>([]);
 
-  // داده‌های تمرینی به صورت lazy loaded
-  const [resistanceExercises, setResistanceExercises] = useState<Record<string, Record<string, string[]>> | null>(null);
-  const [riskyExercises, setRiskyExercises] = useState<Record<string, string[]> | null>(null);
-  const [correctiveExercises, setCorrectiveExercises] = useState<Record<string, string[]> | null>(null);
-  const [cardioExercises, setCardioExercises] = useState<Record<string, Record<string, string[]>> | null>(null);
-  const [warmupExercises, setWarmupExercises] = useState<string[] | null>(null);
-  const [cooldownExercises, setCooldownExercises] = useState<string[] | null>(null);
-  const [warning, setWarning] = useState(null);
-  const [dataLoaded, setDataLoaded] = useState(false);
+  // بارگذاری داده‌های تمرینی از Supabase
+  const { data: exercisesData, isLoading: exercisesLoading, error: exercisesError } = useExercises();
+
+  // سازماندهی داده‌ها بر اساس ساختار قدیمی برای سازگاری
+  const resistanceExercises = useMemo(() => {
+    if (!exercisesData) return null;
+
+    const resistance = exercisesData.filter(ex => ex.type === 'resistance');
+    const grouped: Record<string, Record<string, string[]>> = {};
+
+    resistance.forEach(ex => {
+      if (!grouped[ex.muscle_group]) {
+        grouped[ex.muscle_group] = {};
+      }
+      if (!grouped[ex.muscle_group][ex.sub_muscle_group || 'other']) {
+        grouped[ex.muscle_group][ex.sub_muscle_group || 'other'] = [];
+      }
+      grouped[ex.muscle_group][ex.sub_muscle_group || 'other'].push(ex.name);
+    });
+
+    return grouped;
+  }, [exercisesData]);
+
+  const correctiveExercises = useMemo(() => {
+    if (!exercisesData) return null;
+
+    const corrective = exercisesData.filter(ex => ex.type === 'corrective');
+    const grouped: Record<string, string[]> = {};
+
+    corrective.forEach(ex => {
+      if (!grouped[ex.muscle_group]) {
+        grouped[ex.muscle_group] = [];
+      }
+      grouped[ex.muscle_group].push(ex.name);
+    });
+
+    return grouped;
+  }, [exercisesData]);
+
+  const cardioExercises = useMemo(() => {
+    if (!exercisesData) return null;
+
+    const cardio = exercisesData.filter(ex => ex.type === 'cardio');
+    const grouped: Record<string, Record<string, string[]>> = {};
+
+    cardio.forEach(ex => {
+      // Group cardio exercises by equipment or category
+      const category = ex.equipment || 'general';
+      if (!grouped[category]) {
+        grouped[category] = {};
+      }
+      if (!grouped[category][ex.muscle_group]) {
+        grouped[category][ex.muscle_group] = [];
+      }
+      grouped[category][ex.muscle_group].push(ex.name);
+    });
+
+    return grouped;
+  }, [exercisesData]);
+
+  const warmupExercises = useMemo(() => {
+    if (!exercisesData) return null;
+    return exercisesData.filter(ex => ex.type === 'warmup').map(ex => ex.name);
+  }, [exercisesData]);
+
+  const cooldownExercises = useMemo(() => {
+    if (!exercisesData) return null;
+    return exercisesData.filter(ex => ex.type === 'cooldown').map(ex => ex.name);
+  }, [exercisesData]);
+
+  const dataLoaded = !exercisesLoading;
+  const warning = exercisesError ? 'خطا در بارگذاری داده‌های تمرینی' : null;
 
   // سنسورها برای drag & drop
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
-
-  // بارگذاری داده‌های تمرینی به صورت lazy
-  useEffect(() => {
-    Promise.all([
-      import('../data/resistanceExercises'),
-      import('../data/correctiveExercises'),
-      import('../data/cardioExercises'),
-      import('../data/warmupCooldown')
-    ]).then(([
-      { resistanceExercises: resEx, riskyExercises: riskEx },
-      { correctiveExercises: corrEx },
-      { cardioExercises: cardEx },
-      { warmupExercises: warmEx, cooldownExercises: coolEx }
-    ]) => {
-      setResistanceExercises(resEx as any);
-      setRiskyExercises(riskEx);
-      setCorrectiveExercises(corrEx);
-      setCardioExercises(cardEx);
-      setWarmupExercises(warmEx);
-      setCooldownExercises(coolEx);
-      setDataLoaded(true);
-    }).catch(error => {
-      console.error('Failed to load exercise data:', error);
-      setDataLoaded(true); // Set to true even on error to prevent infinite loading
-    });
-  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {

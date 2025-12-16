@@ -169,7 +169,7 @@ const PrintModal: React.FC<PrintModalProps> = ({ data, onClose, onDownload, onPr
           >
             📥 دانلود PDF
           </button>
-          <button
+          <button 
             onClick={onPrint || handleBrowserPrint}
             className="btn-glass bg-[var(--accent-color)] hover:bg-[var(--accent-color)]/90 text-white text-sm border border-[var(--accent-color)]/30 shadow-lg"
             aria-label="پرینت مرورگر"
