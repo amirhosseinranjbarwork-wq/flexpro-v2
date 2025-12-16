@@ -51,7 +51,10 @@ import {
   Activity,
   Award,
   BarChart3,
-  Settings
+  Settings,
+  ChevronRight,
+  ChevronLeft,
+  TrendingUp
 } from 'lucide-react';
 
 // Import React Bits components
