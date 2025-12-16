@@ -54,7 +54,24 @@ import {
   Settings,
   ChevronRight,
   ChevronLeft,
-  TrendingUp
+  TrendingUp,
+  Bell,
+  Briefcase,
+  Calendar,
+  Copy,
+  Database,
+  Eye,
+  Globe,
+  GraduationCap,
+  Heart,
+  Instagram,
+  Mail,
+  MapPin,
+  MessageCircle,
+  Phone,
+  Star,
+  Target,
+  Zap
 } from 'lucide-react';
 
 // Import React Bits components
