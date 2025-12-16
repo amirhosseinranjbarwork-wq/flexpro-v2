@@ -54,7 +54,22 @@ const ACCOUNT_KEY = 'flexAccountId';
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 // Helper functions
-const makeId = (): string => `u-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+/**
+ * Generate a valid UUID v4 string for local user records
+ * Uses crypto.randomUUID() for consistency with Supabase API
+ */
+const makeId = (): string => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    try {
+      return crypto.randomUUID();
+    } catch (err) {
+      // Fallback only for legacy environments (though unlikely in modern browsers)
+      console.warn('UUID generation failed, using fallback:', err);
+    }
+  }
+  // Fallback for compatibility with very old environments
+  return `u-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+};
 
 const migrateUser = (input: UserInput): User => {
   const user: User = {
@@ -376,26 +391,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const saveUser = useCallback(
     async (userData: UserInput) => {
-      // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: 'debug-session',
-          runId: 'run1',
-          hypothesisId: 'H1',
-          location: 'DataContext.tsx:saveUser:start',
-          message: 'saveUser called',
-          data: {
-            userId: userData.id ?? null,
-            coachId: auth?.user?.id ?? null,
-            hasPermission: hasPermission('manageUsers', userData.id ?? null)
-          },
-          timestamp: Date.now()
-        })
-      }).catch(() => {});
-      // #endregion
-
       if (!hasPermission('manageUsers', userData.id ?? null)) {
         toast.error('دسترسی مربی لازم است');
         return;
@@ -455,25 +450,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           });
         }
-
-        // #region agent log
-        fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId: 'debug-session',
-            runId: 'run1',
-            hypothesisId: 'H1',
-            location: 'DataContext.tsx:saveUser:afterSupabase',
-            message: 'saveUser after supabase ops',
-            data: {
-              usersCount: users.length + 1,
-              supabaseReady: isSupabaseReady
-            },
-            timestamp: Date.now()
-          })
-        }).catch(() => {});
-        // #endregion
 
         toast.success('اطلاعات با موفقیت ذخیره شد');
       } catch (error) {

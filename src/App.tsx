@@ -5,7 +5,9 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import PrivateRoute from './components/PrivateRoute';
 import PublicRoute from './components/PublicRoute';
+import AdminRoute from './components/AdminRoute';
 import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import ErrorBoundary from './components/ErrorBoundary';
 import { Toaster } from 'react-hot-toast';
 
@@ -64,6 +66,16 @@ function App() {
           element={
             <PrivateRoute signedIn={!!user} fallback="/login">
               <Dashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <PrivateRoute signedIn={!!user} fallback="/login">
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
             </PrivateRoute>
           }
         />

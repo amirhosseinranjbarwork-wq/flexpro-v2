@@ -110,11 +110,32 @@ const tableWorkoutPlans = 'workout_plans';
 const COACH_CODE_KEY = 'flexpro_coach_code';
 
 // ========== Helper Functions ==========
+/**
+ * Generate a valid UUID v4 string for Supabase records
+ * Uses crypto.randomUUID() which is supported in modern browsers and Node.js 15+
+ * @throws Error if UUID generation fails
+ */
 const makeId = (): string => {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
+  if (typeof crypto === 'undefined' || !crypto.randomUUID) {
+    throw new Error(
+      'UUID generation unavailable. This environment does not support crypto.randomUUID(). ' +
+      'Please update your browser or Node.js version to 15.7.0 or later.'
+    );
   }
-  return `sp-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+  
+  try {
+    const uuid = crypto.randomUUID();
+    // Validate the generated UUID format (UUID v4 format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(uuid)) {
+      throw new Error(`Generated invalid UUID format: ${uuid}`);
+    }
+    return uuid;
+  } catch (error) {
+    throw new Error(
+      `Failed to generate UUID: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
 };
 
 /**
@@ -499,22 +520,6 @@ export const createClient = async (
 export const upsertClient = async (
   payload: Partial<Client> & { id: string; coach_id: string }
 ): Promise<ApiResponse<Client>> => {
-  // #region agent log
-  fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      sessionId: 'debug-session',
-      runId: 'run1',
-      hypothesisId: 'H2',
-      location: 'supabaseApi.ts:upsertClient:start',
-      message: 'upsertClient called',
-      data: { id: payload.id, coach_id: payload.coach_id },
-      timestamp: Date.now()
-    })
-  }).catch(() => {});
-  // #endregion
-
   if (!await ensureSupabaseReady()) {
     return createApiResponse<Client>(
       null,
@@ -530,43 +535,12 @@ export const upsertClient = async (
       .maybeSingle();
     
     if (error || !data) {
-      // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: 'debug-session',
-          runId: 'run1',
-          hypothesisId: 'H2',
-          location: 'supabaseApi.ts:upsertClient:error',
-          message: 'upsertClient error',
-          data: { error: error?.message || 'unknown' },
-          timestamp: Date.now()
-        })
-      }).catch(() => {});
-      // #endregion
       return createApiResponse<Client>(
         null,
         handleSupabaseError(error ?? new Error('upsertClient failed'), 'upsertClient')
       );
     }
     
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId: 'debug-session',
-        runId: 'run1',
-        hypothesisId: 'H2',
-        location: 'supabaseApi.ts:upsertClient:success',
-        message: 'upsertClient success',
-        data: { id: data.id },
-        timestamp: Date.now()
-      })
-    }).catch(() => {});
-    // #endregion
-
     return createApiResponse<Client>(data as Client, null);
   } catch (err) {
     return createApiResponse<Client>(
@@ -1140,45 +1114,53 @@ const removeRequestFromLocal = (requestId: string, coachId?: string, clientId?: 
 export const createProgramRequest = async (
   request: Omit<ProgramRequest, 'id' | 'created_at' | 'updated_at'>
 ): Promise<ProgramRequest> => {
-  const newRequest: ProgramRequest = {
-    ...request,
-    id: makeId(),
-    status: 'pending',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  };
-  
-  syncRequestToLocal(newRequest);
-  
-  // If Supabase is available, save there too
-  if (isSupabaseEnabled && supabase) {
-    try {
-      const { data, error } = await supabase
-        .from('program_requests')
-        .insert(newRequest)
-        .select()
-        .maybeSingle();
-      
-      if (error) {
-        SupabaseErrorHandler.handle(error, {
+  try {
+    const newRequest: ProgramRequest = {
+      ...request,
+      id: makeId(),
+      status: 'pending',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    syncRequestToLocal(newRequest);
+    
+    // If Supabase is available, save there too
+    if (isSupabaseEnabled && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('program_requests')
+          .insert(newRequest)
+          .select()
+          .maybeSingle();
+        
+        if (error) {
+          SupabaseErrorHandler.handle(error, {
+            operation: 'create request',
+            userMessage: 'درخواست ارسال شد اما ممکن است تأخیر در پردازش داشته باشد'
+          });
+        }
+        if (data) {
+          const stored = data as ProgramRequest;
+          syncRequestToLocal(stored);
+          return stored;
+        }
+      } catch (err) {
+        SupabaseErrorHandler.handle(err, {
           operation: 'create request',
           userMessage: 'درخواست ارسال شد اما ممکن است تأخیر در پردازش داشته باشد'
         });
       }
-      if (data) {
-        const stored = data as ProgramRequest;
-        syncRequestToLocal(stored);
-        return stored;
-      }
-    } catch (err) {
-      SupabaseErrorHandler.handle(err, {
-        operation: 'create request',
-        userMessage: 'درخواست ارسال شد اما ممکن است تأخیر در پردازش داشته باشد'
-      });
     }
+    
+    return newRequest;
+  } catch (err) {
+    SupabaseErrorHandler.handle(err, {
+      operation: 'create request',
+      userMessage: 'خطا در ایجاد درخواست برنامه'
+    });
+    throw err;
   }
-  
-  return newRequest;
 };
 
 export const fetchRequestsByCoach = async (coachId: string): Promise<ProgramRequest[]> => {

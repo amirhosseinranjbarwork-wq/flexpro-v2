@@ -713,20 +713,6 @@ const ClientDashboard: React.FC = () => {
         notes: clientInfo.notes
       };
 
-      fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: 'debug-session',
-          runId: 'pre-fix',
-          hypothesisId: 'B',
-          location: 'ClientDashboard.tsx:handleSendRequest',
-          message: 'sending program request',
-          data: { userId: user.id, coachId, coachCodeLength: coachCode?.length || 0, requestType, profileComplete: isProfileComplete },
-          timestamp: Date.now()
-        })
-      }).catch(() => {});
-
       await createProgramRequest({
         client_id: user.id,
         client_name: clientInfo.full_name || user.user_metadata?.full_name || user.email || '',

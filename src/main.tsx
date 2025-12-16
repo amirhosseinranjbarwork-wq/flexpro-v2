@@ -5,6 +5,7 @@ import './index.css';
 import { AppProvider } from './context/AppContext';
 import { AuthProvider } from './context/AuthContext';
 import { BrowserRouter } from 'react-router-dom';
+import { ReactQueryProvider } from './lib/queryClient';
 import { pushNotificationManager } from './utils/pushNotifications';
 
 const rootElement = document.getElementById('root');
@@ -16,13 +17,15 @@ const root = ReactDOM.createRoot(rootElement);
 
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <AppProvider>
-          <App />
-        </AppProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <ReactQueryProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppProvider>
+            <App />
+          </AppProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ReactQueryProvider>
   </React.StrictMode>
 );
 

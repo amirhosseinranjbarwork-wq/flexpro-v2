@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { useApp } from '../context/AppContext';
-import { Save, FolderOpen, AlertTriangle, Plus, GripVertical, Trash2, Search, Dumbbell } from 'lucide-react';
+import { Save, FolderOpen, AlertTriangle, Plus, GripVertical, Trash2, Search, Dumbbell, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -9,6 +9,8 @@ import { CSS } from '@dnd-kit/utilities';
 import type { User, WorkoutItem, WorkoutMode } from '../types/index';
 import EmptyState from './EmptyState';
 import { useDebounce } from '../hooks/useDebounce';
+import SavePlanModal from './SavePlanModal';
+import TemplateLoader from './TemplateLoader';
 
 interface SortableRowProps {
   item: WorkoutItem;
@@ -142,6 +144,8 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
   const [day, setDay] = useState(1);
   const [mode, setMode] = useState('resist'); 
   const [searchTerm, setSearchTerm] = useState('');
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showLoadModal, setShowLoadModal] = useState(false);
   const debouncedSearch = useDebounce(searchTerm, 300);
   
   const initialFormState = {
@@ -473,46 +477,23 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
           {/* دکمه‌های عملیات */}
           <div className="flex gap-2 shrink-0">
             <button
-              onClick={handleSaveTemplate}
+              onClick={() => setShowSaveModal(true)}
               disabled={!canEdit}
               className={`btn-glass bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs px-4 py-2 rounded-xl font-semibold transition-all hover:shadow-lg hover:shadow-emerald-500/20 ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
-              aria-label="ذخیره الگو"
+              aria-label="ذخیره برنامه کامل"
               type="button"
             >
-              <Save size={14} className="inline ml-1"/> ذخیره الگو
+              <Save size={14} className="inline ml-1"/> ذخیره برنامه
             </button>
-            <div className="relative group">
-              <button
-                disabled={!canEdit}
-                className={`btn-glass bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/30 text-xs px-4 py-2 rounded-xl font-semibold transition-all hover:shadow-lg hover:shadow-purple-500/20 ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
-                aria-label="الگوهای ذخیره شده"
-                type="button"
-              >
-                <FolderOpen size={14} className="inline ml-1"/> الگوها
-              </button>
-              <div className="absolute left-0 mt-2 w-56 glass-panel p-3 rounded-2xl border border-[var(--glass-border)] shadow-2xl hidden group-hover:block z-50 backdrop-blur-xl">
-                {templates.length === 0 && (
-                  <p className="text-xs text-slate-500 p-3 text-center">هیچ الگویی ذخیره نشده</p>
-                )}
-                {templates.map(t => (
-                  <div 
-                    key={t.id} 
-                    onClick={() => handleLoadTemplate(t)} 
-                    className={`p-3 hover:bg-[var(--text-primary)]/10 rounded-xl cursor-pointer text-xs flex justify-between items-center text-[var(--text-primary)] transition-all border border-transparent hover:border-[var(--accent-color)]/30 ${!canEdit ? 'pointer-events-none opacity-50' : ''}`}
-                  >
-                    <span className="font-semibold">{t.name}</span>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); deleteTemplate(t.id); }}
-                      className="text-red-400 hover:text-red-600 font-bold text-lg leading-none transition"
-                      aria-label={`حذف ${t.name}`}
-                      type="button"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <button
+              onClick={() => setShowLoadModal(true)}
+              disabled={!canEdit}
+              className={`btn-glass bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/30 text-xs px-4 py-2 rounded-xl font-semibold transition-all hover:shadow-lg hover:shadow-purple-500/20 ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
+              aria-label="بارگذاری برنامه ذخیره شده"
+              type="button"
+            >
+              <Download size={14} className="inline ml-1"/> بارگذاری برنامه
+            </button>
           </div>
         </div>
       </div>
@@ -902,6 +883,24 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
           </DndContext>
         </div>
       </div>
+
+      {/* Save Plan Modal */}
+      <SavePlanModal 
+        isOpen={showSaveModal} 
+        onClose={() => setShowSaveModal(false)} 
+        fullWeekData={activeUser.plans?.workouts || {}}
+      />
+
+      {/* Load Template Modal */}
+      <TemplateLoader 
+        isOpen={showLoadModal} 
+        onClose={() => setShowLoadModal(false)} 
+        clientId={activeUser.id}
+        onTemplateLoaded={() => {
+          // Refresh user data after loading template
+          onUpdateUser(activeUser);
+        }}
+      />
     </div>
   );
 };

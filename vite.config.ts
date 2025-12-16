@@ -84,50 +84,74 @@ export default defineConfig({
     })
   ],
   build: {
+    target: 'esnext',
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
+    sourcemap: false,
+    reportCompressedSize: false,
     rollupOptions: {
       output: {
+        // Optimize chunk naming for better caching
+        entryFileNames: 'js/[name].[hash].js',
+        chunkFileNames: 'js/[name].[hash].js',
+        assetFileNames: (assetInfo) => {
+          if (!assetInfo.name) return '[name].[hash][extname]';
+          const info = assetInfo.name.split('.');
+          const ext = info[info.length - 1];
+          if (/png|jpe?g|gif|tiff|bmp|ico/i.test(ext)) {
+            return `img/[name].[hash][extname]`;
+          } else if (/woff|woff2|ttf|otf|eot/i.test(ext)) {
+            return `fonts/[name].[hash][extname]`;
+          } else if (ext === 'css') {
+            return `css/[name].[hash][extname]`;
+          } else if (ext === 'svg') {
+            return `svg/[name].[hash][extname]`;
+          }
+          return `[name].[hash][extname]`;
+        },
         manualChunks: (id) => {
-          // React and core libraries
-          if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
-            return 'react-vendor';
+          // Core vendor chunk (React + routing)
+          if (id.includes('react') && (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/react-router-dom/'))) {
+            return 'vendor-core';
+          }
+          
+          // UI vendor chunk
+          if (id.includes('framer-motion') || id.includes('react-hot-toast') || id.includes('sweetalert2') || id.includes('lucide-react')) {
+            return 'vendor-ui';
           }
 
-          // UI libraries
-          if (id.includes('framer-motion') || id.includes('react-hot-toast') || id.includes('sweetalert2') ||
-              id.includes('lucide-react') || id.includes('clsx') || id.includes('tailwind-merge')) {
-            return 'ui-vendor';
+          // Supabase client
+          if (id.includes('@supabase/supabase-js')) {
+            return 'vendor-supabase';
+          }
+
+          // React Query
+          if (id.includes('@tanstack/react-query')) {
+            return 'vendor-query';
           }
 
           // Drag and drop
           if (id.includes('@dnd-kit')) {
-            return 'dnd-vendor';
+            return 'vendor-dnd';
           }
 
-          // Charts and visualization
+          // Charts
           if (id.includes('chart.js') || id.includes('react-chartjs-2')) {
-            return 'chart-vendor';
-          }
-
-          // PDF and image processing (loaded on demand)
-          if (id.includes('jspdf') || id.includes('html2canvas')) {
-            return 'pdf-vendor';
-          }
-
-          // Supabase
-          if (id.includes('@supabase')) {
-            return 'supabase-vendor';
-          }
-
-          // Large data files (will be lazy loaded)
-          if (id.includes('/data/foodData') || id.includes('/data/resistanceExercises') ||
-              id.includes('/data/correctiveExercises') || id.includes('/data/cardioExercises') ||
-              id.includes('/data/warmupCooldown')) {
-            return 'data-vendor';
+            return 'vendor-data';
           }
         }
       }
     },
-    // Increase chunk size warning limit since we have large libraries
-    chunkSizeWarningLimit: 1000
+    // Optimize chunk size thresholds
+    chunkSizeWarningLimit: 600,
+    commonjsOptions: {
+      include: /node_modules/,
+      sourceMap: false
+    }
   }
 })
