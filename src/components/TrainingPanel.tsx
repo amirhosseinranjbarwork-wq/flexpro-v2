@@ -15,6 +15,7 @@ import WorkoutDayTabs from './TrainingPanel/WorkoutDayTabs';
 import ExerciseRow from './TrainingPanel/ExerciseRow';
 import AddExerciseForm from './TrainingPanel/AddExerciseForm';
 import { useExercises } from '../hooks/useExercises';
+import { CardSkeleton, TextSkeleton } from '../components';
 
 interface TrainingPanelProps {
   activeUser: User;
@@ -346,16 +347,25 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
 
   const workoutItems = activeUser.plans?.workouts?.[day] || [];
 
-  // Show loading state until data is loaded
+  // Show enhanced loading state until data is loaded
   if (!dataLoaded) {
     return (
       <div className="space-y-6 animate-fade-in">
-        <div className="flex items-center justify-center p-8 bg-[var(--glass-bg)] rounded-2xl border border-[var(--glass-border)]">
-          <div className="text-center space-y-4">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[var(--accent-color)] border-r-transparent"></div>
-            <p className="text-sm text-[var(--text-secondary)]">در حال بارگذاری داده‌های تمرینی...</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <CardSkeleton variant="shimmer" lines={4} />
+          <CardSkeleton variant="wave" lines={3} />
+        </div>
+
+        <div className="space-y-4">
+          <TextSkeleton lines={1} className="h-8" variant="pulse" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <CardSkeleton key={index} variant="bounce" lines={2} />
+            ))}
           </div>
         </div>
+
+        <CardSkeleton variant="shimmer" lines={1} className="h-32" />
       </div>
     );
   }

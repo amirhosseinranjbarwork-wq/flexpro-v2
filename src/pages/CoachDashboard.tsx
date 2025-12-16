@@ -48,6 +48,12 @@ import {
   Search,
   Plus,
   Edit,
+  Activity,
+  Award
+} from 'lucide-react';
+
+// Import React Bits components
+import { StatCounter, HoverCard, FloatingActionButton, ExpandableFab } from '../components';
   Trash2,
   Eye,
   ChevronLeft,
@@ -1045,36 +1051,43 @@ const CoachDashboard: React.FC = () => {
                   </div>
                 </motion.div>
 
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <StatCard
-                    icon={<Users size={24} />}
-                    label="کل شاگردان"
-                    value={stats.totalStudents}
-                    gradient="linear-gradient(135deg, #3b82f6, #1d4ed8)"
-                    delay={0}
-                  />
-                  <StatCard
-                    icon={<Clock size={24} />}
-                    label="درخواست در انتظار"
-                    value={stats.pendingRequests}
-                    gradient="linear-gradient(135deg, #f59e0b, #d97706)"
-                    delay={0.1}
-                  />
-                  <StatCard
-                    icon={<CheckCircle size={24} />}
-                    label="درخواست تأیید شده"
-                    value={stats.acceptedRequests}
-                    gradient="linear-gradient(135deg, #10b981, #059669)"
-                    delay={0.2}
-                  />
-                  <StatCard
-                    icon={<Activity size={24} />}
-                    label="برنامه فعال"
-                    value={stats.activePrograms}
-                    gradient="linear-gradient(135deg, #8b5cf6, #6d28d9)"
-                    delay={0.3}
-                  />
+                {/* Stats Grid with React Bits Components */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <HoverCard variant="glow" className="transform hover:scale-105 transition-all duration-300">
+                    <StatCounter
+                      value={stats.totalStudents}
+                      label="کل شاگردان"
+                      icon={<Users className="text-blue-500" />}
+                      color="text-blue-600"
+                    />
+                  </HoverCard>
+
+                  <HoverCard variant="tilt" className="transform hover:scale-105 transition-all duration-300">
+                    <StatCounter
+                      value={stats.pendingRequests}
+                      label="درخواست در انتظار"
+                      icon={<Clock className="text-yellow-500" />}
+                      color="text-yellow-600"
+                    />
+                  </HoverCard>
+
+                  <HoverCard variant="morph" className="transform hover:scale-105 transition-all duration-300">
+                    <StatCounter
+                      value={stats.acceptedRequests}
+                      label="درخواست تأیید شده"
+                      icon={<CheckCircle className="text-green-500" />}
+                      color="text-green-600"
+                    />
+                  </HoverCard>
+
+                  <HoverCard variant="border" className="transform hover:scale-105 transition-all duration-300">
+                    <StatCounter
+                      value={stats.activePrograms}
+                      label="برنامه فعال"
+                      icon={<Activity className="text-purple-500" />}
+                      color="text-purple-600"
+                    />
+                  </HoverCard>
                 </div>
 
                 {/* Coach Code & Quick Actions */}
@@ -2289,6 +2302,33 @@ const CoachDashboard: React.FC = () => {
           )}
         </AnimatePresence>
       </main>
+
+      {/* React Bits Floating Action Button */}
+      <ExpandableFab
+        actions={[
+          {
+            icon: <Plus className="w-4 h-4" />,
+            label: "افزودن شاگرد جدید",
+            onClick: () => {
+              setEditingUserId(null);
+              setIsUserModalOpen(true);
+            }
+          },
+          {
+            icon: <Users className="w-4 h-4" />,
+            label: "مشاهده درخواست‌ها",
+            onClick: () => setCurrentTab('requests')
+          },
+          {
+            icon: <Printer className="w-4 h-4" />,
+            label: "چاپ گزارش",
+            onClick: () => setCurrentTab('reports')
+          }
+        ]}
+        mainIcon={<Plus className="w-5 h-5" />}
+        tooltip="منوی اکشن سریع"
+        position="bottom-right"
+      />
 
       {/* ==================== Modals ==================== */}
       <AnimatePresence>

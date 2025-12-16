@@ -36,6 +36,9 @@ import {
   Plus
 } from 'lucide-react';
 
+// Import React Bits components
+import { HoverCard, FloatingActionButton, TextAnimation } from '../components';
+
 type TabType = 'dashboard' | 'training' | 'nutrition' | 'supplements' | 'request' | 'profile' | 'portfolio';
 
 const containerVariants = {
@@ -1054,7 +1057,13 @@ const ClientDashboard: React.FC = () => {
                   <GlowCard>
                     <div className="p-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <h3 className="text-2xl font-black mb-1">سلام {greeting?.split(' ')[0] || 'دوست'} عزیز 👋</h3>
+                        <h3 className="text-2xl font-black mb-1">
+                          <TextAnimation.FadeInText
+                            text={`سلام ${greeting?.split(' ')[0] || 'دوست'} عزیز 👋`}
+                            className="text-2xl font-black"
+                            stagger={50}
+                          />
+                        </h3>
                         <p className="text-[var(--text-secondary)] text-sm">
                           {plan ? 'برنامه شما آماده است، روی کارت‌ها کلیک کنید.' : 'درخواست برنامه بدهید تا مربی برای شما برنامه بسازد.'}
                         </p>
@@ -1075,35 +1084,46 @@ const ClientDashboard: React.FC = () => {
                   </GlowCard>
                 </motion.div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <StatCard
-                    icon={<Dumbbell size={22} />}
-                    label="روزهای تمرین فعال"
-                    value={stats.workoutDays}
-                    gradient="linear-gradient(135deg, #3b82f6, #1d4ed8)"
-                    delay={0}
-                  />
-                  <StatCard
-                    icon={<Layers size={22} />}
-                    label="کل حرکات"
-                    value={stats.totalExercises}
-                    gradient="linear-gradient(135deg, #10b981, #059669)"
-                    delay={0.1}
-                  />
-                  <StatCard
-                    icon={<UtensilsCrossed size={22} />}
-                    label="آیتم‌های رژیم"
-                    value={stats.dietItems}
-                    gradient="linear-gradient(135deg, #f59e0b, #d97706)"
-                    delay={0.2}
-                  />
-                  <StatCard
-                    icon={<Send size={22} />}
-                    label="درخواست‌های باز"
-                    value={pendingRequests.length}
-                    gradient="linear-gradient(135deg, #8b5cf6, #6d28d9)"
-                    delay={0.3}
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <HoverCard variant="glow" className="transform hover:scale-105 transition-all duration-300">
+                    <StatCard
+                      icon={<Dumbbell size={22} className="text-blue-500" />}
+                      label="روزهای تمرین فعال"
+                      value={stats.workoutDays}
+                      gradient="linear-gradient(135deg, #3b82f6, #1d4ed8)"
+                      delay={0}
+                    />
+                  </HoverCard>
+
+                  <HoverCard variant="tilt" className="transform hover:scale-105 transition-all duration-300">
+                    <StatCard
+                      icon={<Layers size={22} className="text-green-500" />}
+                      label="کل حرکات"
+                      value={stats.totalExercises}
+                      gradient="linear-gradient(135deg, #10b981, #059669)"
+                      delay={0.1}
+                    />
+                  </HoverCard>
+
+                  <HoverCard variant="morph" className="transform hover:scale-105 transition-all duration-300">
+                    <StatCard
+                      icon={<UtensilsCrossed size={22} className="text-orange-500" />}
+                      label="آیتم‌های رژیم"
+                      value={stats.dietItems}
+                      gradient="linear-gradient(135deg, #f59e0b, #d97706)"
+                      delay={0.2}
+                    />
+                  </HoverCard>
+
+                  <HoverCard variant="border" className="transform hover:scale-105 transition-all duration-300">
+                    <StatCard
+                      icon={<Send size={22} className="text-purple-500" />}
+                      label="درخواست‌های باز"
+                      value={pendingRequests.length}
+                      gradient="linear-gradient(135deg, #8b5cf6, #6d28d9)"
+                      delay={0.3}
+                    />
+                  </HoverCard>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -2438,7 +2458,26 @@ const ClientDashboard: React.FC = () => {
   );
 };
 
-export default ClientDashboard;
+// React Bits Floating Action Button for ClientDashboard
+const ClientDashboardWithFAB = () => (
+  <>
+    <ClientDashboard />
+    <FloatingActionButton
+      onClick={() => {
+        // Scroll to top or open request modal
+        const requestTab = document.querySelector('[data-tab="request"]');
+        if (requestTab) {
+          (requestTab as HTMLElement).click();
+        }
+      }}
+      icon={<Send className="w-5 h-5" />}
+      tooltip="ارسال درخواست جدید"
+      position="bottom-right"
+    />
+  </>
+);
+
+export default ClientDashboardWithFAB;
 
 type FieldProps = { label: string; children: React.ReactNode };
 const Field: React.FC<FieldProps> = ({ label, children }) => (
