@@ -107,15 +107,15 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <Suspense fallback={<LoadingFallback />}>
-      <ReactQueryProvider>
-        <BrowserRouter>
-          <AuthProvider>
-            <AppProvider>
-              <App />
-            </AppProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </ReactQueryProvider>
+    <ReactQueryProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppProvider>
+            <App />
+          </AppProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ReactQueryProvider>
     </Suspense>
   </React.StrictMode>
 );
