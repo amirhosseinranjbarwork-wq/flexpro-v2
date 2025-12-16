@@ -421,12 +421,29 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Update local state first for better UX
         setUsers(prev => {
           const idx = prev.findIndex(u => u.id === newUser.id);
+          let updatedUsers;
           if (idx > -1) {
             const updated = [...prev];
             updated[idx] = newUser;
-            return updated;
+            updatedUsers = updated;
+          } else {
+            updatedUsers = [...prev, newUser];
           }
-          return [...prev, newUser];
+
+          // Immediately save to localStorage to persist across page refreshes
+          try {
+            const cacheData = {
+              users: updatedUsers,
+              templates,
+              requests,
+              timestamp: Date.now()
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cacheData));
+          } catch (e) {
+            console.warn('Failed to save user to localStorage:', e);
+          }
+
+          return updatedUsers;
         });
 
         if (isSupabaseReady) {
