@@ -40,6 +40,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   const loadProfile = async (uid: string) => {
     if (!supabase) return null;
     const { data, error } = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle();
+
     if (error) {
       console.warn('loadProfile error', error.message);
       return null;

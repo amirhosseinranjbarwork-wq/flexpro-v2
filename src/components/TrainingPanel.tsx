@@ -2,18 +2,17 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { Save, AlertTriangle, Plus, Search, Dumbbell, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
-import Swal from 'sweetalert2';
+import { motion, AnimatePresence } from 'framer-motion';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import type { User, WorkoutItem, WorkoutMode } from '../types/index';
 import EmptyState from './EmptyState';
+import { riskyExercises } from '../data/resistanceExercises';
 import { useDebounce } from '../hooks/useDebounce';
 import SavePlanModal from './SavePlanModal';
 import TemplateLoader from './TemplateLoader';
-import WorkoutDayTabs from './TrainingPanel/WorkoutDayTabs';
 import ExerciseRow from './TrainingPanel/ExerciseRow';
-import AddExerciseForm from './TrainingPanel/AddExerciseForm';
+import MobileExerciseCard from './TrainingPanel/MobileExerciseCard';
 import { useExercises } from '../hooks/useExercises';
 import { CardSkeleton, TextSkeleton } from '../components';
 
@@ -23,7 +22,7 @@ interface TrainingPanelProps {
 }
 
 const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser }) => {
-  const { templates, saveTemplate, deleteTemplate, theme, hasPermission } = useApp();
+  const { hasPermission } = useApp();
   const canEdit = hasPermission('editProgram', activeUser.id);
   const [day, setDay] = useState(1);
   const [mode, setMode] = useState('resist'); 
@@ -53,10 +52,10 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
   const resistanceExercises = useMemo(() => {
     if (!exercisesData) return null;
 
-    const resistance = exercisesData.filter(ex => ex.type === 'resistance');
+    const resistance = exercisesData.filter((ex: any) => ex.type === 'resistance');
     const grouped: Record<string, Record<string, string[]>> = {};
 
-    resistance.forEach(ex => {
+    resistance.forEach((ex: any) => {
       if (!grouped[ex.muscle_group]) {
         grouped[ex.muscle_group] = {};
       }
@@ -72,10 +71,10 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
   const correctiveExercises = useMemo(() => {
     if (!exercisesData) return null;
 
-    const corrective = exercisesData.filter(ex => ex.type === 'corrective');
+    const corrective = exercisesData.filter((ex: any) => ex.type === 'corrective');
     const grouped: Record<string, string[]> = {};
 
-    corrective.forEach(ex => {
+    corrective.forEach((ex: any) => {
       if (!grouped[ex.muscle_group]) {
         grouped[ex.muscle_group] = [];
       }
@@ -88,10 +87,10 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
   const cardioExercises = useMemo(() => {
     if (!exercisesData) return null;
 
-    const cardio = exercisesData.filter(ex => ex.type === 'cardio');
+    const cardio = exercisesData.filter((ex: any) => ex.type === 'cardio');
     const grouped: Record<string, Record<string, string[]>> = {};
 
-    cardio.forEach(ex => {
+    cardio.forEach((ex: any) => {
       // Group cardio exercises by equipment or category
       const category = ex.equipment || 'general';
       if (!grouped[category]) {
@@ -108,16 +107,16 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
 
   const warmupExercises = useMemo(() => {
     if (!exercisesData) return null;
-    return exercisesData.filter(ex => ex.type === 'warmup').map(ex => ex.name);
+    return exercisesData.filter((ex: any) => ex.type === 'warmup').map((ex: any) => ex.name);
   }, [exercisesData]);
 
   const cooldownExercises = useMemo(() => {
     if (!exercisesData) return null;
-    return exercisesData.filter(ex => ex.type === 'cooldown').map(ex => ex.name);
+    return exercisesData.filter((ex: any) => ex.type === 'cooldown').map((ex: any) => ex.name);
   }, [exercisesData]);
 
   const dataLoaded = !exercisesLoading;
-  const warning = exercisesError ? 'خطا در بارگذاری داده‌های تمرینی' : null;
+  const [warning, setWarning] = useState<string | null>(exercisesError ? 'خطا در بارگذاری داده‌های تمرینی' : null);
 
   // سنسورها برای drag & drop
   const sensors = useSensors(
@@ -216,7 +215,7 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
     onUpdateUser(u);
   }, [canEdit, activeUser, day, onUpdateUser]);
 
-  const handleAddExercise = () => {
+  const handleAddExercise = (): void => {
     if (!canEdit) {
       toast.error('دسترسی مربی لازم است');
       return;
@@ -233,30 +232,43 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
     };
     
     if (mode === 'resist') {
-      if (!formData.ex1) return toast.error('لطفا حرکت را انتخاب کنید');
-      if (!formData.sets || !formData.reps) return toast.error('ست و تکرار الزامی است');
+      if (!formData.ex1) {
+        toast.error('لطفا حرکت را انتخاب کنید');
+        return;
+      }
+      if (!formData.sets || !formData.reps) {
+        toast.error('ست و تکرار الزامی است');
+        return;
+      }
       
       // Validation برای سیستم‌های مختلف
       if (formData.system === 'superset' && !formData.ex2) {
-        return toast.error('برای سوپرست، حرکت دوم الزامی است');
+        toast.error('برای سوپرست، حرکت دوم الزامی است');
+        return;
       }
       if (formData.system === 'triset' && (!formData.ex2 || !formData.name3)) {
-        return toast.error('برای تری‌ست، حرکت دوم و سوم الزامی است');
+        toast.error('برای تری‌ست، حرکت دوم و سوم الزامی است');
+        return;
       }
       if (formData.system === 'giantset' && (!formData.ex2 || !formData.name3)) {
-        return toast.error('برای جاینت‌ست، حداقل 3 حرکت الزامی است');
+        toast.error('برای جاینت‌ست، حداقل 3 حرکت الزامی است');
+        return;
       }
       if (formData.system === 'dropset' && !formData.dropCount) {
-        return toast.error('برای درآپ‌ست، تعداد درآپ الزامی است');
+        toast.error('برای درآپ‌ست، تعداد درآپ الزامی است');
+        return;
       }
       if (formData.system === 'restpause' && !formData.restPauseTime) {
-        return toast.error('برای رست-پاز، زمان استراحت بین پاز الزامی است');
+        toast.error('برای رست-پاز، زمان استراحت بین پاز الزامی است');
+        return;
       }
       if (formData.system === 'tempo' && !formData.tempo) {
-        return toast.error('برای تمپو، الگوی تمپو الزامی است (مثال: 3-1-2-0)');
+        toast.error('برای تمپو، الگوی تمپو الزامی است (مثال: 3-1-2-0)');
+        return;
       }
       if (formData.system === 'isometric' && !formData.holdTime) {
-        return toast.error('برای ایزومتریک، زمان نگه‌داری الزامی است');
+        toast.error('برای ایزومتریک، زمان نگه‌داری الزامی است');
+        return;
       }
       
       item = { 
@@ -277,16 +289,28 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
       // Reset form after successful add
       setFormData(initialFormState);
     } else if (mode === 'cardio') {
-      if (!formData.cType || !formData.cTime) return toast.error('نوع تمرین و مدت زمان الزامی است');
+      if (!formData.cType || !formData.cTime) {
+        toast.error('نوع تمرین و مدت زمان الزامی است');
+        return;
+      }
       item = { ...item, type: 'normal', name: formData.cType, duration: formData.cTime, intensity: formData.cInt || formData.cIntensity || '' };
     } else if (mode === 'corrective') {
-      if (!formData.corrEx) return toast.error('حرکت اصلاحی الزامی است');
+      if (!formData.corrEx) {
+        toast.error('حرکت اصلاحی الزامی است');
+        return;
+      }
       item = { ...item, type: 'nasm-corrective', name: formData.corrEx, sets: formData.sets, reps: formData.reps };
     } else if (mode === 'warmup') {
-      if (!formData.warmupType) return toast.error('نوع گرم کردن را انتخاب کنید');
+      if (!formData.warmupType) {
+        toast.error('نوع گرم کردن را انتخاب کنید');
+        return;
+      }
       item = { ...item, type: undefined, name: formData.warmupType, duration: formData.cTime || '5', sets: formData.sets, reps: formData.reps };
     } else if (mode === 'cooldown') {
-      if (!formData.cooldownType) return toast.error('نوع سرد کردن را انتخاب کنید');
+      if (!formData.cooldownType) {
+        toast.error('نوع سرد کردن را انتخاب کنید');
+        return;
+      }
       item = { ...item, type: undefined, name: formData.cooldownType, duration: formData.cTime || '5', sets: formData.sets, reps: formData.reps };
     }
 
@@ -299,50 +323,6 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
     onUpdateUser(newUser);
     setFormData(initialFormState);
     toast.success('ثبت شد');
-  };
-
-  const handleSaveTemplate = async () => {
-    if (!canEdit) {
-      toast.error('دسترسی مربی لازم است');
-      return;
-    }
-    const { value: name } = await Swal.fire({
-      title: 'ذخیره الگو',
-      input: 'text',
-      inputPlaceholder: 'نام الگو را وارد کنید...',
-      showCancelButton: true,
-      confirmButtonText: 'ذخیره',
-      cancelButtonText: 'لغو',
-      background: theme === 'dark' ? '#1e293b' : '#fff',
-      color: theme === 'dark' ? '#fff' : '#000',
-      inputValidator: (value) => {
-        if (!value) return 'نام الگو الزامی است';
-      }
-    });
-    if (name) saveTemplate(name, activeUser.plans.workouts[day]);
-  };
-
-  const handleLoadTemplate = (t: any) => {
-    if (!canEdit) {
-      toast.error('دسترسی مربی لازم است');
-      return;
-    }
-    Swal.fire({
-      title: 'جایگزینی برنامه روز انتخاب‌شده؟',
-      text: 'برنامه فعلی این جلسه حذف و الگو جایگزین می‌شود.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'بله، جایگزین کن',
-      cancelButtonText: 'لغو'
-    }).then(res => {
-      if (res.isConfirmed) {
-        const newUser = { ...activeUser };
-        if (!newUser.plans.workouts) newUser.plans.workouts = {};
-        newUser.plans.workouts[day] = [...(t.workout || [])];
-        onUpdateUser(newUser);
-        toast.success('الگو با موفقیت بارگذاری شد');
-      }
-    });
   };
 
   const workoutItems = activeUser.plans?.workouts?.[day] || [];
@@ -465,7 +445,7 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
                 <>
                   <select className="input-glass font-bold" value={formData.warmupType} onChange={e => setFormData({ ...formData, warmupType: e.target.value })}>
                     <option value="">انتخاب نوع گرم کردن...</option>
-                    {warmupExercises ? warmupExercises.map(ex => <option key={ex} value={ex}>{ex}</option>) : <option disabled>در حال بارگذاری...</option>}
+                    {warmupExercises ? warmupExercises.map((ex: string) => <option key={ex} value={ex}>{ex}</option>) : <option disabled>در حال بارگذاری...</option>}
                   </select>
                   <input className="input-glass" type="number" placeholder="مدت زمان (دقیقه)" value={formData.cTime} onChange={e => setFormData({ ...formData, cTime: e.target.value })} />
                   <div className="text-[10px] text-[var(--text-secondary)] bg-amber-500/10 border border-amber-500/20 rounded-lg p-2">
@@ -479,7 +459,7 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
                 <>
                   <select className="input-glass font-bold" value={formData.cooldownType} onChange={e => setFormData({ ...formData, cooldownType: e.target.value })}>
                     <option value="">انتخاب نوع سرد کردن...</option>
-                    {cooldownExercises ? cooldownExercises.map(ex => <option key={ex} value={ex}>{ex}</option>) : <option disabled>در حال بارگذاری...</option>}
+                    {cooldownExercises ? cooldownExercises.map((ex: string) => <option key={ex} value={ex}>{ex}</option>) : <option disabled>در حال بارگذاری...</option>}
                   </select>
                   <input className="input-glass" type="number" placeholder="مدت زمان (دقیقه)" value={formData.cTime} onChange={e => setFormData({ ...formData, cTime: e.target.value })} />
                   <div className="text-[10px] text-[var(--text-secondary)] bg-[var(--accent-color)]/10 border border-[var(--accent-color)]/20 rounded-lg p-2">
@@ -775,40 +755,70 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
           
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             {workoutItems.length > 0 ? (
-              <div className="overflow-x-auto -mx-2 sm:-mx-4 md:mx-0 px-2 sm:px-4 md:px-0">
-                <table className="w-full text-right text-xs sm:text-sm min-w-[500px] sm:min-w-[600px]">
-                  <thead className="bg-[var(--text-primary)]/3 text-[var(--text-secondary)] text-xs border-b border-[var(--glass-border)] sticky top-0 backdrop-blur-sm">
-                    <tr>
-                      <th className="p-3 w-12 text-center"></th>
-                      <th className="p-4 font-bold">شرح حرکت</th>
-                      <th className="p-4 w-20 text-center font-bold">ست</th>
-                      <th className="p-4 w-24 text-center font-bold">تکرار</th>
-                      <th className="p-4 w-28 text-center font-bold">استراحت</th>
-                      <th className="p-4 w-12 text-center"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--glass-border)]">
+              <>
+                {/* Desktop View - Table */}
+                <div className="hidden md:block overflow-x-auto px-6 py-4">
+                  <table className="w-full text-right text-xs sm:text-sm">
+                    <thead className="bg-[var(--text-primary)]/3 text-[var(--text-secondary)] text-xs border-b border-[var(--glass-border)] sticky top-0 backdrop-blur-sm">
+                      <tr>
+                        <th className="p-3 w-12 text-center"></th>
+                        <th className="p-4 font-bold">شرح حرکت</th>
+                        <th className="p-4 w-20 text-center font-bold">ست</th>
+                        <th className="p-4 w-24 text-center font-bold">تکرار</th>
+                        <th className="p-4 w-28 text-center font-bold">استراحت</th>
+                        <th className="p-4 w-12 text-center"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--glass-border)]">
+                      <SortableContext items={workoutItems.map((_, idx) => `${day}-${idx}`)} strategy={verticalListSortingStrategy}>
+                        {workoutItems.map((item, idx) => (
+                          <motion.tr
+                            key={`${day}-${idx}`}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ delay: idx * 0.05 }}
+                          >
+                            <ExerciseRow
+                              item={item}
+                              idx={idx}
+                              day={day}
+                              onDelete={handleDeleteExercise}
+                              canEdit={canEdit}
+                            />
+                          </motion.tr>
+                        ))}
+                      </SortableContext>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile View - Card Stack */}
+                <div className="md:hidden p-4 sm:p-6 overflow-y-auto max-h-[600px]">
                   <SortableContext items={workoutItems.map((_, idx) => `${day}-${idx}`)} strategy={verticalListSortingStrategy}>
-                    {workoutItems.map((item, idx) => (
-                      <ExerciseRow
-                        key={`${day}-${idx}`}
-                        item={item}
-                        idx={idx}
-                        day={day}
-                        onDelete={handleDeleteExercise}
-                        canEdit={canEdit}
-                      />
-                    ))}
+                    <AnimatePresence>
+                      {workoutItems.map((item, idx) => (
+                        <MobileExerciseCard
+                          key={`${day}-${idx}`}
+                          item={item}
+                          idx={idx}
+                          day={day}
+                          onDelete={handleDeleteExercise}
+                          canEdit={canEdit}
+                        />
+                      ))}
+                    </AnimatePresence>
                   </SortableContext>
-                </tbody>
-                </table>
-              </div>
+                </div>
+              </>
             ) : (
-              <EmptyState
-                icon={<Dumbbell size={32} className="text-[var(--accent-color)]" />}
-                title="برنامه‌ای ثبت نشده است"
-                description="هنوز حرکتی برای این جلسه اضافه نشده است. می‌توانید از فرم سمت راست حرکت جدید اضافه کنید."
-              />
+              <div className="p-8 sm:p-12">
+                <EmptyState
+                  icon={<Dumbbell size={32} className="text-[var(--accent-color)]" />}
+                  title="برنامه‌ای ثبت نشده است"
+                  description="هنوز حرکتی برای این جلسه اضافه نشده است. می‌توانید از فرم سمت راست حرکت جدید اضافه کنید."
+                />
+              </div>
             )}
           </DndContext>
         </div>

@@ -765,20 +765,6 @@ const ClientDashboard: React.FC = () => {
         created_at: clientInfo.created_at || new Date().toISOString()
       };
 
-      fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: 'debug-session',
-          runId: 'pre-fix',
-          hypothesisId: 'A',
-          location: 'ClientDashboard.tsx:handleSaveProfile',
-          message: 'about to updateClient',
-          data: { userId: user.id, effectiveCoachId, payloadKeys: Object.keys(payload || {}), profileCompleted: payload.profile_completed },
-          timestamp: Date.now()
-        })
-      }).catch(() => {});
-
       const savedClient = await updateClient(user.id, payload);
       
       setClientInfo(savedClient);

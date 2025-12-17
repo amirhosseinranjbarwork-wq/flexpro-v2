@@ -59,3 +59,6 @@ export { default as Tooltip } from './Tooltip';
 
 // Layout components
 export { default as EmptyState } from './EmptyState';
+
+// UI Components
+export { default as SpotlightCard, SpotlightCard as SpotlightCardComponent } from './ui/SpotlightCard';
