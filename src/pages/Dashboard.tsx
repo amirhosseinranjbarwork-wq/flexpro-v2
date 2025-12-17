@@ -1,49 +1,36 @@
-import React, { Suspense, lazy } from 'react';
-import { Navigate } from 'react-router-dom';
+import React from 'react';
 import { useAuth } from '../context/AuthContext';
-
-// Code Splitting - Lazy load dashboards
-const CoachDashboard = lazy(() => import('./CoachDashboard'));
-const ClientDashboard = lazy(() => import('./ClientDashboard'));
-
-const LoadingFallback = () => (
-  <div className="flex h-screen items-center justify-center bg-[var(--bg-primary)]">
-    <div className="text-center space-y-4">
-      <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-[var(--accent-color)] border-r-transparent"></div>
-      <p className="text-sm text-[var(--text-secondary)]">در حال بارگذاری...</p>
-    </div>
-  </div>
-);
+import CoachDashboard from './CoachDashboard';
+import ClientDashboard from './ClientDashboard';
+import DashboardLayout from '../components/DashboardLayout';
 
 const Dashboard: React.FC = () => {
-  const { user, role, loading, profile } = useAuth();
+  const { role, ready, user } = useAuth();
 
-  if (loading) {
-    return <LoadingFallback />;
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (role === 'coach' || profile?.role === 'coach') {
+  // Show a loading state while authentication is being verified
+  if (!ready || !user) {
     return (
-      <Suspense fallback={<LoadingFallback />}>
-        <CoachDashboard />
-      </Suspense>
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
+        <div className="w-8 h-8 border-4 border-[var(--accent-color)] border-t-transparent rounded-full animate-spin"></div>
+      </div>
     );
   }
 
-  if (role === 'client' || profile?.role === 'client') {
-    return (
-      <Suspense fallback={<LoadingFallback />}>
-        <ClientDashboard />
-      </Suspense>
-    );
-  }
-
-  return <div className="p-4">نقش کاربر نامعتبر است.</div>;
+  // Render the appropriate dashboard within the layout based on the user's role
+  return (
+    <DashboardLayout>
+      {role === 'coach' && <CoachDashboard />}
+      {role === 'client' && <ClientDashboard />}
+      {!role && (
+        <div className="text-center p-8">
+          <h2 className="text-xl font-bold text-red-500">خطا: نقش کاربری یافت نشد</h2>
+          <p className="text-[var(--text-secondary)]">
+            نقش شما در سیستم تعریف نشده است. لطفا با پشتیبانی تماس بگیرید.
+          </p>
+        </div>
+      )}
+    </DashboardLayout>
+  );
 };
 
 export default Dashboard;
-

@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
 
@@ -20,7 +21,7 @@ interface AuthContextValue {
   role: string | null;
   profile: Profile | null;
   loading: boolean;
-  signInWithPassword: AuthFn;
+  signInWithPassword: (identifier: string, password: string, expectedRole: 'coach' | 'client') => Promise<void>;
   signUpWithPassword: AuthFn;
   register: RegisterFn;
   signOut: () => Promise<void>;
@@ -36,6 +37,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   const [ready, setReady] = useState(false);
   const [role, setRole] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const navigate = useNavigate();
 
   const loadProfile = async (uid: string) => {
     if (!supabase) return null;
@@ -137,7 +139,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     };
   }, [handleSessionChange]);
 
-  const signInWithPassword = useCallback(async (identifier: string, password: string) => {
+  const signInWithPassword = useCallback(async (identifier: string, password: string, expectedRole: 'coach' | 'client') => {
     if (!isSupabaseEnabled || !supabase) {
       const error = new Error('Supabase auth غیرفعال است');
       if (import.meta.env.DEV) console.error('Sign in error:', error);
@@ -156,6 +158,19 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     setLoading(true);
     try {
       const emailToUse = await resolveEmail(identifier);
+
+      // Verify the user's role BEFORE attempting to sign in
+      const { data: actualRole, error: roleError } = await supabase.rpc('get_user_role_by_email', { p_email: emailToUse });
+
+      if (roleError) {
+        console.error('Role check RPC error:', roleError);
+        throw new Error('خطا در تأیید نقش کاربر.');
+      }
+
+      if (actualRole !== expectedRole) {
+        throw new Error(`شما فقط می‌توانید از پنل "${actualRole === 'coach' ? 'مربی' : 'شاگرد'}" وارد شوید.`);
+      }
+
       const { error } = await supabase.auth.signInWithPassword({ email: emailToUse, password });
       if (error) {
         // تبدیل خطاهای Supabase به پیام‌های قابل فهم
@@ -194,15 +209,15 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   }, []);
 
   const signOut = useCallback(async () => {
-    if (!isSupabaseEnabled || !supabase) {
-      setUser(null);
-      setSession(null);
-      return;
+    if (isSupabaseEnabled && supabase) {
+      await supabase.auth.signOut();
     }
-    await supabase.auth.signOut();
     setUser(null);
     setSession(null);
-  }, []);
+    setProfile(null);
+    setRole(null);
+    navigate('/', { replace: true });
+  }, [navigate]);
 
   const register: RegisterFn = useCallback(async ({ email, password, fullName, role: r, username }) => {
     if (!isSupabaseEnabled || !supabase) {

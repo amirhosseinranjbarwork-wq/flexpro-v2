@@ -52,7 +52,7 @@ const LoginPage: React.FC = () => {
     }
 
     try {
-      await signInWithPassword(identifier, password);
+      await signInWithPassword(identifier, password, activeTab);
       
       // بررسی role بعد از لاگین موفق
       // این بررسی در useEffect انجام می‌شود
