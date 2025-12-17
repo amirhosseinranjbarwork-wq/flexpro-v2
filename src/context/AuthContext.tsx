@@ -63,11 +63,24 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     if (!supabase) throw new Error('Supabase auth غیرفعال است');
     if (identifier.includes('@')) return identifier;
 
-    const { data, error } = await supabase.rpc('get_email_by_username', { p_username: identifier });
+    // Try RPC first (if function exists)
+    try {
+      const { data, error } = await supabase.rpc('get_email_by_username', { p_username: identifier });
+      if (!error && data) return data as string;
+    } catch (e) {
+      console.warn('RPC function not available, falling back to direct query');
+    }
+
+    // Fallback: Direct query (less secure but functional)
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('username', identifier)
+      .single();
 
     if (error) throw new Error('نام کاربری یافت نشد');
-    if (!data) throw new Error('نام کاربری یافت نشد');
-    return data as string;
+    if (!data?.email) throw new Error('نام کاربری یافت نشد');
+    return data.email;
   }, []);
 
   useEffect(() => {

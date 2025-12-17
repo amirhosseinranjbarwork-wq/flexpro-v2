@@ -39,26 +39,23 @@ const ExerciseRow: React.FC<ExerciseRowProps> = memo(({ item, idx: _idx, day, on
   };
 
   return (
-    <tr ref={setNodeRef} style={style} className={`${item.type === 'superset' ? 'border-l-4 border-yellow-500' : ''} mb-3`}>
-      <td colSpan={6} className="p-0">
-        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4 mx-2 hover:bg-white/10 transition-all duration-300 group">
-          {/* Drag Handle */}
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-shrink-0 mt-1">
-              <button
-                {...attributes}
-                {...listeners}
-                className="cursor-grab active:cursor-grabbing p-2 hover:bg-[var(--accent-color)]/10 rounded-lg transition-all duration-500 group-hover:scale-110"
-                aria-label={`جابجایی ${item.name || 'حرکت'}`}
-                type="button"
-                disabled={!canEdit}
-              >
-                <GripVertical size={18} className="text-[var(--text-secondary)] group-hover:text-[var(--accent-color)] transition-colors" aria-hidden="true" />
-              </button>
-            </div>
+    <tr ref={setNodeRef} style={style} className="hover:bg-gradient-to-r hover:from-[var(--accent-color)]/8 hover:to-transparent group border-b border-[var(--glass-border)]/50 transition-all duration-500">
+      {/* Drag Handle */}
+      <td className="p-3 text-center">
+        <button 
+          {...attributes} 
+          {...listeners} 
+          className="cursor-grab active:cursor-grabbing p-2 hover:bg-[var(--accent-color)]/10 rounded-lg transition-all duration-500 group-hover:scale-110"
+          aria-label={`جابجایی ${item.name || 'حرکت'}`}
+          type="button"
+          disabled={!canEdit}
+        >
+          <GripVertical size={18} className="text-[var(--text-secondary)] group-hover:text-[var(--accent-color)] transition-colors" aria-hidden="true" />
+        </button>
+      </td>
 
-            {/* Exercise Details */}
-            <div className="flex-1 min-w-0">
+      {/* Exercise Details */}
+      <td className="p-4 align-top">
         {/* Type Badge */}
         <div className="flex items-center gap-2 flex-wrap mb-2">
           <span className={`text-[10px] px-2.5 py-1 rounded-lg font-bold border ${getTypeStyles(item.type)}`}>
@@ -105,39 +102,49 @@ const ExerciseRow: React.FC<ExerciseRowProps> = memo(({ item, idx: _idx, day, on
             نگه: {item.holdTime}ث
           </div>
         )}
-            {item.note && <div className="text-[10px] text-[var(--text-secondary)] mt-1 bg-[var(--text-primary)]/5 p-1 rounded inline-block">{item.note}</div>}
-            </div>
+        {item.note && <div className="text-[10px] text-[var(--text-secondary)] mt-1 bg-[var(--text-primary)]/5 p-1 rounded inline-block">{item.note}</div>}
+      </td>
 
-            {/* Sets, Reps, Rest, Delete - Right side */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {item.sets && (
-                <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 font-bold text-sm">
-                  {item.sets}
-                </div>
-              )}
-              {item.reps && (
-                <div className="inline-flex items-center justify-center min-w-[60px] h-10 rounded-lg bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/30 font-bold text-sm">
-                  {item.mode === 'cardio' ? `${item.duration} min` : item.reps}
-                </div>
-              )}
-              {item.rest && (
-                <div className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/30 text-xs font-semibold">
-                  {item.rest}{item.restUnit === 'm' ? 'د' : 'ث'}
-                </div>
-              )}
-              {canEdit && (
-                <button
-                  onClick={() => onDelete(_idx)}
-                  className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors"
-                  aria-label="حذف"
-                  type="button"
-                >
-                  <Trash2 size={16} />
-                </button>
-              )}
-            </div>
-          </div>
+      {/* Sets */}
+      <td className="p-4 text-center">
+        <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--accent-color)]/10 border border-[var(--accent-color)]/20 font-bold text-[var(--accent-color)]">
+          {item.sets || '-'}
         </div>
+      </td>
+
+      {/* Reps/Duration */}
+      <td className="p-4 text-center">
+        <div className="inline-flex items-center justify-center min-w-[60px] h-10 rounded-lg bg-[var(--accent-secondary)]/10 border border-[var(--accent-secondary)]/20 font-bold text-[var(--accent-secondary)]">
+          {item.mode === 'cardio' ? `${item.duration} min` : item.reps || '-'}
+        </div>
+      </td>
+
+      {/* Rest */}
+      <td className="p-4 text-center">
+        {item.rest ? (
+          <div className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-[var(--text-primary)]/5 border border-[var(--glass-border)] text-xs text-[var(--text-secondary)] font-semibold">
+            {item.rest} {item.restUnit === 'm' ? 'دقیقه' : 'ثانیه'}
+          </div>
+        ) : (
+          <span className="text-[var(--text-secondary)] opacity-50">-</span>
+        )}
+      </td>
+
+      {/* Delete Button */}
+      <td className="p-4 text-center">
+        <button
+          onClick={() => onDelete(_idx)}
+          disabled={!canEdit}
+          className={`inline-flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
+            canEdit
+              ? 'hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 text-[var(--text-secondary)] hover:border-red-500/30 border border-transparent'
+              : 'opacity-50 cursor-not-allowed'
+          }`}
+          aria-label="حذف"
+          type="button"
+        >
+          <Trash2 size={18} />
+        </button>
       </td>
     </tr>
   );

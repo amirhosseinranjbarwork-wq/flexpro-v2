@@ -1,85 +1,99 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, ReactNode } from 'react';
 import { motion } from 'framer-motion';
+import clsx from 'clsx';
 
 interface SpotlightCardProps {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
   spotlightColor?: string;
-  spotlightSize?: number;
-  intensity?: number;
+  glassEffect?: boolean;
+  interactive?: boolean;
+  onClick?: () => void;
 }
 
+/**
+ * SpotlightCard: A glassmorphism card with a cursor-tracking radial gradient spotlight effect
+ * Uses framer-motion for smooth animations and Tailwind for styling
+ */
 export const SpotlightCard: React.FC<SpotlightCardProps> = ({
   children,
   className = '',
-  spotlightColor = 'rgba(14, 165, 233, 0.3)',
-  spotlightSize = 300,
-  intensity = 0.8
+  spotlightColor = 'rgba(59, 130, 246, 0.1)', // Blue by default
+  glassEffect = true,
+  interactive = true,
+  onClick,
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isHovered, setIsHovered] = useState(false);
+  const [spotlightPos, setSpotlightPos] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
+    if (!interactive || !cardRef.current) return;
 
     const rect = cardRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    setMousePosition({ x, y });
+    setSpotlightPos({ x, y });
   };
 
   const handleMouseEnter = () => {
-    setIsHovered(true);
+    if (interactive) setIsHovering(true);
   };
 
   const handleMouseLeave = () => {
-    setIsHovered(false);
+    if (interactive) setIsHovering(false);
   };
 
   return (
     <motion.div
       ref={cardRef}
-      className={`relative overflow-hidden cursor-pointer bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg ${className}`}
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+      onClick={onClick}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className={clsx(
+        'relative overflow-hidden rounded-2xl transition-all duration-300',
+        glassEffect && 'bg-white/5 border border-white/10 backdrop-blur-xl',
+        interactive && 'cursor-pointer hover:border-white/20',
+        onClick && 'hover:shadow-lg hover:shadow-blue-500/10',
+        className
+      )}
     >
       {/* Spotlight Effect */}
-      <motion.div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: `radial-gradient(circle ${spotlightSize}px at ${mousePosition.x}px ${mousePosition.y}px, ${spotlightColor}, transparent 70%)`,
-          opacity: isHovered ? intensity : 0,
-        }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: isHovered ? intensity : 0 }}
-        transition={{ duration: 0.3 }}
-      />
+      {isHovering && interactive && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `radial-gradient(circle 400px at ${spotlightPos.x}px ${spotlightPos.y}px, ${spotlightColor}, transparent 80%)`,
+          }}
+        />
+      )}
 
-      {/* Shine Line Effect */}
-      <motion.div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: `linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)`,
-          transform: `translateX(${isHovered ? '100%' : '-100%'})`,
-        }}
-        animate={{
-          transform: isHovered
-            ? `translateX(100%) translateY(${mousePosition.y - 50}px)`
-            : 'translateX(-100%)'
-        }}
-        transition={{ duration: 0.8, ease: "easeInOut" }}
-      />
+      {/* Static Subtle Gradient Background */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-40" />
+
+      {/* Border Glow on Hover */}
+      {isHovering && interactive && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="pointer-events-none absolute inset-0 rounded-2xl border border-white/20"
+        />
+      )}
 
       {/* Content */}
-      <div className="relative z-10">
-        {children}
-      </div>
+      <div className="relative z-10">{children}</div>
     </motion.div>
   );
 };
+export default SpotlightCard;
+

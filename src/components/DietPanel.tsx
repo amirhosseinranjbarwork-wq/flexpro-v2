@@ -8,7 +8,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from '@dnd-kit/utilities';
 import type { User } from '../types/index';
 import { useApp } from '../context/AppContext';
-import { EmptyState } from './ui/EmptyState';
+import EmptyState from './EmptyState';
 import { useDebounce } from '../hooks/useDebounce';
 import { DragEndEvent } from '@dnd-kit/core';
 import { useFoods } from '../hooks/useExercises';
@@ -86,7 +86,7 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
   const [customFood, setCustomFood] = useState({ name: '', cal: '', protein: '', carb: '', fat: '', unit: 'گرم', base: 100 });
 
   // بارگذاری داده‌های غذایی از Supabase
-  const { data: foodsData } = useFoods();
+  const { data: foodsData, isLoading: foodsLoading, error: foodsError } = useFoods();
 
   // سازماندهی داده‌ها بر اساس ساختار قدیمی برای سازگاری
   const foodData = useMemo(() => {
