@@ -8,26 +8,14 @@ import React from 'react';
 import { UIProvider, useUI } from './UIContext';
 import { DataProvider, useData } from './DataContext';
 import type { AppContextType } from '../types/index';
+import { generateTrainingProgramHTML, generateNutritionProgramHTML, generateSupplementProgramHTML } from '../utils/printGenerators';
 
 // Create a combined context for backward compatibility
 const AppContext = React.createContext<AppContextType | undefined>(undefined);
 
 /**
- * AppProvider - Wraps UIProvider and DataProvider
- * This maintains backward compatibility while using the new architecture
- */
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return (
-    <UIProvider>
-      <DataProvider>
-        <AppContextProvider>{children}</AppContextProvider>
-      </DataProvider>
-    </UIProvider>
-  );
-};
-
-/**
  * Internal provider that combines UI and Data contexts
+ * MUST be defined BEFORE AppProvider since it's not hoisted as const
  */
 const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const ui = useUI();
@@ -36,12 +24,26 @@ const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Combine print functionality from UI with data
   const handlePrintPreview = (type: import('../types/index').PrintType) => {
     if (!data.activeUser) {
-      // Show error if no active user
-            return;
-        }
-    // Delegate to UI context - actual HTML generation should be done in components
-    // that have access to activeUser and can call generatePrintHTML
-    ui.handlePrintPreview(type, data.activeUser);
+      return;
+    }
+    
+    let html = '';
+    switch(type) {
+      case 'training':
+        html = generateTrainingProgramHTML(data.activeUser);
+        break;
+      case 'nutrition':
+        html = generateNutritionProgramHTML(data.activeUser);
+        break;
+      case 'supplement':
+        html = generateSupplementProgramHTML(data.activeUser);
+        break;
+      default:
+        html = '<div>نوع برنامه نامشخص است</div>';
+    }
+    
+    // Update UI with generated HTML
+    ui.handlePrintPreview(type, data.activeUser, html);
   };
 
   const value: AppContextType = {
@@ -79,6 +81,21 @@ const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+};
+
+/**
+ * AppProvider - Wraps UIProvider and DataProvider
+ * This maintains backward compatibility while using the new architecture
+ * Defined AFTER AppContextProvider since it uses it
+ */
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <UIProvider>
+      <DataProvider>
+        <AppContextProvider>{children}</AppContextProvider>
+      </DataProvider>
+    </UIProvider>
+  );
 };
 
 /**

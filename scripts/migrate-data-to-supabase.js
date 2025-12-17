@@ -27,8 +27,14 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 
 // Create client with options to bypass schema cache
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  db: {
-    schema: 'public'
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 2
+    }
   },
   global: {
     headers: {
@@ -296,13 +302,13 @@ async function runMigration() {
   try {
     // Test Supabase connection
     console.log('🔌 Testing Supabase connection...');
-    const { data, error } = await supabase.from('exercises').select('count()', { count: 'exact', head: true });
-    
+    const { data, error } = await supabase.from('exercises').select('count', { count: 'exact', head: true });
+
     if (error) {
       console.error('❌ Failed to connect to Supabase:', error.message);
       process.exit(1);
     }
-    
+
     console.log('✅ Supabase connection successful\n');
 
     // Run migrations

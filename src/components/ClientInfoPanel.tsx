@@ -19,7 +19,6 @@ import {
   FileText,
   Scale,
   Dumbbell,
-  ChefHat,
   Plus,
   ArrowRight
 } from 'lucide-react';

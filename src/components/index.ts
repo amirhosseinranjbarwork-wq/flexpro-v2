@@ -1,7 +1,7 @@
 // React Bits inspired components for enhanced UI/UX
 
 // Animated Counter
-export { default as AnimatedCounter, StatCounter, FloatingCounter, ProgressCounter } from './AnimatedCounter';
+export { default as AnimatedCounter, StatCounter, FloatingCounter, ProgressCounter } from './ui/AnimatedCounter';
 
 // Enhanced Card Effects
 export {
@@ -12,7 +12,7 @@ export {
   RippleCard,
   MorphingCard,
   FloatingCard
-} from './EnhancedCard';
+} from './ui/EnhancedCard';
 
 // Floating Action Button
 export {
@@ -20,7 +20,7 @@ export {
   ExpandableFab,
   ScrollToTopFab,
   PulseFab
-} from './FloatingActionButton';
+} from './ui/FloatingActionButton';
 
 // Advanced Skeletons
 export {
@@ -32,7 +32,7 @@ export {
   DashboardSkeleton,
   ProfileSkeleton,
   ShimmerOverlay
-} from './AdvancedSkeleton';
+} from './ui/AdvancedSkeleton';
 
 // Text Animations
 export {
@@ -46,19 +46,19 @@ export {
   GradientText,
   ScrambleText,
   MorphingText
-} from './TextAnimation';
+} from './ui/TextAnimation';
 
 // Existing components
-export { default as LoadingSpinner } from './LoadingSpinner';
-export { default as SkeletonLoader } from './SkeletonLoader';
-export { default as Modal } from './Modal';
-export { default as Notification } from './Notification';
-export { default as Progress } from './Progress';
-export { default as Badge } from './Badge';
-export { default as Tooltip } from './Tooltip';
+export { default as LoadingSpinner } from './ui/LoadingSpinner';
+export { default as SkeletonLoader } from './ui/SkeletonLoader';
+export { default as Modal } from './ui/Modal';
+export { default as Notification } from './ui/Notification';
+export { default as Progress } from './ui/Progress';
+export { default as Badge } from './ui/Badge';
+export { default as Tooltip } from './ui/Tooltip';
 
 // Layout components
-export { default as EmptyState } from './EmptyState';
+export { default as EmptyState } from './ui/EmptyState';
 
 // UI Components
-export { default as SpotlightCard, SpotlightCard as SpotlightCardComponent } from './ui/SpotlightCard';
+export { SpotlightCard } from './ui/SpotlightCard';

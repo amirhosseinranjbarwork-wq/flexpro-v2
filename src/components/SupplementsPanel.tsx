@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { useApp } from '../context/AppContext';
 import type { User } from '../types/index';
+import { useSupplements } from '../hooks/useExercises';
 
 interface SupplementsPanelProps {
   activeUser: User;
@@ -14,8 +15,16 @@ const SupplementsPanel: React.FC<SupplementsPanelProps> = ({ activeUser, onUpdat
   const canEdit = hasPermission('editProgram', activeUser.id);
   const [formData, setFormData] = useState({ name: '', dose: '', time: '', note: '' });
 
-  // لیست مکمل‌ها (در آینده می‌توان از Supabase بارگذاری کرد)
-  const supplementsData = useMemo(() => [
+  // بارگذاری داده‌های مکمل‌ها از Supabase
+  const { data: supplementsFromDB = [] } = useSupplements();
+
+  // لیست مکمل‌ها (fallback برای کمپتیبیلیتی)
+  const supplementsData = useMemo(() => {
+    if (supplementsFromDB && supplementsFromDB.length > 0) {
+      return supplementsFromDB.map((s: any) => s.name);
+    }
+    
+    return [
     // پروتئین‌ها
     "پروتئین وی (Whey Protein)",
     "پروتئین وی ایزوله (Whey Isolate)",

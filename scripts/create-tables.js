@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 /**
- * Create database tables directly
+ * Create Tables in Supabase
+ * Executes CREATE TABLE statements for all required tables
  */
 
-import dotenv from 'dotenv';
-import { createClient } from '@supabase/supabase-js';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import fs from 'fs';
+import path from 'path';
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables
-dotenv.config({ path: path.join(__dirname, '../.env.local') });
+dotenv.config();
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY;
@@ -24,82 +24,102 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  db: {
-    schema: 'public'
-  },
-  global: {
-    headers: {
-      'X-Client-Info': 'create-tables-script'
-    }
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
   }
 });
 
-async function createTables() {
-  console.log('🏗️ Creating database tables...\n');
-
+/**
+ * Create a table by executing its migration
+ */
+async function createTableFromMigration(migrationPath) {
   try {
-    // Read migration files
-    const exercisesSql = fs.readFileSync(path.join(__dirname, '../supabase/migrations/20250116_create_exercises_foods_tables.sql'), 'utf-8');
-    const adminSql = fs.readFileSync(path.join(__dirname, '../supabase/migrations/20250116_add_super_admin_flag.sql'), 'utf-8');
+    console.log(`📄 Creating table from: ${path.basename(migrationPath)}`);
 
-    console.log('📄 Read migration files successfully');
+    const sql = fs.readFileSync(migrationPath, 'utf-8');
 
-    // Split into statements and execute
-    const allSql = exercisesSql + '\n\n' + adminSql;
-    const statements = allSql.split(';').filter(stmt => stmt.trim().length > 0);
+    // Extract only CREATE TABLE and related DDL statements (no INSERTs)
+    const statements = sql
+      .split(';')
+      .map(stmt => stmt.trim())
+      .filter(stmt => stmt.length > 0)
+      .filter(stmt =>
+        stmt.toUpperCase().includes('CREATE TABLE') ||
+        stmt.toUpperCase().includes('CREATE INDEX') ||
+        stmt.toUpperCase().includes('ALTER TABLE') ||
+        stmt.toUpperCase().includes('CREATE POLICY')
+      );
 
-    console.log(`📋 Found ${statements.length} SQL statements to execute`);
+    console.log(`Found ${statements.length} DDL statements`);
 
-    let successCount = 0;
-    for (let i = 0; i < statements.length; i++) {
-      const statement = statements[i].trim();
-      if (!statement) continue;
+    // Note: We can't execute DDL directly via Supabase client
+    // This would require direct database access or CLI
+    console.log('⚠️ DDL execution requires Supabase CLI or direct database access');
+    console.log('Please execute the following SQL in your Supabase SQL editor:\n');
 
-      try {
-        // Try to execute using different methods
-        console.log(`Executing statement ${i + 1}/${statements.length}...`);
+    statements.forEach((stmt, index) => {
+      console.log(`${index + 1}. ${stmt};`);
+      console.log('');
+    });
 
-        // Method 1: Direct query (might not work)
-        const { error } = await supabase.rpc('exec', { query: statement });
-
-        if (error) {
-          console.log(`   ⚠️ RPC failed, trying alternative method...`);
-
-          // Method 2: Try with different RPC
-          const { error: error2 } = await supabase.from('_supabase_migrations').insert({
-            name: `migration_${i}`,
-            statements: [statement]
-          });
-
-          if (error2) {
-            console.log(`   ❌ Statement ${i + 1} failed:`, error2.message);
-            console.log(`   SQL: ${statement.substring(0, 100)}...`);
-          } else {
-            successCount++;
-            console.log(`   ✅ Statement ${i + 1} executed`);
-          }
-        } else {
-          successCount++;
-          console.log(`   ✅ Statement ${i + 1} executed`);
-        }
-      } catch (err) {
-        console.log(`   ❌ Error executing statement ${i + 1}:`, err.message);
-      }
-    }
-
-    console.log(`\n📊 Results: ${successCount}/${statements.length} statements executed`);
-
-    if (successCount > 0) {
-      console.log('\n🎉 Tables created! Now try running:');
-      console.log('node scripts/migrate-data-to-supabase.js');
-    } else {
-      console.log('\n❌ No statements executed. Manual execution required in Supabase Dashboard.');
-    }
+    return true;
 
   } catch (error) {
-    console.error('❌ Error creating tables:', error.message);
-    console.log('\n💡 Please execute the migrations manually in Supabase SQL Editor');
+    console.error(`❌ Error processing ${path.basename(migrationPath)}:`, error.message);
+    return false;
   }
 }
 
-createTables();
+/**
+ * Main function
+ */
+async function main() {
+  console.log('🏗️ Creating FlexPro database tables...\n');
+
+  try {
+    // Test connection
+    console.log('🔗 Testing Supabase connection...');
+    const { error } = await supabase.from('exercises').select('count', { count: 'exact', head: true });
+    if (error && !error.message.includes('does not exist')) {
+      throw new Error(`Connection failed: ${error.message}`);
+    }
+    console.log('✅ Supabase connection successful\n');
+
+    // Migration files
+    const migrations = [
+      '20250218_exercises_comprehensive.sql',
+      '20250218_foods_comprehensive.sql',
+      '20250218_supplements_comprehensive.sql'
+    ];
+
+    console.log('📋 SQL to execute in Supabase SQL Editor:\n');
+    console.log('='.repeat(80));
+
+    for (const migration of migrations) {
+      const filePath = path.join(__dirname, '../supabase/migrations', migration);
+      if (fs.existsSync(filePath)) {
+        await createTableFromMigration(filePath);
+      } else {
+        console.warn(`⚠️ Migration file not found: ${migration}`);
+      }
+    }
+
+    console.log('='.repeat(80));
+    console.log('\n📝 Instructions:');
+    console.log('1. Copy the SQL statements above');
+    console.log('2. Go to your Supabase dashboard');
+    console.log('3. Navigate to SQL Editor');
+    console.log('4. Paste and execute the statements');
+    console.log('5. After tables are created, run: npm run populate-data');
+
+    console.log('\n⚠️ Alternative: If you have Supabase CLI installed, run:');
+    console.log('   supabase db reset');
+
+  } catch (error) {
+    console.error('\n💥 Table creation error:', error.message);
+    process.exit(1);
+  }
+}
+
+main();

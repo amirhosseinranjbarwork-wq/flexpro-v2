@@ -50,6 +50,7 @@ import { useUI } from './UIContext';
 const STORAGE_KEY = 'flexProMaxData_v15';
 const ROLE_KEY = 'flexRole';
 const ACCOUNT_KEY = 'flexAccountId';
+const ACTIVE_USER_KEY = 'flexActiveUserId';
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
@@ -189,7 +190,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [users, setUsers] = useState<User[]>(() => getInitialUsers());
   const [templates, setTemplates] = useState<Template[]>(() => getInitialTemplates());
   const [requests, setRequests] = useState<ProgramRequest[]>([]);
-  const [activeUserId, setActiveUserId] = useState<UserId | null>(null);
+  const [activeUserId, setActiveUserId] = useState<UserId | null>(() => {
+    const saved = localStorage.getItem(ACTIVE_USER_KEY);
+    return saved ? (saved as UserId) : null;
+  });
   const [currentRole, setCurrentRole] = useState<Role>(() => {
     const saved = localStorage.getItem(ROLE_KEY) as Role | null;
     return saved === 'coach' || saved === 'client' ? saved : 'coach';
@@ -307,6 +311,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem(ACCOUNT_KEY);
     }
   }, [currentRole, currentAccountId]);
+
+  // Save active user ID to localStorage
+  useEffect(() => {
+    if (activeUserId != null) {
+      localStorage.setItem(ACTIVE_USER_KEY, String(activeUserId));
+    } else {
+      localStorage.removeItem(ACTIVE_USER_KEY);
+    }
+  }, [activeUserId]);
 
   // Cache data for offline mode (only when online)
   useEffect(() => {

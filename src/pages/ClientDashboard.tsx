@@ -5,6 +5,8 @@ import { fetchClientById, fetchWorkoutPlansByClient, isSupabaseReady, updateClie
 import type { UserPlans, WorkoutItem, Client, ProfileData, ProgramRequest, Measurements } from '../types/index';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../lib/supabaseClient';
+import { useSubscription } from '../hooks/useSubscription';
+import EmptyState from '../components/EmptyState';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User as UserIcon,
@@ -338,6 +340,9 @@ type CoachDetails = {
 const ClientDashboard: React.FC = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const { activeUser, toggleTheme, theme } = useApp();
+
+  // Check subscription status
+  const subscription = useSubscription(clientInfo?.profile_data?.financial);
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<UserPlans | null>(null);
   const [fullName, setFullName] = useState<string>('');
@@ -1331,22 +1336,23 @@ const ClientDashboard: React.FC = () => {
 
             {currentTab === 'training' && (
               <motion.div key="training" {...scaleIn} className="space-y-4">
-                  <ProgramCard
-                    title="برنامه تمرینی هفتگی"
-                    icon={<Dumbbell size={20} />}
-                  accent="linear-gradient(135deg, #3b82f6, #1d4ed8)"
-                  >
-                    {plan && plan.workouts ? (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
-                          {Array.from({ length: 7 }).map((_, idx) => {
-                            const day = idx + 1;
-                            const items = plan.workouts?.[day] || [];
-                            return (
-                              <DayCard
-                                key={day}
-                                day={day}
-                                items={items}
+                  {subscription.canAccessTraining ? (
+                    <ProgramCard
+                      title="برنامه تمرینی هفتگی"
+                      icon={<Dumbbell size={20} />}
+                    accent="linear-gradient(135deg, #3b82f6, #1d4ed8)"
+                    >
+                      {plan && plan.workouts ? (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
+                            {Array.from({ length: 7 }).map((_, idx) => {
+                              const day = idx + 1;
+                              const items = plan.workouts?.[day] || [];
+                              return (
+                                <DayCard
+                                  key={day}
+                                  day={day}
+                                  items={items}
                                 isActive={selectedDay === day}
                                 onClick={() => setSelectedDay(selectedDay === day ? null : day)}
                               />
@@ -1435,6 +1441,25 @@ const ClientDashboard: React.FC = () => {
                     )}
                   </ProgramCard>
               </motion.div>
+                ) : (
+                  <motion.div key="training-locked" {...scaleIn} className="space-y-4">
+                    <EmptyState
+                      icon={<Dumbbell size={36} className="text-red-500" />}
+                      title="اشتراک شما تمام شده است"
+                      description={
+                        subscription.daysRemaining === 0
+                          ? "برای دسترسی به برنامه تمرینی، اشتراک خود را تمدید کنید"
+                          : `اشتراک شما ${subscription.daysRemaining} روز دیگر تمام می‌شود`
+                      }
+                      action={{
+                        label: 'تماس با مربی',
+                        onClick: () => {
+                          // TODO: Add coach contact logic
+                          toast.info('در حال توسعه...');
+                        }
+                      }}
+                    />
+                  </motion.div>
                 )}
 
             {currentTab === 'nutrition' && (

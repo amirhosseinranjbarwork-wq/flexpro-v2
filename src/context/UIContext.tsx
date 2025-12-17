@@ -10,7 +10,7 @@ interface UIContextType {
   sidebarOpen: boolean;
   toggleTheme: () => void;
   setCurrentTab: (tab: TabKey) => void;
-  handlePrintPreview: (type: PrintType, user?: import('../types/index').User) => void;
+  handlePrintPreview: (type: PrintType, user?: import('../types/index').User, html?: string) => void;
   closePrintModal: () => void;
   downloadPDF: () => Promise<void>;
   setSidebarOpen: (open: boolean) => void;
@@ -39,13 +39,12 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     document.documentElement.classList.toggle('dark', t === 'dark');
   }, [theme]);
 
-  const handlePrintPreview = useCallback((type: PrintType, user?: import('../types/index').User) => {
-    // This will be called from components that have access to activeUser
-    // For now, we just set up the structure - actual HTML generation should be done in AppContext
-    // where activeUser is available
-    void type;
-    void user;
-    setPrintData({ html: '' });
+  const handlePrintPreview = useCallback((type: PrintType, user?: import('../types/index').User, html?: string) => {
+    if (html) {
+      setPrintData({ html });
+    } else {
+      setPrintData({ html: '<div style="padding: 20px;">محتوایی برای چاپ یافت نشد</div>' });
+    }
   }, []);
 
   const closePrintModal = useCallback(() => {

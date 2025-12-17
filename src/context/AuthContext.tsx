@@ -39,22 +39,48 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
 
   const loadProfile = async (uid: string) => {
     if (!supabase) return null;
-    const { data, error } = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle();
 
-    if (error) {
-      console.warn('loadProfile error', error.message);
+    try {
+      // Try maybeSingle first
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle();
+      if (error) {
+        // Fallback to single() if maybeSingle not available
+        const { data: fallbackData, error: fallbackError } = await supabase.from('profiles').select('*').eq('id', uid).single();
+        if (fallbackError) {
+          console.warn('loadProfile error', fallbackError.message);
+          return null;
+        }
+        return fallbackData as Profile | null;
+      }
+      return data as Profile | null;
+    } catch (e) {
+      console.warn('loadProfile error', e);
       return null;
     }
-    return data as Profile | null;
   };
 
   const resolveEmail = useCallback(async (identifier: string) => {
     if (!supabase) throw new Error('Supabase auth غیرفعال است');
     if (identifier.includes('@')) return identifier;
-    const { data, error } = await supabase.rpc('get_email_by_username', { p_username: identifier });
-    if (error) throw error;
-    if (!data) throw new Error('نام کاربری یافت نشد');
-    return data as string;
+
+    // Try RPC first (if function exists)
+    try {
+      const { data, error } = await supabase.rpc('get_email_by_username', { p_username: identifier });
+      if (!error && data) return data as string;
+    } catch (e) {
+      console.warn('RPC function not available, falling back to direct query');
+    }
+
+    // Fallback: Direct query (less secure but functional)
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('username', identifier)
+      .single();
+
+    if (error) throw new Error('نام کاربری یافت نشد');
+    if (!data?.email) throw new Error('نام کاربری یافت نشد');
+    return data.email;
   }, []);
 
   useEffect(() => {

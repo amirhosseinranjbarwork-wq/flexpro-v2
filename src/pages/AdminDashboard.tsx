@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import LoadingSpinner from '../components/LoadingSpinner';
-import ErrorMessage from '../components/ErrorMessage';
+import { Bar } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+import ErrorMessage from '../components/ui/ErrorMessage';
+
+// Register Chart.js components
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 interface UserData {
   id: string;
@@ -133,6 +138,55 @@ const AdminDashboard: React.FC = () => {
             <div className="text-3xl font-bold text-red-600">{stats?.banned_users || 0}</div>
           </div>
         </div>
+
+        {/* Chart */}
+        {stats && (
+          <div className="bg-white p-6 rounded-lg shadow mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">آمار سیستم</h2>
+            <div className="h-64">
+              <Bar
+                data={{
+                  labels: ['کاربران', 'مربی‌ها', 'اشتراک‌های فعال', 'کاربران مسدود'],
+                  datasets: [{
+                    label: 'تعداد',
+                    data: [
+                      stats.total_users || 0,
+                      stats.total_coaches || 0,
+                      stats.active_subscriptions || 0,
+                      stats.banned_users || 0
+                    ],
+                    backgroundColor: [
+                      'rgba(59, 130, 246, 0.8)',
+                      'rgba(34, 197, 94, 0.8)',
+                      'rgba(168, 85, 247, 0.8)',
+                      'rgba(239, 68, 68, 0.8)'
+                    ],
+                    borderColor: [
+                      'rgb(59, 130, 246)',
+                      'rgb(34, 197, 94)',
+                      'rgb(168, 85, 247)',
+                      'rgb(239, 68, 68)'
+                    ],
+                    borderWidth: 1
+                  }]
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: 'top' as const,
+                    },
+                    title: {
+                      display: true,
+                      text: 'آمار کاربران سیستم'
+                    }
+                  }
+                }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Users Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">

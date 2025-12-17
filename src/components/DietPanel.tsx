@@ -86,7 +86,7 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
   const [customFood, setCustomFood] = useState({ name: '', cal: '', protein: '', carb: '', fat: '', unit: 'گرم', base: 100 });
 
   // بارگذاری داده‌های غذایی از Supabase
-  const { data: foodsData, isLoading: foodsLoading, error: foodsError } = useFoods();
+  const { data: foodsData } = useFoods();
 
   // سازماندهی داده‌ها بر اساس ساختار قدیمی برای سازگاری
   const foodData = useMemo(() => {

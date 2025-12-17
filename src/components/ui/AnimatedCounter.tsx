@@ -117,8 +117,6 @@ export const FloatingCounter: React.FC<{
     error: 'bg-red-500 text-white'
   };
 
-  const displayValue = value > max ? `${max}+` : value;
-
   return (
     <motion.div
       className={`

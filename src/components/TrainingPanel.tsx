@@ -6,8 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import type { User, WorkoutItem, WorkoutMode } from '../types/index';
+import type { ExercisesRow } from '../types/database';
 import EmptyState from './EmptyState';
-import { riskyExercises } from '../data/resistanceExercises';
+// Removed import of riskyExercises - will be handled differently
 import { useDebounce } from '../hooks/useDebounce';
 import SavePlanModal from './SavePlanModal';
 import TemplateLoader from './TemplateLoader';
@@ -52,10 +53,10 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
   const resistanceExercises = useMemo(() => {
     if (!exercisesData) return null;
 
-    const resistance = exercisesData.filter((ex: any) => ex.type === 'resistance');
+    const resistance = exercisesData.filter((ex: ExercisesRow) => ex.type === 'resistance');
     const grouped: Record<string, Record<string, string[]>> = {};
 
-    resistance.forEach((ex: any) => {
+    resistance.forEach((ex: ExercisesRow) => {
       if (!grouped[ex.muscle_group]) {
         grouped[ex.muscle_group] = {};
       }
@@ -71,10 +72,10 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
   const correctiveExercises = useMemo(() => {
     if (!exercisesData) return null;
 
-    const corrective = exercisesData.filter((ex: any) => ex.type === 'corrective');
+    const corrective = exercisesData.filter((ex: ExercisesRow) => ex.type === 'corrective');
     const grouped: Record<string, string[]> = {};
 
-    corrective.forEach((ex: any) => {
+    corrective.forEach((ex: ExercisesRow) => {
       if (!grouped[ex.muscle_group]) {
         grouped[ex.muscle_group] = [];
       }
@@ -87,10 +88,10 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
   const cardioExercises = useMemo(() => {
     if (!exercisesData) return null;
 
-    const cardio = exercisesData.filter((ex: any) => ex.type === 'cardio');
+    const cardio = exercisesData.filter((ex: ExercisesRow) => ex.type === 'cardio');
     const grouped: Record<string, Record<string, string[]>> = {};
 
-    cardio.forEach((ex: any) => {
+    cardio.forEach((ex: ExercisesRow) => {
       // Group cardio exercises by equipment or category
       const category = ex.equipment || 'general';
       if (!grouped[category]) {
@@ -107,12 +108,12 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
 
   const warmupExercises = useMemo(() => {
     if (!exercisesData) return null;
-    return exercisesData.filter((ex: any) => ex.type === 'warmup').map((ex: any) => ex.name);
+    return exercisesData.filter((ex: ExercisesRow) => ex.type === 'warmup').map((ex: ExercisesRow) => ex.name);
   }, [exercisesData]);
 
   const cooldownExercises = useMemo(() => {
     if (!exercisesData) return null;
-    return exercisesData.filter((ex: any) => ex.type === 'cooldown').map((ex: any) => ex.name);
+    return exercisesData.filter((ex: ExercisesRow) => ex.type === 'cooldown').map((ex: ExercisesRow) => ex.name);
   }, [exercisesData]);
 
   const dataLoaded = !exercisesLoading;
@@ -151,7 +152,37 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (mode === 'resist' && formData.ex1 && activeUser.injuries?.length && riskyExercises) {
+      if (mode === 'resist' && formData.ex1 && activeUser.injuries?.length) {
+        // Temporary injury check - will be moved to database later
+        const riskyExercises: Record<string, string[]> = {
+          "دیسک کمر": [
+            "ددلیفت کلاسیک (Deadlift)", "اسکات هالتر از پشت (Squat)", "زیربغل هالتر خم (Barbell Row)",
+            "سلام ژاپنی (Good Morning)", "ددلیفت رومانیایی (RDL)", "ددلیفت سومو (Sumo Deadlift)",
+            "فیله کمر دستگاه (Back Extension)"
+          ],
+          "دیسک گردن": [
+            "پرس سرشانه هالتر نظامی (Military Press)", "شراگ هالتر (Barbell Shrug)",
+            "کول هالتر دست باز (Upright Row)", "پرس سرشانه هالتر از پشت (Behind-Neck Military Press)",
+            "زیربغل سیم‌کش از پشت سر (Behind-Neck Lat Pulldown)"
+          ],
+          "زانو درد": [
+            "جلو ران دستگاه (Leg Extension)", "لانگ دمبل (DB Lunges)", "اسکات عمیق", "اسکات با وزن زیاد",
+            "پرس پا با زاویه بسته", "هاک پا با زاویه بسته"
+          ],
+          "شانه درد": [
+            "پرس سرشانه هالتر نظامی (Military Press)", "پارالل (Dips)",
+            "زیربغل سیم‌کش از پشت سر", "پرس سرشانه هالتر از پشت (Behind-Neck Military Press)",
+            "نشر از جلو با زاویه نامناسب", "فلای معکوس با فرم نامناسب"
+          ],
+          "آرنج درد": [
+            "جلو بازو لاری (Preacher Curl)", "پشت بازو هالتر خوابیده (Skullcrusher)",
+            "دیپ نیمکت (Bench Dip)", "جلو بازو با فرم نامناسب", "پشت بازو با فرم نامناسب"
+          ],
+          "مچ درد": [
+            "جلو بازو با میله صاف", "پشت بازو با میله صاف", "شراگ با فرم نامناسب", "کول با فرم نامناسب"
+          ]
+        };
+
         let conflict = null;
         activeUser.injuries.forEach(injury => {
           if (riskyExercises[injury]?.includes(formData.ex1)) conflict = `هشدار: مضر برای "${injury}"`;
@@ -160,7 +191,7 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
       } else setWarning(null);
     }, 0);
     return () => clearTimeout(timer);
-  }, [formData.ex1, activeUser.injuries, mode, riskyExercises]);
+  }, [formData.ex1, activeUser.injuries, mode]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -683,7 +714,11 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
                   {formData.cCategory && (
                     <select className="input-glass font-bold" value={formData.cType} onChange={e => setFormData({ ...formData, cType: e.target.value })}>
                       <option value="">انتخاب نوع...</option>
-                      {cardioExercises && (cardioExercises[formData.cCategory] as any)?.map((ex: any) => <option key={ex} value={ex}>{ex}</option>)}
+                      {cardioExercises && cardioExercises[formData.cCategory] &&
+                        Object.values(cardioExercises[formData.cCategory]).flat().map((ex: string) => (
+                          <option key={ex} value={ex}>{ex}</option>
+                        ))
+                      }
                     </select>
                   )}
                   <input className="input-glass" placeholder="زمان (دقیقه)" type="number" value={formData.cTime} onChange={e => setFormData({ ...formData, cTime: e.target.value })} />

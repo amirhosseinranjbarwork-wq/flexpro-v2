@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useSaveTemplate } from '../hooks/useTemplates';
 import { supabase } from '../lib/supabaseClient';
-import SuccessMessage from './SuccessMessage';
-import ErrorMessage from './ErrorMessage';
+import SuccessMessage from './ui/SuccessMessage';
+import ErrorMessage from './ui/ErrorMessage';
 
 interface SavePlanModalProps {
   isOpen: boolean;

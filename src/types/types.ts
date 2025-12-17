@@ -116,6 +116,8 @@ export interface FinancialInfo {
   startDate: string;
   duration: number;
   amount: number | string;
+  subscription_end_date?: string;
+  is_active?: boolean;
 }
 
 export interface Measurements {
@@ -257,7 +259,7 @@ export interface AppContextType {
   restoreData: (file: File) => void;
   resetSystem: () => void;
   printData: PrintData | null;
-  handlePrintPreview: (type: PrintType) => void;
+  handlePrintPreview: (type: PrintType, user?: User, html?: string) => void;
   closePrintModal: () => void;
   downloadPDF: () => Promise<void> | void;
 }

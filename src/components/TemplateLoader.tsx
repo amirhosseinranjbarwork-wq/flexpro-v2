@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useTemplates, useLoadTemplate, useDeleteTemplate } from '../hooks/useTemplates';
-import LoadingSpinner from './LoadingSpinner';
-import ErrorMessage from './ErrorMessage';
-import SuccessMessage from './SuccessMessage';
+import LoadingSpinner from './ui/LoadingSpinner';
+import ErrorMessage from './ui/ErrorMessage';
+import SuccessMessage from './ui/SuccessMessage';
 
 interface TemplateLoaderProps {
   isOpen: boolean;
