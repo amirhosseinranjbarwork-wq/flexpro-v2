@@ -71,8 +71,30 @@ const RegisterPage: React.FC = () => {
     }
     
     try {
-      await register({ email, password, fullName, role, username });
-      toast.success('ثبت‌نام موفق');
+      const { isPlaceholderEmail } = await register({ email, password, fullName, role, username });
+
+      if (isPlaceholderEmail) {
+        toast.success(
+          (t) => (
+            <div className="flex flex-col items-start gap-2">
+              <span className="font-bold text-sm">ثبت‌نام موفق!</span>
+              <span className="text-xs">
+                چون ایمیل وارد نکردید، برای بازیابی رمز عبور باید از نام کاربری خود استفاده کنید.
+              </span>
+              <button
+                onClick={() => toast.dismiss(t.id)}
+                className="w-full mt-2 text-center text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition"
+              >
+                متوجه شدم
+              </button>
+            </div>
+          ),
+          { duration: 10000 }
+        );
+      } else {
+        toast.success('ثبت‌نام موفق. لطفا ایمیل خود را برای فعال‌سازی حساب چک کنید.');
+      }
+
       navigate('/dashboard', { replace: true });
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'خطای ناشناخته در ثبت‌نام';

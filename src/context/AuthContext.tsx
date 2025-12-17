@@ -4,7 +4,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
 
 type AuthFn = (identifier: string, password: string) => Promise<void>;
-type RegisterFn = (params: { email?: string; password: string; fullName: string; role: string; username: string }) => Promise<void>;
+type RegisterFn = (params: { email?: string; password: string; fullName: string; role: string; username: string }) => Promise<{ isPlaceholderEmail: boolean }>;
 
 interface Profile {
   id?: string;
@@ -63,24 +63,44 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     if (!supabase) throw new Error('Supabase auth غیرفعال است');
     if (identifier.includes('@')) return identifier;
 
-    // Try RPC first (if function exists)
     try {
       const { data, error } = await supabase.rpc('get_email_by_username', { p_username: identifier });
-      if (!error && data) return data as string;
-    } catch (e) {
-      console.warn('RPC function not available, falling back to direct query');
+      if (error) {
+        // Log the error for debugging but throw a generic message to the user
+        console.error('RPC get_email_by_username error:', error);
+        throw new Error('خطا در یافتن کاربر');
+      }
+      if (!data) {
+        throw new Error('نام کاربری یافت نشد');
+      }
+      return data as string;
+    } catch (e: unknown) {
+      console.error('An unexpected error occurred in resolveEmail:', e);
+      // Re-throw if it's already an error, otherwise wrap it
+      if (e instanceof Error) {
+        throw e;
+      }
+      throw new Error('یک خطای پیش‌بینی نشده رخ داد');
     }
+  }, []);
 
-    // Fallback: Direct query (less secure but functional)
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('email')
-      .eq('username', identifier)
-      .single();
+  const handleSessionChange = useCallback(async (session: Session | null) => {
+    setSession(session);
+    setUser(session?.user ?? null);
+    setProfile(null);
+    setRole(null);
 
-    if (error) throw new Error('نام کاربری یافت نشد');
-    if (!data?.email) throw new Error('نام کاربری یافت نشد');
-    return data.email;
+    if (session?.user?.id) {
+      try {
+        const p = await loadProfile(session.user.id);
+        if (p) {
+          setProfile(p);
+          setRole(p.role || null);
+        }
+      } catch (e) {
+        console.error("Failed to load profile on session change", e);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -88,46 +108,34 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       setReady(true);
       return;
     }
+
     let active = true;
+
     supabase.auth.getSession().then(({ data, error }) => {
-      if (!active) return;
-      if (!error && data?.session) {
-        setSession(data.session);
-        setUser(data.session.user);
-        const rMeta = data.session.user?.user_metadata?.role;
-        setRole(typeof rMeta === 'string' ? rMeta : null);
-        loadProfile(data.session.user.id).then((p) => {
-          if (p) {
-            setProfile(p);
-            if (p.role) setRole(p.role);
-          }
-        });
+      if (active) {
+        if (error) {
+          console.error("Error getting session:", error);
+          setReady(true);
+          return;
+        }
+        await handleSessionChange(data.session);
+        if (active) {
+          setReady(true);
+        }
       }
-      setReady(true);
     });
+
     const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-      const rMeta = newSession?.user?.user_metadata?.role;
-      setRole(typeof rMeta === 'string' ? rMeta : null);
-      if (newSession?.user?.id) {
-        loadProfile(newSession.user.id).then((p) => {
-          if (p) {
-            setProfile(p);
-            if (p.role) setRole(p.role);
-          } else {
-            setProfile(null);
-          }
-        });
-      } else {
-        setProfile(null);
+      if (active) {
+        handleSessionChange(newSession);
       }
     });
+
     return () => {
       active = false;
       sub?.subscription.unsubscribe();
     };
-  }, []);
+  }, [handleSessionChange]);
 
   const signInWithPassword = useCallback(async (identifier: string, password: string) => {
     if (!isSupabaseEnabled || !supabase) {
@@ -251,7 +259,10 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         throw new Error('نام کاربری تکراری است. لطفا نام کاربری دیگری انتخاب کنید');
       }
 
-      const finalEmail = (email && email.trim().length > 0) ? email.trim() : `${username}-${Date.now()}@placeholder.flexpro`;
+      const isPlaceholderEmail = !email || email.trim().length === 0;
+      const finalEmail = isPlaceholderEmail
+        ? `${username}-${Date.now()}@placeholder.flexpro`
+        : email!.trim();
 
       const { data, error } = await supabase.auth.signUp({
         email: finalEmail,
@@ -295,6 +306,8 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         setRole(r);
         setProfile({ id: data.user.id, full_name: fullName, role: r, email: finalEmail, username });
         if (import.meta.env.DEV) console.log('Registration successful');
+
+        return { isPlaceholderEmail };
       } else {
         throw new Error('خطا در ایجاد کاربر');
       }
