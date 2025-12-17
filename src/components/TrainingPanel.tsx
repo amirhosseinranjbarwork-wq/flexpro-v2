@@ -14,6 +14,7 @@ import SavePlanModal from './SavePlanModal';
 import TemplateLoader from './TemplateLoader';
 import ExerciseRow from './TrainingPanel/ExerciseRow';
 import MobileExerciseCard from './TrainingPanel/MobileExerciseCard';
+import AddExerciseForm from './TrainingPanel/AddExerciseForm';
 import { useExercises } from '../hooks/useExercises';
 import { CardSkeleton, TextSkeleton } from '../components';
 
@@ -440,339 +441,29 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* فرم سمت راست - طراحی مدرن */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="glass-panel p-6 rounded-3xl sticky top-6 border border-[var(--glass-border)] shadow-xl backdrop-blur-xl">
-            <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
-              <span className="w-1.5 h-6 bg-gradient-to-b from-[var(--accent-color)] to-[var(--accent-secondary)] rounded-full animate-pulse-glow"></span>
-              افزودن حرکت جدید
-            </h3>
-            
-            <div className="flex flex-wrap gap-2 mb-5 bg-[var(--input-bg)] p-1.5 rounded-2xl border border-[var(--glass-border)]" role="tablist" aria-label="انتخاب نوع تمرین">
-              {['warmup', 'resist', 'cardio', 'corrective', 'cooldown'].map(m => (
-                <button 
-                  key={m} 
-                  onClick={() => setMode(m)} 
-                  className={`flex-1 text-[11px] font-bold py-2.5 rounded-xl transition-all duration-300 ${
-                    mode === m 
-                      ? 'text-white shadow-lg scale-105' 
-                      : 'text-[var(--text-secondary)] hover:text-[var(--accent-color)] hover:bg-[var(--text-primary)]/5'
-                  }`}
-                  style={mode === m ? { background: `linear-gradient(135deg, var(--accent-color), var(--accent-secondary))`, boxShadow: `0 10px 30px var(--accent-color)/30` } : {}}
-                  role="tab"
-                  aria-selected={mode === m}
-                  aria-controls={`${m}-panel`}
-                  aria-label={`نوع تمرین: ${m === 'warmup' ? 'گرم کردن' : m === 'resist' ? 'مقاومتی' : m === 'cardio' ? 'هوازی' : m === 'corrective' ? 'اصلاحی' : 'سرد کردن'}`}
-                  type="button"
-                >
-                  {m === 'warmup' ? '🔥 گرم' : m === 'resist' ? '💪 مقاومتی' : m === 'cardio' ? '🏃 هوازی' : m === 'corrective' ? '🩹 اصلاحی' : '❄️ سرد'}
-                </button>
-              ))}
-            </div>
+        {/* فرم سمت راست - طراحی مدرن و فشرده */}
+        <div className="lg:col-span-4">
+          <AddExerciseForm
+            onAdd={(exerciseData) => {
+              // Convert the compact form data to the full form data expected by handleAddExercise
+              const workoutItem = {
+                mode: 'resist' as const,
+                name: exerciseData.name || '',
+                sets: exerciseData.sets,
+                reps: exerciseData.reps,
+                rest: exerciseData.rest,
+                restUnit: exerciseData.restUnit,
+                note: exerciseData.note,
+                type: 'normal' as const
+              };
 
-            <div className="space-y-3">
-              {/* گرم کردن */}
-              {mode === 'warmup' && (
-                <>
-                  <select className="input-glass font-bold" value={formData.warmupType} onChange={e => setFormData({ ...formData, warmupType: e.target.value })}>
-                    <option value="">انتخاب نوع گرم کردن...</option>
-                    {warmupExercises ? warmupExercises.map((ex: string) => <option key={ex} value={ex}>{ex}</option>) : <option disabled>در حال بارگذاری...</option>}
-                  </select>
-                  <input className="input-glass" type="number" placeholder="مدت زمان (دقیقه)" value={formData.cTime} onChange={e => setFormData({ ...formData, cTime: e.target.value })} />
-                  <div className="text-[10px] text-[var(--text-secondary)] bg-amber-500/10 border border-amber-500/20 rounded-lg p-2">
-                    💡 گرم کردن باید 5-15 دقیقه باشد و شامل افزایش تدریجی ضربان قلب و کشش‌های پویا شود.
-                  </div>
-                </>
-              )}
-
-              {/* سرد کردن */}
-              {mode === 'cooldown' && (
-                <>
-                  <select className="input-glass font-bold" value={formData.cooldownType} onChange={e => setFormData({ ...formData, cooldownType: e.target.value })}>
-                    <option value="">انتخاب نوع سرد کردن...</option>
-                    {cooldownExercises ? cooldownExercises.map((ex: string) => <option key={ex} value={ex}>{ex}</option>) : <option disabled>در حال بارگذاری...</option>}
-                  </select>
-                  <input className="input-glass" type="number" placeholder="مدت زمان (دقیقه)" value={formData.cTime} onChange={e => setFormData({ ...formData, cTime: e.target.value })} />
-                  <div className="text-[10px] text-[var(--text-secondary)] bg-[var(--accent-color)]/10 border border-[var(--accent-color)]/20 rounded-lg p-2">
-                    💡 سرد کردن باید 5-10 دقیقه باشد و شامل کاهش تدریجی ضربان قلب و کشش‌های ایستا شود.
-                  </div>
-                </>
-              )}
-
-              {/* بدنسازی */}
-              {mode === 'resist' && (
-                <>
-                  <select className="input-glass" value={formData.system} onChange={e => setFormData({ ...formData, system: e.target.value })}>
-                    <option value="normal">سیستم ساده (Straight Set)</option>
-                    <option value="superset">سوپرست (۲ حرکت پشت‌سرهم)</option>
-                    <option value="triset">تری‌ست (۳ حرکت)</option>
-                    <option value="giantset">جاینت‌ست (۴+ حرکت)</option>
-                    <option value="dropset">درآپ‌ست (Drop Set)</option>
-                    <option value="pyramid">هرمی (Pyramid)</option>
-                    <option value="restpause">رست-پاز (Rest-Pause)</option>
-                    <option value="german-volume">حجم آلمانی (10x10)</option>
-                    <option value="fst7">FST-7</option>
-                    <option value="5x5">5x5 (Stronglifts)</option>
-                    <option value="cluster">کلاستر ست</option>
-                    <option value="myorep">مایورپ (Myo-Reps)</option>
-                    <option value="tempo">تمپو (Tempo)</option>
-                    <option value="isometric">ایزومتریک</option>
-                    <option value="negatives">نگاتیو</option>
-                    <option value="21s">21s</option>
-                  </select>
-                  
-                  <div className="grid grid-cols-2 gap-2">
-                    <select className="input-glass text-xs" value={formData.muscle} onChange={e => setFormData({ ...formData, muscle: e.target.value, subMuscle: '' })}>
-                      <option value="">عضله...</option>
-                      {resistanceExercises ? Object.keys(resistanceExercises).map(m => <option key={m} value={m}>{m}</option>) : null}
-                    </select>
-                    <select className="input-glass text-xs" value={formData.subMuscle} onChange={e => setFormData({ ...formData, subMuscle: e.target.value })}>
-                      <option value="">ناحیه...</option>
-                      {subMuscles.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </div>
-
-                  {/* جستجوی حرکات */}
-                  {exercises.length > 10 && (
-                    <div className="relative">
-                      <input
-                        type="text"
-                        className="input-glass pl-8 text-sm"
-                        placeholder="جستجوی حرکت..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                      />
-                      <Search size={14} className="absolute left-3 top-3.5 text-slate-400" />
-                    </div>
-                  )}
-
-                  <select className="input-glass font-bold text-[var(--accent-color)]" value={formData.ex1} onChange={e => setFormData({ ...formData, ex1: e.target.value })}>
-                    <option value="">انتخاب حرکت...</option>
-                    {filteredExercises.map(e => <option key={e} value={e}>{e}</option>)}
-                  </select>
-
-                  {/* سوپرست - نیاز به 2 حرکت */}
-                  {formData.system === 'superset' && (
-                    <select className="input-glass border-r-4 border-r-yellow-400 font-bold text-yellow-600 dark:text-yellow-400" value={formData.ex2} onChange={e => setFormData({ ...formData, ex2: e.target.value })}>
-                      <option value="">+ انتخاب حرکت دوم (الزامی)</option>
-                      {filteredExercises.map(e => <option key={e} value={e}>{e}</option>)}
-                    </select>
-                  )}
-
-                  {/* تری‌ست - نیاز به 3 حرکت */}
-                  {formData.system === 'triset' && (
-                    <>
-                      <select className="input-glass border-r-4 border-r-yellow-400 font-bold text-yellow-600 dark:text-yellow-400" value={formData.ex2} onChange={e => setFormData({ ...formData, ex2: e.target.value })}>
-                        <option value="">+ انتخاب حرکت دوم (الزامی)</option>
-                        {filteredExercises.map(e => <option key={e} value={e}>{e}</option>)}
-                      </select>
-                      <select className="input-glass border-r-4 border-r-purple-400 font-bold text-purple-600 dark:text-purple-400" value={formData.name3} onChange={e => setFormData({ ...formData, name3: e.target.value })}>
-                        <option value="">+ انتخاب حرکت سوم (الزامی)</option>
-                        {filteredExercises.map(e => <option key={e} value={e}>{e}</option>)}
-                      </select>
-                    </>
-                  )}
-
-                  {/* جاینت‌ست - نیاز به 4+ حرکت */}
-                  {formData.system === 'giantset' && (
-                    <>
-                      <select className="input-glass border-r-4 border-r-yellow-400 font-bold text-yellow-600 dark:text-yellow-400" value={formData.ex2} onChange={e => setFormData({ ...formData, ex2: e.target.value })}>
-                        <option value="">+ انتخاب حرکت دوم (الزامی)</option>
-                        {filteredExercises.map(e => <option key={e} value={e}>{e}</option>)}
-                      </select>
-                      <select className="input-glass border-r-4 border-r-purple-400 font-bold text-purple-600 dark:text-purple-400" value={formData.name3} onChange={e => setFormData({ ...formData, name3: e.target.value })}>
-                        <option value="">+ انتخاب حرکت سوم (الزامی)</option>
-                        {filteredExercises.map(e => <option key={e} value={e}>{e}</option>)}
-                      </select>
-                      <select className="input-glass border-r-4 border-r-red-400 font-bold text-red-600 dark:text-red-400" value={formData.name4} onChange={e => setFormData({ ...formData, name4: e.target.value })}>
-                        <option value="">+ انتخاب حرکت چهارم (اختیاری)</option>
-                        {filteredExercises.map(e => <option key={e} value={e}>{e}</option>)}
-                      </select>
-                    </>
-                  )}
-
-                  {/* درآپ‌ست - نیاز به تعداد درآپ */}
-                  {formData.system === 'dropset' && (
-                    <div className="bg-yellow-500/10 border border-yellow-500/30 p-3 rounded-lg">
-                      <label className="text-xs text-yellow-600 dark:text-yellow-400 font-bold block mb-1">تعداد درآپ (Drop Count)</label>
-                      <input className="input-glass text-center font-bold" type="number" placeholder="مثال: 2 یا 3" value={formData.dropCount} onChange={e => setFormData({ ...formData, dropCount: e.target.value })} />
-                      <p className="text-[10px] text-yellow-600/70 mt-1">مثال: 2 درآپ = کاهش وزن 2 بار</p>
-                    </div>
-                  )}
-
-                  {/* رست-پاز - نیاز به زمان استراحت بین پاز */}
-                  {formData.system === 'restpause' && (
-                    <div className="bg-purple-500/10 border border-purple-500/30 p-3 rounded-lg">
-                      <label className="text-xs text-purple-600 dark:text-purple-400 font-bold block mb-1">زمان استراحت بین پاز (ثانیه)</label>
-                      <input className="input-glass text-center font-bold" type="number" placeholder="مثال: 15-20" value={formData.restPauseTime} onChange={e => setFormData({ ...formData, restPauseTime: e.target.value })} />
-                      <p className="text-[10px] text-purple-600/70 mt-1">زمان استراحت کوتاه بین تکرارها</p>
-                    </div>
-                  )}
-
-                  {/* تمپو - نیاز به الگوی تمپو */}
-                  {formData.system === 'tempo' && (
-                    <div className="bg-[var(--accent-color)]/10 border border-[var(--accent-color)]/30 p-3 rounded-lg">
-                      <label className="text-xs text-[var(--accent-color)] font-bold block mb-1">الگوی تمپو (مثال: 3-1-2-0)</label>
-                      <input className="input-glass text-center font-mono font-bold" placeholder="3-1-2-0" value={formData.tempo} onChange={e => setFormData({ ...formData, tempo: e.target.value })} />
-                      <p className="text-[10px] text-[var(--accent-color)]/70 mt-1">فرمت: پایین-نگه-بالا-استراحت (ثانیه)</p>
-                    </div>
-                  )}
-
-                  {/* ایزومتریک - نیاز به زمان نگه‌داری */}
-                  {formData.system === 'isometric' && (
-                    <div className="bg-green-500/10 border border-green-500/30 p-3 rounded-lg">
-                      <label className="text-xs text-green-600 dark:text-green-400 font-bold block mb-1">زمان نگه‌داری (ثانیه)</label>
-                      <input className="input-glass text-center font-bold" type="number" placeholder="مثال: 30-60" value={formData.holdTime} onChange={e => setFormData({ ...formData, holdTime: e.target.value })} />
-                      <p className="text-[10px] text-green-600/70 mt-1">مدت زمان نگه‌داری در موقعیت</p>
-                    </div>
-                  )}
-
-                  {/* هرمی - نیاز به توضیحات */}
-                  {formData.system === 'pyramid' && (
-                    <div className="bg-indigo-500/10 border border-indigo-500/30 p-3 rounded-lg">
-                      <p className="text-xs text-indigo-600 dark:text-indigo-400 font-bold mb-1">سیستم هرمی</p>
-                      <p className="text-[10px] text-indigo-600/70">افزایش/کاهش تدریجی وزن یا تکرار در هر ست</p>
-                    </div>
-                  )}
-
-                  {/* حجم آلمانی - 10x10 */}
-                  {formData.system === 'german-volume' && (
-                    <div className="bg-red-500/10 border border-red-500/30 p-3 rounded-lg">
-                      <p className="text-xs text-red-600 dark:text-red-400 font-bold mb-1">حجم آلمانی (10x10)</p>
-                      <p className="text-[10px] text-red-600/70">10 ست × 10 تکرار با 60% 1RM</p>
-                    </div>
-                  )}
-
-                  {/* FST-7 */}
-                  {formData.system === 'fst7' && (
-                    <div className="bg-pink-500/10 border border-pink-500/30 p-3 rounded-lg">
-                      <p className="text-xs text-pink-600 dark:text-pink-400 font-bold mb-1">FST-7 (Fascia Stretch Training)</p>
-                      <p className="text-[10px] text-pink-600/70">7 ست با استراحت 30-45 ثانیه</p>
-                    </div>
-                  )}
-
-                  {/* 5x5 */}
-                  {formData.system === '5x5' && (
-                    <div className="bg-blue-500/10 border border-blue-500/30 p-3 rounded-lg">
-                      <p className="text-xs text-blue-600 dark:text-blue-400 font-bold mb-1">5x5 (Stronglifts)</p>
-                      <p className="text-[10px] text-blue-600/70">5 ست × 5 تکرار - افزایش وزن در هر جلسه</p>
-                    </div>
-                  )}
-
-                  {/* کلاستر */}
-                  {formData.system === 'cluster' && (
-                    <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-lg">
-                      <p className="text-xs text-amber-600 dark:text-amber-400 font-bold mb-1">کلاستر ست</p>
-                      <p className="text-[10px] text-amber-600/70">تقسیم یک ست به چند بخش با استراحت کوتاه</p>
-                    </div>
-                  )}
-
-                  {/* مایورپ */}
-                  {formData.system === 'myorep' && (
-                    <div className="bg-indigo-500/10 border border-indigo-500/30 p-3 rounded-lg">
-                      <p className="text-xs text-indigo-600 dark:text-indigo-400 font-bold mb-1">مایورپ (Myo-Reps)</p>
-                      <p className="text-[10px] text-indigo-600/70">ست فعال + چند ست کوتاه با استراحت 5-10 ثانیه</p>
-                    </div>
-                  )}
-
-                  {/* نگاتیو */}
-                  {formData.system === 'negatives' && (
-                    <div className="bg-violet-500/10 border border-violet-500/30 p-3 rounded-lg">
-                      <p className="text-xs text-violet-600 dark:text-violet-400 font-bold mb-1">نگاتیو (Eccentric)</p>
-                      <p className="text-[10px] text-violet-600/70">تأکید بر فاز منفی حرکت (پایین آوردن)</p>
-                    </div>
-                  )}
-
-                  {/* 21s */}
-                  {formData.system === '21s' && (
-                    <div className="bg-rose-500/10 border border-rose-500/30 p-3 rounded-lg">
-                      <p className="text-xs text-rose-600 dark:text-rose-400 font-bold mb-1">21s</p>
-                      <p className="text-[10px] text-rose-600/70">7 تکرار نیمه پایین + 7 تکرار نیمه بالا + 7 تکرار کامل</p>
-                    </div>
-                  )}
-
-                  {warning && (
-                    <div className="bg-red-500/10 border border-red-500/30 p-2 rounded-lg flex items-center gap-2 text-red-500 text-xs animate-pulse">
-                      <AlertTriangle size={14} /> {warning}
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-3 gap-2">
-                    <input className="input-glass text-center px-1" placeholder="ست" value={formData.sets} onChange={e => setFormData({ ...formData, sets: e.target.value })} />
-                    <input className="input-glass text-center px-1 col-span-2" placeholder="تکرار" value={formData.reps} onChange={e => setFormData({ ...formData, reps: e.target.value })} />
-                  </div>
-                </>
-              )}
-
-              {/* هوازی */}
-              {mode === 'cardio' && (
-                <>
-                  <select className="input-glass" value={formData.cCategory} onChange={e => setFormData({ ...formData, cCategory: e.target.value, cType: '' })}>
-                    <option value="">انتخاب دسته...</option>
-                    {cardioExercises ? Object.keys(cardioExercises).map(cat => <option key={cat} value={cat}>{cat}</option>) : <option disabled>در حال بارگذاری...</option>}
-                  </select>
-                  {formData.cCategory && (
-                    <select className="input-glass font-bold" value={formData.cType} onChange={e => setFormData({ ...formData, cType: e.target.value })}>
-                      <option value="">انتخاب نوع...</option>
-                      {cardioExercises && cardioExercises[formData.cCategory] &&
-                        Object.values(cardioExercises[formData.cCategory]).flat().map((ex: string) => (
-                          <option key={ex} value={ex}>{ex}</option>
-                        ))
-                      }
-                    </select>
-                  )}
-                  <input className="input-glass" placeholder="زمان (دقیقه)" type="number" value={formData.cTime} onChange={e => setFormData({ ...formData, cTime: e.target.value })} />
-                  <select className="input-glass" value={formData.cIntensity} onChange={e => setFormData({ ...formData, cIntensity: e.target.value })}>
-                    <option value="">سطح شدت...</option>
-                    <option value="low">سبک (50-60%)</option>
-                    <option value="moderate">متوسط (60-70%)</option>
-                    <option value="high">سنگین (70-85%)</option>
-                    <option value="very-high">خیلی سنگین (85%+)</option>
-                  </select>
-                </>
-              )}
-
-              {/* اصلاحی */}
-              {mode === 'corrective' && (
-                <>
-                  <select className="input-glass" value={formData.corrType} onChange={e => setFormData({ ...formData, corrType: e.target.value })}>
-                    <option value="">نوع ناهنجاری...</option>
-                    {correctiveExercises ? Object.keys(correctiveExercises).map(k => <option key={k} value={k}>{k}</option>) : <option disabled>در حال بارگذاری...</option>}
-                  </select>
-                  <select className="input-glass" value={formData.corrEx} onChange={e => setFormData({ ...formData, corrEx: e.target.value })}>
-                    <option value="">حرکت...</option>
-                    {corrExercisesList.map(e => <option key={e} value={e}>{e}</option>)}
-                  </select>
-                  <input className="input-glass" placeholder="تکرار/زمان" value={formData.reps} onChange={e => setFormData({ ...formData, reps: e.target.value })} />
-                </>
-              )}
-
-              {/* فیلدهای مشترک */}
-              {(mode === 'resist' || mode === 'corrective') && (
-                <div className="flex gap-2">
-                  <input className="input-glass flex-1 text-center" placeholder="استراحت" type="number" value={formData.rest} onChange={e => setFormData({ ...formData, rest: e.target.value })} />
-                  <select className="input-glass w-24 text-center" value={formData.restUnit} onChange={e => setFormData({ ...formData, restUnit: e.target.value })}>
-                    <option value="s">ثانیه</option>
-                    <option value="m">دقیقه</option>
-                  </select>
-                </div>
-              )}
-
-              <input className="input-glass" placeholder="توضیحات فنی" value={formData.note} onChange={e => setFormData({ ...formData, note: e.target.value })} />
-            </div>
-            
-            <button
-              onClick={handleAddExercise}
-              disabled={!canEdit}
-              className={`w-full btn-glass text-white mt-6 py-3.5 font-bold text-sm transition-all duration-300 hover:scale-[1.02] ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
-              style={!canEdit ? {} : { background: `linear-gradient(135deg, var(--accent-color), var(--accent-secondary))` }}
-              aria-label="افزودن حرکت به برنامه"
-              aria-disabled={!canEdit}
-              type="button"
-            >
-              <Plus size={18} className="inline ml-2"/> ثبت در برنامه
-            </button>
-          </div>
+              const newUser = { ...activeUser };
+              if (!newUser.plans.workouts[day]) newUser.plans.workouts[day] = [];
+              newUser.plans.workouts[day].push(workoutItem);
+              onUpdateUser(newUser);
+            }}
+            canEdit={canEdit}
+          />
         </div>
 
         {/* جدول سمت چپ - طراحی مدرن */}

@@ -58,7 +58,7 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="mb-4"
+      className={`mb-4 ${item.type === 'superset' ? 'border-l-4 border-yellow-500 pl-2' : ''}`}
     >
       <SpotlightCard
         className="p-4"

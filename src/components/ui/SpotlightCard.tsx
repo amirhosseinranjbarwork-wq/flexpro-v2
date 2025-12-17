@@ -9,7 +9,7 @@ interface SpotlightCardProps {
   intensity?: number;
 }
 
-const SpotlightCard: React.FC<SpotlightCardProps> = ({
+export const SpotlightCard: React.FC<SpotlightCardProps> = ({
   children,
   className = '',
   spotlightColor = 'rgba(14, 165, 233, 0.3)',
@@ -41,7 +41,7 @@ const SpotlightCard: React.FC<SpotlightCardProps> = ({
   return (
     <motion.div
       ref={cardRef}
-      className={`relative overflow-hidden cursor-pointer ${className}`}
+      className={`relative overflow-hidden cursor-pointer bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg ${className}`}
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -83,5 +83,3 @@ const SpotlightCard: React.FC<SpotlightCardProps> = ({
     </motion.div>
   );
 };
-
-export { SpotlightCard };
