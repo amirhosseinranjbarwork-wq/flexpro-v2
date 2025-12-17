@@ -38,12 +38,24 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   const [profile, setProfile] = useState<Profile | null>(null);
 
   const loadProfile = async (uid: string) => {
+    // #region agent log - hypothesis B: Profile loading start
+    fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:44',message:'loadProfile called',data:{uid:uid,supabaseAvailable:!!supabase},sessionId:'debug-session',runId:'initial',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+
     if (!supabase) return null;
     const { data, error } = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle();
+
     if (error) {
+      // #region agent log - hypothesis B: Profile loading error
+      fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:47',message:'loadProfile error',data:{uid:uid,error:error.message,code:error.code},sessionId:'debug-session',runId:'initial',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       console.warn('loadProfile error', error.message);
       return null;
     }
+
+    // #region agent log - hypothesis B: Profile loading success
+    fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:50',message:'loadProfile success',data:{uid:uid,profileFound:!!data,profileData:data ? {id:data.id,role:data.role,email:data.email,username:data.username} : null},sessionId:'debug-session',runId:'initial',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     return data as Profile | null;
   };
 
@@ -55,6 +67,10 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     if (!data) throw new Error('نام کاربری یافت نشد');
     return data as string;
   }, []);
+
+  // #region agent log - hypothesis B: Auth useEffect triggered
+  fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:75',message:'Auth useEffect triggered',data:{supabaseEnabled:isSupabaseEnabled,supabaseAvailable:!!supabase,timestamp:new Date().toISOString()},sessionId:'debug-session',runId:'initial',hypothesisId:'B'})}).catch(()=>{});
+  // #endregion
 
   useEffect(() => {
     if (!isSupabaseEnabled || !supabase) {

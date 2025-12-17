@@ -152,6 +152,10 @@ export const mapClientToUser = (client: Client, plan?: WorkoutPlanFromDB): User 
 // Export helper functions
 export { migrateUser, planIdForClient, clientPayloadFromUser, workoutPlanPayloadFromUser };
 
+// #region agent log - hypothesis B: DataProvider initialization
+fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DataContext.tsx:155',message:'DataProvider initialized',data:{user:auth.user?.id,role:auth.role,childrenCount:React.Children.count(children),timestamp:new Date().toISOString()},sessionId:'debug-session',runId:'initial',hypothesisId:'B'})}).catch(()=>{});
+// #endregion
+
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const auth = useAuth();
   const { theme } = useUI();
@@ -203,6 +207,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Fetch data from Supabase (single source of truth)
   const refreshData = useCallback(async () => {
+    // #region agent log - hypothesis D: refreshData called
+    fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DataContext.tsx:209',message:'refreshData called',data:{userId:auth?.user?.id,supabaseReady:isSupabaseReady,hasLocalUsers:getInitialUsers().length,timestamp:new Date().toISOString()},sessionId:'debug-session',runId:'initial',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
+
     if (!auth?.user?.id) {
       setUsers(getInitialUsers());
       setTemplates(getInitialTemplates());

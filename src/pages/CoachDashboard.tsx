@@ -264,6 +264,10 @@ const EmptyState: React.FC<{
 );
 
 // ========== Main Component ==========
+// #region agent log - hypothesis E: CoachDashboard initialization
+fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CoachDashboard.tsx:267',message:'CoachDashboard component mounted',data:{userId:user?.id,theme:theme,timestamp:new Date().toISOString()},sessionId:'debug-session',runId:'initial',hypothesisId:'E'})}).catch(()=>{});
+// #endregion
+
 const CoachDashboard: React.FC = () => {
   const { user, signOut } = useAuth();
   const { theme, toggleTheme, printData, closePrintModal, downloadPDF } = useUI();

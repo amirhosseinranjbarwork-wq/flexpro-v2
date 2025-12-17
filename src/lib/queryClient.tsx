@@ -41,6 +41,10 @@ interface ReactQueryProviderProps {
  * React Query Provider Wrapper
  * Wraps application with QueryClientProvider for centralized server state management
  */
+// #region agent log - hypothesis B: ReactQueryProvider initialized
+fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'queryClient.tsx:44',message:'ReactQueryProvider initialized',data:{childrenCount:React.Children.count(children),timestamp:new Date().toISOString()},sessionId:'debug-session',runId:'initial',hypothesisId:'B'})}).catch(()=>{});
+// #endregion
+
 export const ReactQueryProvider: React.FC<ReactQueryProviderProps> = ({ children }) => {
   return (
     <QueryClientProvider client={queryClient}>

@@ -1,3 +1,8 @@
+// #region agent log - hypothesis A: pushNotifications.ts loaded
+console.log('DEBUG: pushNotifications.ts loaded');
+fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'pushNotifications.ts:1',message:'pushNotifications.ts loaded',data:{timestamp:new Date().toISOString()},sessionId:'debug-session',runId:'initial',hypothesisId:'A'})}).catch(()=>{});
+// #endregion
+
 import { supabase } from '../lib/supabaseClient';
 
 export interface PushSubscriptionData {
