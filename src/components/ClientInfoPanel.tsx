@@ -19,11 +19,12 @@ import {
   FileText,
   Scale,
   Dumbbell,
+  ChefHat,
   Plus,
   ArrowRight
 } from 'lucide-react';
 import type { Client, User as UserType } from '../types/index';
-import { LoadingSpinner } from './ui/LoadingSpinner';
+import { LoadingSpinner } from './index';
 
 interface ClientInfoPanelProps {
   client: Client | null;

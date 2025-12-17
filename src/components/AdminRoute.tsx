@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { LoadingSpinner } from './ui/LoadingSpinner';
+import { LoadingSpinner } from './index';
 
 interface AdminRouteProps {
   children: React.ReactNode;
