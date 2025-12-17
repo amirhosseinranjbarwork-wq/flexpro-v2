@@ -7,7 +7,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import type { User, WorkoutItem, WorkoutMode } from '../types/index';
 import type { ExercisesRow } from '../types/database';
-import EmptyState from './EmptyState';
+import { EmptyState } from './ui/EmptyState';
 // Removed import of riskyExercises - will be handled differently
 import { useDebounce } from '../hooks/useDebounce';
 import SavePlanModal from './SavePlanModal';

@@ -178,7 +178,8 @@ const SupplementsPanel: React.FC<SupplementsPanelProps> = ({ activeUser, onUpdat
     "چای سفید (White Tea)",
     "چای اولانگ (Oolong Tea)",
     "چای روئیبوش (Rooibos Tea)"
-  ], []);
+  ];
+  }, [supplementsFromDB]);
 
   const handleAdd = () => {
     if (!canEdit) {

@@ -23,7 +23,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import type { Client, User as UserType } from '../types/index';
-import LoadingSpinner from './LoadingSpinner';
+import { LoadingSpinner } from './ui/LoadingSpinner';
 
 interface ClientInfoPanelProps {
   client: Client | null;
