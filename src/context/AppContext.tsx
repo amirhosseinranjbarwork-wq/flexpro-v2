@@ -16,10 +16,6 @@ const AppContext = React.createContext<AppContextType | undefined>(undefined);
  * AppProvider - Wraps UIProvider and DataProvider
  * This maintains backward compatibility while using the new architecture
  */
-// #region agent log - hypothesis B: AppProvider initialized
-fetch('http://127.0.0.1:7243/ingest/ec06820d-8d44-4cc6-8efe-2fb418aa5d14',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AppContext.tsx:19',message:'AppProvider initialized',data:{childrenCount:React.Children.count(children),timestamp:new Date().toISOString()},sessionId:'debug-session',runId:'initial',hypothesisId:'B'})}).catch(()=>{});
-// #endregion
-
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <UIProvider>
