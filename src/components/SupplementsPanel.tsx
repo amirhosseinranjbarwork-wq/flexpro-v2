@@ -20,13 +20,9 @@ const SupplementsPanel: React.FC<SupplementsPanelProps> = ({ activeUser, onUpdat
 
   // لیست مکمل‌ها (fallback برای کمپتیبیلیتی)
   const supplementsData = useMemo(() => {
-    if (supplementsFromDB && supplementsFromDB.length > 0) {
-      return supplementsFromDB.map((s: any) => s.name);
-    }
-    
-    return [
-    // پروتئین‌ها
-    "پروتئین وی (Whey Protein)",
+    const staticSupplements = [
+      // پروتئین‌ها
+      "پروتئین وی (Whey Protein)",
     "پروتئین وی ایزوله (Whey Isolate)",
     "پروتئین وی کنسانتره (Whey Concentrate)",
     "پروتئین وی هیدرولیزه (Whey Hydrolysate)",
@@ -178,7 +174,14 @@ const SupplementsPanel: React.FC<SupplementsPanelProps> = ({ activeUser, onUpdat
     "چای سفید (White Tea)",
     "چای اولانگ (Oolong Tea)",
     "چای روئیبوش (Rooibos Tea)"
-  ], []);
+    ];
+
+    const dbSupplementNames = (supplementsFromDB || []).map((s: any) => s.name).filter(Boolean);
+
+    const combined = new Set([...dbSupplementNames, ...staticSupplements]);
+
+    return Array.from(combined).sort((a, b) => a.localeCompare(b));
+  }, [supplementsFromDB]);
 
   const handleAdd = () => {
     if (!canEdit) {
