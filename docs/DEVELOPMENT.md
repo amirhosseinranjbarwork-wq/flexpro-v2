@@ -16,9 +16,14 @@
 #### **روش A: Double-click (ساده‌ترین راه)**
 
 ```bash
-# فقط روی فایل START-DEV.bat دوبار کلیک کنید!
-START-DEV.bat
+# فقط روی فایل start-dev.bat دوبار کلیک کنید!
+start-dev.bat
 ```
+
+این فایل batch کارهای زیر را انجام می‌دهد:
+- ✅ همگام‌سازی کامل با Git (commit & push)
+- ⚠️ بررسی Supabase (اگر اجرا نباشد، warning می‌دهد)
+- 🚀 اجرای Development Server
 
 #### **روش B: Terminal/Command Line**
 
@@ -95,7 +100,7 @@ npm run dev:hot
 | `npm run dev` | اجرای سرور توسعه |
 | `npm run dev:hot` | اجرای سرور با HMR و host |
 | `npm run dev:sync` | **همگام‌سازی کامل + اجرای سرور** |
-| `START-DEV.bat` | **فایل batch برای اجرای سریع (double-click)** |
+| `start-dev.bat` | **فایل batch برای اجرای سریع (double-click)** |
 | `npm run build` | ساخت پروژه برای production |
 | `npm run preview` | پیش‌نمایش build شده |
 | `npm run test` | اجرای تست‌ها |

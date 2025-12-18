@@ -1,20 +1,21 @@
 @echo off
 REM FlexPro Development Sync Launcher
 REM این فایل batch workflow توسعه کامل را اجرا می‌کند
+chcp 65001 >nul
 
 echo ========================================
-echo 🎯 FlexPro Development Sync Launcher
+echo FlexPro Development Sync Launcher
 echo ========================================
 echo.
 
 REM تنظیم دایرکتوری به محل فایل batch (مهم برای اجرای از shortcut یا administrator)
 cd /d "%~dp0"
 
-echo 📂 تغییر دایرکتوری به: %cd%
+echo تغییر دایرکتوری به: %cd%
 echo.
 
 REM اجرای دستور همگام‌سازی کامل
-echo 🚀 شروع همگام‌سازی کامل...
+echo شروع همگام‌سازی کامل...
 echo.
 
 REM بررسی وجود npm
