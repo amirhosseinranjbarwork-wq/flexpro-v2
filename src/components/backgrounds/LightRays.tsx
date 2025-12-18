@@ -1,5 +1,5 @@
 import React from 'react';
-import { useUI } from '../../context/UIContext';
+import { useApp } from '../../context/AppContext';
 import './LightRays.css';
 
 interface LightRaysProps {
@@ -8,7 +8,7 @@ interface LightRaysProps {
 }
 
 const LightRays: React.FC<LightRaysProps> = ({ children, className = '' }) => {
-  const { theme } = useUI();
+  const { theme } = useApp();
   const isDark = theme === 'dark';
 
   return (

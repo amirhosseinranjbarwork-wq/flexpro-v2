@@ -18,14 +18,14 @@ function App() {
   return (
     <ErrorBoundary>
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors">
-      <Toaster 
-        position="top-center" 
-        toastOptions={{ 
+      <Toaster
+        position="top-center"
+        toastOptions={{
           duration: 4000,
-          style: { 
-            background: 'var(--glass-bg)', 
-            color: 'var(--text-primary)', 
-            borderRadius: '12px', 
+          style: {
+            background: 'var(--glass-bg)',
+            color: 'var(--text-primary)',
+            borderRadius: '12px',
             border: '1px solid var(--glass-border)',
             padding: '12px 16px',
             fontSize: '14px',
@@ -43,7 +43,7 @@ function App() {
               secondary: '#fff',
             },
           },
-        }} 
+        }}
       />
       <Routes>
         <Route path="/" element={<LandingPage />} />

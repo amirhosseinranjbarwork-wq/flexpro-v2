@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
-import { Save, AlertTriangle, Plus, Search, Dumbbell, Download } from 'lucide-react';
+import { Save, AlertTriangle, Plus, Search, Dumbbell, Download, Filter, Target, Clock, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import type { User, WorkoutItem, WorkoutMode } from '../types/index';
+import type { Exercise, ExerciseCategory, EquipmentType, DifficultyLevel } from '../types/database';
 import EmptyState from './ui/EmptyState';
 import { riskyExercises } from '../data/resistanceExercises';
 import { useDebounce } from '../hooks/useDebounce';
@@ -25,11 +26,16 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
   const { hasPermission } = useApp();
   const canEdit = hasPermission('editProgram', activeUser.id);
   const [day, setDay] = useState(1);
-  const [mode, setMode] = useState('resist'); 
+  const [mode, setMode] = useState('resist');
   const [searchTerm, setSearchTerm] = useState('');
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showLoadModal, setShowLoadModal] = useState(false);
   const debouncedSearch = useDebounce(searchTerm, 300);
+
+  // فیلترهای علمی جدید
+  const [categoryFilter, setCategoryFilter] = useState<ExerciseCategory | ''>('');
+  const [equipmentFilter, setEquipmentFilter] = useState<EquipmentType | ''>('');
+  const [difficultyFilter, setDifficultyFilter] = useState<DifficultyLevel | ''>('');
   
   const initialFormState = {
     system: 'normal', muscle: '', subMuscle: '', ex1: '', ex2: '', name3: '', name4: '', sets: '3', reps: '10', 
@@ -48,37 +54,65 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
   // بارگذاری داده‌های تمرینی از Supabase
   const { data: exercisesData, isLoading: exercisesLoading, error: exercisesError } = useExercises();
 
-  // سازماندهی داده‌ها بر اساس ساختار قدیمی برای سازگاری
+  // فیلترینگ علمی exercises
+  const filteredExercises = useMemo(() => {
+    if (!exercisesData) return [];
+
+    return exercisesData.filter((exercise: Exercise) => {
+      // فیلتر جستجو
+      const matchesSearch = !debouncedSearch ||
+        exercise.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        exercise.primary_muscle?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        exercise.muscle_group.toLowerCase().includes(debouncedSearch.toLowerCase());
+
+      // فیلتر دسته‌بندی
+      const matchesCategory = !categoryFilter || exercise.category === categoryFilter;
+
+      // فیلتر تجهیزات
+      const matchesEquipment = !equipmentFilter || exercise.equipment_standardized === equipmentFilter;
+
+      // فیلتر سطح دشواری
+      const matchesDifficulty = !difficultyFilter || exercise.difficulty_level === difficultyFilter;
+
+      return matchesSearch && matchesCategory && matchesEquipment && matchesDifficulty;
+    });
+  }, [exercisesData, debouncedSearch, categoryFilter, equipmentFilter, difficultyFilter]);
+
+  // سازگاری با ساختار قدیمی برای dropdownها
   const resistanceExercises = useMemo(() => {
     if (!exercisesData) return null;
 
-    const resistance = exercisesData.filter((ex: any) => ex.type === 'resistance');
-    const grouped: Record<string, Record<string, string[]>> = {};
+    const resistance = exercisesData.filter((ex: Exercise) => ex.category === 'bodybuilding');
+    const grouped: Record<string, string[]> = {};
 
-    resistance.forEach((ex: any) => {
-      if (!grouped[ex.muscle_group]) {
-        grouped[ex.muscle_group] = {};
+    resistance.forEach((ex: Exercise) => {
+      const muscle = ex.primary_muscle || ex.muscle_group;
+      if (!grouped[muscle]) {
+        grouped[muscle] = [];
       }
-      if (!grouped[ex.muscle_group][ex.sub_muscle_group || 'other']) {
-        grouped[ex.muscle_group][ex.sub_muscle_group || 'other'] = [];
-      }
-      grouped[ex.muscle_group][ex.sub_muscle_group || 'other'].push(ex.name);
+      grouped[muscle].push(ex.name);
     });
 
     return grouped;
   }, [exercisesData]);
 
+  // استخراج نام حرکات فیلتر شده برای dropdown سازگاری
+  const filteredExerciseNames = useMemo(() => {
+    return filteredExercises.map(ex => ex.name);
+  }, [filteredExercises]);
+
   const correctiveExercises = useMemo(() => {
     if (!exercisesData) return null;
 
-    const corrective = exercisesData.filter((ex: any) => ex.type === 'corrective');
+    const corrective = exercisesData.filter((ex: Exercise) => ex.category === 'corrective');
     const grouped: Record<string, string[]> = {};
 
-    corrective.forEach((ex: any) => {
-      if (!grouped[ex.muscle_group]) {
-        grouped[ex.muscle_group] = [];
+    corrective.forEach((ex: Exercise) => {
+      const muscle = ex.primary_muscle || ex.muscle_group;
+      if (!grouped[muscle]) {
+        grouped[muscle] = [];
       }
-      grouped[ex.muscle_group].push(ex.name);
+      grouped[muscle].push(ex.name);
     });
 
     return grouped;
@@ -87,19 +121,15 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
   const cardioExercises = useMemo(() => {
     if (!exercisesData) return null;
 
-    const cardio = exercisesData.filter((ex: any) => ex.type === 'cardio');
-    const grouped: Record<string, Record<string, string[]>> = {};
+    const cardio = exercisesData.filter((ex: Exercise) => ex.category === 'cardio');
+    const grouped: Record<string, string[]> = {};
 
-    cardio.forEach((ex: any) => {
-      // Group cardio exercises by equipment or category
-      const category = ex.equipment || 'general';
+    cardio.forEach((ex: Exercise) => {
+      const category = ex.equipment_standardized || 'general';
       if (!grouped[category]) {
-        grouped[category] = {};
+        grouped[category] = [];
       }
-      if (!grouped[category][ex.muscle_group]) {
-        grouped[category][ex.muscle_group] = [];
-      }
-      grouped[category][ex.muscle_group].push(ex.name);
+      grouped[category].push(ex.name);
     });
 
     return grouped;
@@ -137,10 +167,13 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
     const timer = setTimeout(() => {
       if (formData.subMuscle && formData.muscle && resistanceExercises && resistanceExercises[formData.muscle]) {
         setExercises(resistanceExercises[formData.muscle][formData.subMuscle] || []);
-      } else setExercises([]);
+      } else {
+        // استفاده از filteredExerciseNames برای سازگاری
+        setExercises(filteredExerciseNames);
+      }
     }, 0);
     return () => clearTimeout(timer);
-  }, [formData.subMuscle, formData.muscle, resistanceExercises]);
+  }, [formData.subMuscle, formData.muscle, resistanceExercises, filteredExerciseNames]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -172,19 +205,12 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
         warmupType: '', cooldownType: ''
       }));
       setSubMuscles([]);
-      setExercises([]);
+      setExercises(filteredExerciseNames);
       setCorrExercisesList([]);
       setSearchTerm('');
     }, 0);
     return () => clearTimeout(timer);
   }, [mode]);
-
-  // فیلتر حرکات با جستجو - استفاده از useMemo و debounce برای بهینه‌سازی
-  const filteredExercises = useMemo(() => {
-    if (!debouncedSearch) return exercises;
-    const lowerSearch = debouncedSearch.toLowerCase();
-    return exercises.filter(ex => ex.toLowerCase().includes(lowerSearch));
-  }, [exercises, debouncedSearch]);
 
   // هندلر جابجایی - استفاده از useCallback برای بهینه‌سازی
   const handleDragEnd = useCallback((event: DragEndEvent) => {
@@ -501,6 +527,51 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
                     </select>
                   </div>
 
+                  {/* فیلترهای علمی جدید */}
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-3 gap-2">
+                      <select
+                        className="input-glass text-xs"
+                        value={categoryFilter}
+                        onChange={e => setCategoryFilter(e.target.value as ExerciseCategory | '')}
+                      >
+                        <option value="">همه دسته‌ها</option>
+                        <option value="bodybuilding">🏋️ بدنسازی</option>
+                        <option value="cardio">🏃 کاردیو</option>
+                        <option value="corrective">🩹 اصلاحی</option>
+                        <option value="warmup">🔥 گرم‌کردن</option>
+                        <option value="cooldown">❄️ سردکردن</option>
+                      </select>
+
+                      <select
+                        className="input-glass text-xs"
+                        value={equipmentFilter}
+                        onChange={e => setEquipmentFilter(e.target.value as EquipmentType | '')}
+                      >
+                        <option value="">همه تجهیزات</option>
+                        <option value="barbell">هالتر</option>
+                        <option value="dumbbell">دمبل</option>
+                        <option value="cable">کابل</option>
+                        <option value="machine">دستگاه</option>
+                        <option value="bodyweight">وزن بدن</option>
+                        <option value="bands">باند</option>
+                        <option value="trx">TRX</option>
+                        <option value="foam_roller">فوم رولر</option>
+                      </select>
+
+                      <select
+                        className="input-glass text-xs"
+                        value={difficultyFilter}
+                        onChange={e => setDifficultyFilter(e.target.value as DifficultyLevel | '')}
+                      >
+                        <option value="">همه سطوح</option>
+                        <option value="beginner">مبتدی</option>
+                        <option value="intermediate">متوسط</option>
+                        <option value="advanced">پیشرفته</option>
+                      </select>
+                    </div>
+                  </div>
+
                   {/* جستجوی حرکات */}
                   {exercises.length > 10 && (
                     <div className="relative">
@@ -517,14 +588,14 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
 
                   <select className="input-glass font-bold text-[var(--accent-color)]" value={formData.ex1} onChange={e => setFormData({ ...formData, ex1: e.target.value })}>
                     <option value="">انتخاب حرکت...</option>
-                    {filteredExercises.map(e => <option key={e} value={e}>{e}</option>)}
+                    {filteredExerciseNames.map(name => <option key={name} value={name}>{name}</option>)}
                   </select>
 
                   {/* سوپرست - نیاز به 2 حرکت */}
                   {formData.system === 'superset' && (
                     <select className="input-glass border-r-4 border-r-yellow-400 font-bold text-yellow-600 dark:text-yellow-400" value={formData.ex2} onChange={e => setFormData({ ...formData, ex2: e.target.value })}>
                       <option value="">+ انتخاب حرکت دوم (الزامی)</option>
-                      {filteredExercises.map(e => <option key={e} value={e}>{e}</option>)}
+                      {filteredExerciseNames.map(name => <option key={name} value={name}>{name}</option>)}
                     </select>
                   )}
 

@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState, useCallback, memo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
+import LightRays from '../components/backgrounds/LightRays';
+import GlassCard from '../components/ui/GlassCard';
 import { fetchClientById, fetchWorkoutPlansByClient, isSupabaseReady, updateClient, findCoachByCode, createProgramRequest, fetchRequestsByClient, deleteProgramRequestLocally } from '../lib/supabaseApi';
 import type { UserPlans, WorkoutItem, Client, ProfileData, ProgramRequest, Measurements } from '../types/index';
 import { toast } from 'react-hot-toast';
@@ -62,7 +64,7 @@ const GlowCard: React.FC<{
   className?: string;
   glowColor?: string;
   onClick?: () => void;
-}> = ({ children, className = '', glowColor = 'var(--accent-color)', onClick }) => (
+}> = ({ children, className = '', glowColor = '#8b5cf6', onClick }) => (
   <motion.div
     whileHover={{ scale: onClick ? 1.02 : 1.01, y: onClick ? -4 : 0 }}
     whileTap={{ scale: 0.98 }}
@@ -93,7 +95,7 @@ const StatCard: React.FC<{
     initial="hidden"
     animate="visible"
     transition={{ delay }}
-    className="relative overflow-hidden glass-card p-6 rounded-2xl border border-[var(--glass-border)] group hover:border-[var(--accent-color)]/30 transition-all duration-500"
+    className="relative overflow-hidden glass-card p-6 rounded-2xl border border-white/20 group hover:border-purple-400/30 transition-all duration-500"
   >
     <div
       className="absolute -top-1/2 -right-1/2 w-full h-full rounded-full opacity-20 group-hover:opacity-30 transition-opacity"
@@ -131,7 +133,7 @@ const NavItem: React.FC<{
     onClick={onClick}
     className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 relative group ${
       active
-        ? 'bg-gradient-to-l from-[var(--accent-color)] to-[var(--accent-secondary)] text-white shadow-lg shadow-[var(--accent-color)]/30'
+        ? 'bg-gradient-to-l from-purple-500 to-blue-500 text-white shadow-lg shadow-purple-500/30'
         : 'text-[var(--text-secondary)] hover:bg-[var(--glass-bg)] hover:text-[var(--text-primary)]'
     }`}
   >
@@ -200,8 +202,8 @@ const EmptyState: React.FC<{
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={action.onClick}
-        className="px-5 py-3 rounded-xl font-semibold text-white shadow-lg shadow-[var(--accent-color)]/30"
-        style={{ background: 'linear-gradient(135deg, var(--accent-color), var(--accent-secondary))' }}
+        className="px-5 py-3 rounded-xl font-semibold text-white shadow-lg shadow-purple-500/30"
+        style={{ background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)' }}
       >
         {action.label}
       </motion.button>
@@ -260,23 +262,23 @@ const DayCard: React.FC<{ day: number; items: WorkoutItem[]; isActive?: boolean;
     whileTap={{ scale: 0.98 }}
     className={`relative w-full p-4 rounded-2xl border-2 transition-all duration-300 ${
       isActive
-        ? 'bg-[var(--accent-color)]/10 border-[var(--accent-color)] shadow-lg shadow-[var(--accent-color)]/20'
-        : 'bg-[var(--glass-bg)] border-[var(--glass-border)] hover:border-[var(--accent-color)]/50 hover:bg-[var(--accent-color)]/5'
+        ? 'bg-purple-500/10 border-purple-500 shadow-lg shadow-purple-500/20'
+        : 'bg-white/10 border-white/20 hover:border-purple-400/50 hover:bg-purple-400/5'
     }`}
     aria-label={`جلسه ${day}`}
     type="button"
   >
     <div className="flex items-center justify-between mb-3">
       <div className="flex items-center gap-2">
-        <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-[var(--accent-color)]' : 'bg-[var(--text-secondary)]'}`} />
-        <span className={`text-sm font-bold ${isActive ? 'text-[var(--accent-color)]' : 'text-[var(--text-primary)]'}`}>
+        <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-purple-500' : 'bg-slate-400'}`} />
+        <span className={`text-sm font-bold ${isActive ? 'text-purple-400' : 'text-white'}`}>
           جلسه {day}
         </span>
       </div>
       {items.length > 0 && (
         <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${
           isActive 
-            ? 'bg-[var(--accent-color)]/30 text-[var(--accent-color)]' 
+            ? 'bg-purple-500/30 text-purple-400' 
             : 'bg-[var(--text-primary)]/10 text-[var(--text-secondary)]'
         }`}>
           {items.length} حرکت
@@ -846,7 +848,7 @@ const ClientDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex">
+    <div className="min-h-screen bg-transparent text-white flex relative overflow-hidden">
       <motion.aside
         initial={false}
         animate={{ width: sidebarOpen ? 280 : 88 }}
@@ -2446,21 +2448,23 @@ const ClientDashboard: React.FC = () => {
 
 // React Bits Floating Action Button for ClientDashboard
 const ClientDashboardWithFAB = () => (
-  <>
-    <ClientDashboard />
-    <FloatingActionButton
-      onClick={() => {
-        // Scroll to top or open request modal
-        const requestTab = document.querySelector('[data-tab="request"]');
-        if (requestTab) {
-          (requestTab as HTMLElement).click();
-        }
-      }}
-      icon={<Send className="w-5 h-5" />}
-      tooltip="ارسال درخواست جدید"
-      position="bottom-right"
-    />
-  </>
+  <LightRays className="opacity-30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white relative overflow-hidden">
+      <ClientDashboard />
+      <FloatingActionButton
+        onClick={() => {
+          // Scroll to top or open request modal
+          const requestTab = document.querySelector('[data-tab="request"]');
+          if (requestTab) {
+            (requestTab as HTMLElement).click();
+          }
+        }}
+        icon={<Send className="w-5 h-5" />}
+        tooltip="ارسال درخواست جدید"
+        position="bottom-right"
+      />
+    </div>
+  </LightRays>
 );
 
 export default ClientDashboardWithFAB;

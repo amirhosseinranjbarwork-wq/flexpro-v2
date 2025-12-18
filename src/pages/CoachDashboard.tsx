@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback, Suspense, lazy } from
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { useData } from '../context/DataContext';
+import LightRays from '../components/backgrounds/LightRays';
 
 // Lazy load heavy panel components
 const TrainingPanel = lazy(() => import('../components/TrainingPanel'));
@@ -13,8 +14,8 @@ const ProfilePanel = lazy(() => import('../components/ProfilePanel'));
 const PanelLoadingFallback = () => (
   <div className="flex items-center justify-center p-8 bg-[var(--glass-bg)] rounded-2xl border border-[var(--glass-border)]">
     <div className="text-center space-y-4">
-      <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[var(--accent-color)] border-r-transparent"></div>
-      <p className="text-sm text-[var(--text-secondary)]">در حال بارگذاری...</p>
+      <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-purple-500 border-r-transparent"></div>
+      <p className="text-sm text-slate-300">در حال بارگذاری...</p>
     </div>
   </div>
 );
@@ -104,29 +105,28 @@ const scaleIn = {
 };
 
 // ========== Reusable Components ==========
-const GlowCard: React.FC<{ 
-  children: React.ReactNode; 
+// Import GlassCard
+import GlassCard from '../components/ui/GlassCard';
+
+const GlowCard: React.FC<{
+  children: React.ReactNode;
   className?: string;
   glowColor?: string;
   onClick?: () => void;
-}> = ({ children, className = '', glowColor = 'var(--accent-color)', onClick }) => (
-  <motion.div
-    whileHover={{ scale: 1.02, y: -4 }}
-    whileTap={{ scale: 0.98 }}
+}> = ({ children, className = '', glowColor = '#8b5cf6', onClick }) => (
+  <GlassCard
+    className={`relative group overflow-hidden transition-all duration-500 ${onClick ? 'cursor-pointer' : ''} ${className}`}
+    glow={true}
     onClick={onClick}
-    className={`relative group glass-card rounded-2xl border border-[var(--glass-border)] overflow-hidden transition-all duration-500 ${onClick ? 'cursor-pointer' : ''} ${className}`}
-    style={{ 
-      boxShadow: `0 0 0 1px ${glowColor}10`,
-    }}
   >
-    <div 
+    <div
       className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
       style={{
         background: `radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), ${glowColor}15, transparent 40%)`
       }}
     />
     {children}
-  </motion.div>
+  </GlassCard>
 );
 
 const StatCard: React.FC<{ 
@@ -137,12 +137,10 @@ const StatCard: React.FC<{
   gradient: string;
   delay?: number;
 }> = ({ icon, label, value, trend, gradient, delay = 0 }) => (
-  <motion.div
-    variants={itemVariants}
-    initial="hidden"
-    animate="visible"
-    transition={{ delay }}
-    className="relative overflow-hidden glass-card p-6 rounded-2xl border border-[var(--glass-border)] group hover:border-[var(--accent-color)]/30 transition-all duration-500"
+  <GlassCard
+    variant="elevated"
+    className="relative overflow-hidden p-6 group hover:border-purple-400/30 transition-all duration-500"
+    animate={false}
   >
     {/* Background Gradient */}
     <div 
@@ -168,7 +166,7 @@ const StatCard: React.FC<{
         {icon}
       </div>
     </div>
-  </motion.div>
+  </GlassCard>
 );
 
 const NavItem: React.FC<{ 
@@ -185,7 +183,7 @@ const NavItem: React.FC<{
     onClick={onClick}
     className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 relative group ${
       active
-        ? 'bg-gradient-to-l from-[var(--accent-color)] to-[var(--accent-secondary)] text-white shadow-lg shadow-[var(--accent-color)]/30'
+        ? 'bg-gradient-to-l from-purple-500 to-blue-500 text-white shadow-lg shadow-purple-500/30'
         : 'text-[var(--text-secondary)] hover:bg-[var(--glass-bg)] hover:text-[var(--text-primary)]'
     }`}
   >
@@ -254,8 +252,8 @@ const EmptyState: React.FC<{
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={action.onClick}
-        className="px-6 py-3 rounded-xl font-semibold text-white shadow-lg shadow-[var(--accent-color)]/30"
-        style={{ background: 'linear-gradient(135deg, var(--accent-color), var(--accent-secondary))' }}
+        className="px-6 py-3 rounded-xl font-semibold text-white shadow-lg shadow-purple-500/30"
+        style={{ background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)' }}
       >
         {action.label}
       </motion.button>
@@ -774,13 +772,14 @@ const CoachDashboard: React.FC = () => {
 
   // ========== Render ==========
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex">
+    <LightRays className="opacity-30">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white flex relative overflow-hidden">
       {/* ==================== Sidebar - Desktop ==================== */}
       <motion.aside
         initial={false}
         animate={{ width: sidebarOpen ? 280 : 88 }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className="hidden lg:flex flex-col h-screen sticky top-0 glass-panel border-l border-[var(--glass-border)] z-30"
+        className="hidden lg:flex flex-col h-screen sticky top-0 bg-black/20 backdrop-blur-xl border-l border-white/10 shadow-2xl z-30"
       >
         {/* Logo & Brand */}
         <div className="p-5 border-b border-[var(--glass-border)]">
@@ -788,7 +787,7 @@ const CoachDashboard: React.FC = () => {
             <motion.div 
               whileHover={{ rotate: 360 }}
               transition={{ duration: 0.6 }}
-              className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--accent-color)] to-[var(--accent-secondary)] flex items-center justify-center text-white font-black text-xl shadow-lg shadow-[var(--accent-color)]/30"
+              className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-purple-500/30"
             >
               V2
             </motion.div>
@@ -799,7 +798,7 @@ const CoachDashboard: React.FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
                 >
-                  <h1 className="text-xl font-black bg-gradient-to-l from-[var(--accent-color)] to-[var(--accent-secondary)] bg-clip-text text-transparent">
+                  <h1 className="text-xl font-black bg-gradient-to-l from-purple-500 to-blue-500 bg-clip-text text-transparent">
                     VO₂MAX
                   </h1>
                   <p className="text-xs text-[var(--text-secondary)] font-medium">پنل مدیریت مربی</p>
@@ -890,7 +889,7 @@ const CoachDashboard: React.FC = () => {
             >
               <div className="p-5 border-b border-[var(--glass-border)] flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--accent-color)] to-[var(--accent-secondary)] flex items-center justify-center text-white font-bold">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold">
                     V2
                   </div>
                   <h1 className="text-lg font-black">VO₂MAX</h1>
@@ -934,7 +933,7 @@ const CoachDashboard: React.FC = () => {
       {/* ==================== Main Content ==================== */}
       <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
         {/* ==================== Header ==================== */}
-        <header className="sticky top-0 z-40 glass-panel border-b border-[var(--glass-border)] px-4 sm:px-6 py-4">
+        <header className="sticky top-0 z-40 bg-black/20 backdrop-blur-xl border-b border-white/10 px-4 sm:px-6 py-4 shadow-lg">
           <div className="flex items-center justify-between">
             <div className="pr-12 lg:pr-0">
               <h2 className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">
@@ -1000,7 +999,7 @@ const CoachDashboard: React.FC = () => {
                 </div>
                 <motion.div 
                   whileHover={{ scale: 1.05 }}
-                  className="w-11 h-11 rounded-xl bg-gradient-to-br from-[var(--accent-color)] to-[var(--accent-secondary)] flex items-center justify-center text-white font-bold shadow-lg cursor-pointer"
+                  className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold shadow-lg cursor-pointer"
                   onClick={() => setCurrentTab('profile')}
                 >
                   {coachProfile.fullName?.charAt(0) || 'م'}
@@ -1036,7 +1035,7 @@ const CoachDashboard: React.FC = () => {
               >
                 {/* Welcome Message */}
                 <motion.div variants={itemVariants} className="glass-card p-6 rounded-2xl border border-[var(--glass-border)] relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-64 h-64 rounded-full bg-gradient-to-br from-[var(--accent-color)]/20 to-transparent blur-3xl pointer-events-none" />
+                <div className="absolute top-0 left-0 w-64 h-64 rounded-full bg-gradient-to-br from-purple-500/20 to-transparent blur-3xl pointer-events-none" />
                   <div className="relative">
                     <h3 className="text-2xl font-black mb-2">
                       سلام {coachProfile.fullName?.split(' ')[0] || 'مربی'} عزیز! 👋
@@ -2351,7 +2350,8 @@ const CoachDashboard: React.FC = () => {
         isOpen={isSupabaseDebugOpen}
         onClose={() => setIsSupabaseDebugOpen(false)}
       />
-    </div>
+      </div>
+    </LightRays>
   );
 };
 

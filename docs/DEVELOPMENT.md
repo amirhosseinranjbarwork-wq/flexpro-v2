@@ -81,7 +81,20 @@ npm run db:migrate
 npm run db:seed
 ```
 
-#### ۴. اجرای پروژه
+#### ۴. راه‌اندازی Training Engine (اختیاری)
+
+```bash
+# اجرای migration علمی exercises
+# SQL را از خروجی npm run db:seed-exercises کپی کرده و در Supabase SQL Editor اجرا کنید
+
+# تولید داده‌های تمرینی علمی
+npm run db:seed-exercises
+
+# بروزرسانی TypeScript types
+npm run db:generate-types
+```
+
+#### ۵. اجرای پروژه
 
 ```bash
 # اجرای سرور توسعه
@@ -109,6 +122,7 @@ npm run dev:hot
 | `npm run db:reset` | ریست کامل دیتابیس |
 | `npm run db:migrate` | اجرای migration‌ها |
 | `npm run db:seed` | افزودن داده‌های اولیه |
+| `npm run db:seed-exercises` | **تولید داده‌های تمرینی علمی** |
 | `npm run db:generate-types` | تولید TypeScript types |
 
 ## 🏗️ ساختار پروژه

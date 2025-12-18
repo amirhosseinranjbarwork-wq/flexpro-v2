@@ -72,6 +72,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
 
   useEffect(() => {
     if (!isSupabaseEnabled || !supabase) {
+      console.log('Supabase disabled, running in demo mode');
       setReady(true);
       return;
     }

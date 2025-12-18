@@ -4,11 +4,11 @@ import './index.css';
 import { BrowserRouter } from 'react-router-dom';
 import { pushNotificationManager } from './utils/pushNotifications';
 
-// Lazy load main components for better performance
-const ReactQueryProvider = React.lazy(() => import('./lib/queryClient').then(module => ({ default: module.ReactQueryProvider })));
-const AuthProvider = React.lazy(() => import('./context/AuthContext').then(module => ({ default: module.AuthProvider })));
-const AppProvider = React.lazy(() => import('./context/AppContext').then(module => ({ default: module.AppProvider })));
-const App = React.lazy(() => import('./App'));
+// Temporarily disable lazy loading to debug
+import { ReactQueryProvider } from './lib/queryClient';
+import { AuthProvider } from './context/AuthContext';
+import { AppProvider } from './context/AppContext';
+import App from './App';
 
 // Loading component for lazy-loaded components
 const LoadingFallback = () => (
@@ -107,15 +107,15 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <Suspense fallback={<LoadingFallback />}>
-    <ReactQueryProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          <AppProvider>
-            <App />
-          </AppProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </ReactQueryProvider>
+      <ReactQueryProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <AppProvider>
+              <App />
+            </AppProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </ReactQueryProvider>
     </Suspense>
   </React.StrictMode>
 );
