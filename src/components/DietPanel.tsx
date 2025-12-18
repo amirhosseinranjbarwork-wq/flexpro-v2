@@ -8,7 +8,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from '@dnd-kit/utilities';
 import type { User } from '../types/index';
 import { useApp } from '../context/AppContext';
-import EmptyState from './EmptyState';
+import EmptyState from './ui/EmptyState';
 import { useDebounce } from '../hooks/useDebounce';
 import { DragEndEvent } from '@dnd-kit/core';
 import { useFoods } from '../hooks/useExercises';

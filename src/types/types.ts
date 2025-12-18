@@ -238,12 +238,14 @@ export interface ProgramRequest {
 export interface AppContextType {
   users: User[];
   activeUser: User | null;
+  selectedClientId: UserId | null;
   currentTab: TabKey;
   theme: 'light' | 'dark';
   currentRole: Role;
   currentAccountId: UserId | null;
   setCurrentRole: (role: Role) => void;
   setCurrentAccountId: (id: UserId | null) => void;
+  setSelectedClientId: (id: UserId | null) => void;
   hasPermission: (action: PermissionAction, targetUserId?: UserId | null) => boolean;
   templates: Template[];
   setActiveUserId: (id: UserId | null) => void;
@@ -270,11 +272,13 @@ export interface DataContextType {
   requests: ProgramRequest[];
   activeUser: User | null;
   activeUserId: UserId | null;
+  selectedClientId: UserId | null;
   templates: Template[];
   currentRole: Role;
   currentAccountId: UserId | null;
   setCurrentRole: (role: Role) => void;
   setCurrentAccountId: (id: UserId | null) => void;
+  setSelectedClientId: (id: UserId | null) => void;
   setActiveUserId: (id: UserId | null) => void;
   hasPermission: (action: PermissionAction, targetUserId?: UserId | null) => boolean;
   saveUser: (user: UserInput) => Promise<void>;

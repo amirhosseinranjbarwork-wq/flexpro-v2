@@ -50,11 +50,13 @@ const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Data from DataContext
     users: data.users,
     activeUser: data.activeUser,
+    selectedClientId: data.selectedClientId,
     templates: data.templates,
     currentRole: data.currentRole,
     currentAccountId: data.currentAccountId,
     setCurrentRole: data.setCurrentRole,
     setCurrentAccountId: data.setCurrentAccountId,
+    setSelectedClientId: data.setSelectedClientId,
     setActiveUserId: data.setActiveUserId,
     hasPermission: data.hasPermission,
     saveUser: data.saveUser,

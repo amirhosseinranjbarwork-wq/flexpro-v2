@@ -61,26 +61,13 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
 
   const resolveEmail = useCallback(async (identifier: string) => {
     if (!supabase) throw new Error('Supabase auth غیرفعال است');
+    
+    // If it already looks like an email, use it directly
     if (identifier.includes('@')) return identifier;
-
-    // Try RPC first (if function exists)
-    try {
-      const { data, error } = await supabase.rpc('get_email_by_username', { p_username: identifier });
-      if (!error && data) return data as string;
-    } catch (e) {
-      console.warn('RPC function not available, falling back to direct query');
-    }
-
-    // Fallback: Direct query (less secure but functional)
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('email')
-      .eq('username', identifier)
-      .single();
-
-    if (error) throw new Error('نام کاربری یافت نشد');
-    if (!data?.email) throw new Error('نام کاربری یافت نشد');
-    return data.email;
+    
+    // For now, treat identifier as email since the database schema doesn't have a username field
+    // TODO: Add username field to profiles table and implement proper username-to-email resolution
+    return identifier;
   }, []);
 
   useEffect(() => {

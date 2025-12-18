@@ -51,6 +51,7 @@ const STORAGE_KEY = 'flexProMaxData_v15';
 const ROLE_KEY = 'flexRole';
 const ACCOUNT_KEY = 'flexAccountId';
 const ACTIVE_USER_KEY = 'flexActiveUserId';
+const SELECTED_CLIENT_KEY = 'flexSelectedClientId';
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
@@ -202,6 +203,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const saved = localStorage.getItem(ACCOUNT_KEY);
     return saved ? (saved as UserId) : null;
   });
+
+  const [selectedClientId, setSelectedClientIdState] = useState<UserId | null>(() => {
+    const saved = localStorage.getItem(SELECTED_CLIENT_KEY);
+    return saved ? (saved as UserId) : null;
+  });
+
+  const setSelectedClientId = useCallback((id: UserId | null) => {
+    setSelectedClientIdState(id);
+    if (id) {
+      localStorage.setItem(SELECTED_CLIENT_KEY, id);
+    } else {
+      localStorage.removeItem(SELECTED_CLIENT_KEY);
+    }
+  }, []);
 
   const isFirstRender = useRef<boolean>(true);
 
@@ -448,18 +463,33 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         if (isSupabaseReady) {
+          // First, ensure the client has a profile record with coach_id
+          const profilePayload = {
+            id: newUser.id,
+            coach_id: coachId,
+            full_name: newUser.name,
+            email: newUser.email || null,
+            phone: newUser.phone || null,
+            profile_data: { ...newUser, plans: newUser.plans }
+          };
+
           const clientPayload = clientPayloadFromUser(newUser, coachId);
           const workoutPayload = workoutPlanPayloadFromUser(newUser, coachId);
 
           const results = await Promise.allSettled([
+            // First ensure profile exists
+            supabase.from('profiles').upsert(profilePayload),
+            // Then save client data
             upsertClient(clientPayload as Client),
+            // Save workout plan
             upsertWorkoutPlan(workoutPayload as WorkoutPlanFromDB)
           ]);
 
           // Check for errors and log them, but don't revert local state
           results.forEach((result, index) => {
             if (result.status === 'rejected') {
-              console.error(`Failed to save ${index === 0 ? 'client' : 'workout plan'}:`, result.reason);
+              const operation = index === 0 ? 'profile' : index === 1 ? 'client' : 'workout plan';
+              console.error(`Failed to save ${operation}:`, result.reason);
             }
           });
         }
@@ -781,11 +811,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         requests,
         activeUser,
         activeUserId,
+        selectedClientId,
         templates,
         currentRole,
         currentAccountId,
         setCurrentRole,
         setCurrentAccountId,
+        setSelectedClientId,
         setActiveUserId,
         hasPermission,
         saveUser,

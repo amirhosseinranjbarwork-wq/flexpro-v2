@@ -1,17 +1,59 @@
-# React + Vite
+# 🚀 FlexPro v2
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+پلتفرم هوشمند مدیریت ورزشکاران و برنامه‌های تمرینی
 
-Currently, two official plugins are available:
+## 📖 راهنمای توسعه
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+برای راه‌اندازی پروژه و شروع توسعه، لطفاً فایل [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) را مطالعه کنید.
 
-## React Compiler
+## 🏗️ معماری سیستم
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+برای درک معماری فنی پروژه، فایل [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) را مطالعه کنید.
 
-## Expanding the ESLint configuration
+## 🚀 راه‌اندازی سریع
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-"# flexpro-v2" 
+```bash
+# کلون کردن پروژه
+git clone <repository-url>
+cd flexpro-v2
+
+# نصب وابستگی‌ها
+npm install
+
+# تنظیم متغیرهای محیطی
+cp scripts/env.example .env
+# سپس فایل .env را با اطلاعات Supabase پر کنید
+
+# راه‌اندازی دیتابیس
+npm run db:reset
+
+# اجرای پروژه
+npm run dev
+```
+
+## 📱 ویژگی‌ها
+
+- **مدیریت شاگردان**: افزودن، ویرایش و پیگیری شاگردان
+- **برنامه‌ریزی تمرینی**: ایجاد برنامه‌های شخصی‌سازی شده
+- **تغذیه**: برنامه‌ریزی رژیم غذایی
+- **مکمل‌ها**: تجویز و پیگیری مکمل‌ها
+- **گزارش‌ها**: تحلیل عملکرد و پیشرفت
+- **داشبورد هوشمند**: نمای کلی از فعالیت‌ها
+
+## 🛠️ تکنولوژی‌ها
+
+- **Frontend**: React 18 + TypeScript
+- **Styling**: Tailwind CSS + Framer Motion
+- **Backend**: Supabase
+- **Database**: PostgreSQL
+- **State Management**: React Context + TanStack Query
+- **Build Tool**: Vite
+- **Testing**: Vitest + React Testing Library
+
+## 📄 مجوز
+
+این پروژه تحت مجوز MIT منتشر شده است.
+
+---
+
+💪 **قدرت گرفته از FlexPro - پلتفرم هوشمند ورزشکاران**

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import type { User, WorkoutItem, WorkoutMode } from '../types/index';
-import EmptyState from './EmptyState';
+import EmptyState from './ui/EmptyState';
 import { riskyExercises } from '../data/resistanceExercises';
 import { useDebounce } from '../hooks/useDebounce';
 import SavePlanModal from './SavePlanModal';
