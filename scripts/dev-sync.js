@@ -213,12 +213,12 @@ async function syncGit() {
 
     // Commit کردن
     logInfo(`Commit با پیام: "${finalMessage}"`);
-    await runCommand('git', ['commit', '-m', finalMessage]);
+    await runCommand(`git commit -m "${finalMessage}"`, [], { shell: true });
     logSuccess('تغییرات commit شدند');
 
     // Push کردن
     logInfo('Push به remote...');
-    await runCommand('git', ['push', 'origin', 'main']);
+    await runCommand('git push origin main', [], { shell: true });
     logSuccess('تغییرات به GitHub push شدند');
 
     return true;
