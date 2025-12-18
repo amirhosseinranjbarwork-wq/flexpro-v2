@@ -16,6 +16,16 @@ echo.
 REM اجرای دستور همگام‌سازی کامل
 echo 🚀 شروع همگام‌سازی کامل...
 echo.
+
+REM بررسی وجود npm
+where npm >nul 2>nul
+if %errorlevel% neq 0 (
+    echo ❌ npm یافت نشد! لطفاً Node.js را نصب کنید.
+    echo برای دانلود: https://nodejs.org
+    pause
+    exit /b 1
+)
+
 npm run dev:sync
 
 REM بررسی نتیجه اجرای دستور
