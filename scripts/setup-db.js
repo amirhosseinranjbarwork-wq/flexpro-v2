@@ -5,7 +5,7 @@
  *
  * این اسکریپت عملیات زیر را انجام می‌دهد:
  * 1. اجرای migration‌های SQL از supabase/migrations
- * 2. ایجاد داده‌های اولیه (roles, admin user)
+ * 2. ایجاد داده‌های اولیه (Roles, Admin User)
  * 3. اعتبارسنجی اتصال به دیتابیس
  *
  * Usage:
@@ -13,10 +13,18 @@
  *   node scripts/setup-db.js
  */
 
-const fs = require('fs');
-const path = require('path');
-const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+
+// تنظیم __dirname برای ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// بارگذاری متغیرهای محیطی
+dotenv.config();
 
 // تنظیمات
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
@@ -40,18 +48,17 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 /**
  * اجرای یک فایل SQL
+ * توجه: Supabase RPC برای اجرای SQL خام پشتیبانی نمی‌کند
+ * این تابع فقط برای نمایش محتوای فایل استفاده می‌شود
  */
 async function executeSqlFile(filePath) {
   try {
     const sql = fs.readFileSync(filePath, 'utf8');
-    const { error } = await supabase.rpc('exec_sql', { sql });
-
-    if (error) {
-      console.error(`❌ خطا در اجرای ${path.basename(filePath)}:`, error.message);
-      return false;
-    }
-
-    console.log(`✅ ${path.basename(filePath)} اجرا شد`);
+    console.log(`📄 محتوای ${path.basename(filePath)}:`);
+    console.log('─'.repeat(50));
+    console.log(sql.substring(0, 200) + (sql.length > 200 ? '\n... (truncated)' : ''));
+    console.log('─'.repeat(50));
+    console.log(`ℹ️  لطفاً این SQL را در Supabase Dashboard یا CLI اجرا کنید`);
     return true;
   } catch (err) {
     console.error(`❌ خطا در خواندن فایل ${filePath}:`, err.message);
@@ -60,37 +67,32 @@ async function executeSqlFile(filePath) {
 }
 
 /**
- * اجرای migration‌ها
+ * نمایش migration‌ها
  */
-async function runMigrations() {
-  console.log('\n🚀 اجرای Migration‌ها...\n');
+async function showMigrations() {
+  console.log('\n🚀 Migration‌های موجود:\n');
 
   const migrationsDir = path.join(__dirname, '..', 'supabase', 'migrations');
   const migrationFiles = fs.readdirSync(migrationsDir)
     .filter(file => file.endsWith('.sql'))
     .sort(); // مرتب‌سازی بر اساس نام فایل
 
-  let successCount = 0;
-  let errorCount = 0;
-
-  for (const file of migrationFiles) {
-    const filePath = path.join(migrationsDir, file);
-    const success = await executeSqlFile(filePath);
-
-    if (success) {
-      successCount++;
-    } else {
-      errorCount++;
-    }
+  if (migrationFiles.length === 0) {
+    console.log('❌ هیچ migration یافت نشد');
+    return false;
   }
 
-  console.log(`\n📊 نتیجه Migration‌ها: ${successCount} موفق، ${errorCount} ناموفق`);
+  console.log(`📁 تعداد ${migrationFiles.length} فایل migration یافت شد:`);
+  migrationFiles.forEach((file, index) => {
+    console.log(`   ${index + 1}. ${file}`);
+  });
 
-  if (errorCount > 0) {
-    console.log('⚠️  برخی migration‌ها با خطا مواجه شدند، اما ادامه می‌دهیم...');
-  }
+  console.log('\n📝 برای اجرای migrationها:');
+  console.log('   ۱. Supabase CLI را نصب کنید: npm install -g supabase');
+  console.log('   ۲. به پروژه متصل شوید: supabase link --project-ref your-project-ref');
+  console.log('   ۳. Migrationها را اجرا کنید: supabase db push');
 
-  return errorCount === 0;
+  return true;
 }
 
 /**
@@ -98,73 +100,52 @@ async function runMigrations() {
  */
 async function seedDatabase() {
   console.log('\n🌱 ایجاد داده‌های اولیه...\n');
+  console.log('⚠️  توجه: این اسکریپت نمی‌تواند migrationها را اجرا کند');
+  console.log('💡 لطفاً migrationها را به صورت دستی در Supabase Dashboard اجرا کنید\n');
 
   try {
-    // ایجاد نقش‌های پیش‌فرض
-    const { error: roleError } = await supabase
-      .from('roles')
-      .upsert([
-        { name: 'coach', description: 'مربی ورزشی' },
-        { name: 'client', description: 'شاگرد' },
-        { name: 'admin', description: 'مدیر سیستم' }
-      ], { onConflict: 'name' });
+    // بررسی اتصال به جداول
+    console.log('🔍 بررسی جداول...');
 
-    if (roleError) {
-      console.error('❌ خطا در ایجاد نقش‌ها:', roleError.message);
-    } else {
-      console.log('✅ نقش‌های پیش‌فرض ایجاد شدند');
-    }
+    const tables = ['roles', 'profiles', 'clients'];
+    let availableTables = [];
 
-    // ایجاد کاربر admin پیش‌فرض (فقط در محیط development)
-    if (process.env.NODE_ENV === 'development') {
-      const adminEmail = 'admin@flexpro.dev';
-      const adminPassword = 'admin123456';
-
-      // ابتدا بررسی کنیم آیا کاربر وجود دارد
-      const { data: existingUser } = await supabase.auth.admin.listUsers();
-
-      const adminExists = existingUser?.users?.some(user => user.email === adminEmail);
-
-      if (!adminExists) {
-        const { data, error } = await supabase.auth.admin.createUser({
-          email: adminEmail,
-          password: adminPassword,
-          email_confirm: true,
-          user_metadata: {
-            full_name: 'مدیر سیستم',
-            role: 'admin'
-          }
-        });
-
-        if (error) {
-          console.error('❌ خطا در ایجاد کاربر admin:', error.message);
+    for (const table of tables) {
+      try {
+        const { error } = await supabase.from(table).select('count', { count: 'exact', head: true });
+        if (!error) {
+          availableTables.push(table);
+          console.log(`✅ جدول ${table} موجود است`);
         } else {
-          console.log('✅ کاربر admin ایجاد شد:');
-          console.log(`   ایمیل: ${adminEmail}`);
-          console.log(`   رمز عبور: ${adminPassword}`);
-          console.log(`   ID: ${data.user.id}`);
-
-          // ایجاد پروفایل admin
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .upsert({
-              id: data.user.id,
-              full_name: 'مدیر سیستم',
-              email: adminEmail,
-              role: 'admin',
-              coach_code: 'ADMIN001'
-            });
-
-          if (profileError) {
-            console.error('❌ خطا در ایجاد پروفایل admin:', profileError.message);
-          } else {
-            console.log('✅ پروفایل admin ایجاد شد');
-          }
+          console.log(`❌ جدول ${table} موجود نیست:`, error.message);
         }
-      } else {
-        console.log('ℹ️  کاربر admin از قبل وجود دارد');
+      } catch (err) {
+        console.log(`❌ خطا در بررسی جدول ${table}:`, err.message);
       }
     }
+
+    if (availableTables.length === 0) {
+      console.log('\n❌ هیچ جدولی یافت نشد. لطفاً ابتدا migrationها را اجرا کنید.');
+      return false;
+    }
+
+    console.log(`\n📊 جداول موجود: ${availableTables.join(', ')}`);
+
+    // نمایش دستورالعمل برای seeding دستی
+    console.log('\n📝 برای seeding داده‌های اولیه، این SQL را در Supabase SQL Editor اجرا کنید:');
+    console.log('─'.repeat(70));
+    console.log(`
+-- ایجاد نقش‌های پیش‌فرض
+INSERT INTO roles (name, description) VALUES
+  ('coach', 'مربی ورزشی'),
+  ('client', 'شاگرد'),
+  ('admin', 'مدیر سیستم')
+ON CONFLICT (name) DO NOTHING;
+
+-- ایجاد کاربر admin (پسورد: admin123456)
+-- این کار باید از طریق Supabase Auth انجام شود
+    `);
+    console.log('─'.repeat(70));
 
     return true;
   } catch (error) {
@@ -252,8 +233,8 @@ async function main() {
     connection: false
   };
 
-  // ۱. اجرای migration‌ها
-  results.migrations = await runMigrations();
+  // ۱. نمایش migration‌ها
+  results.migrations = await showMigrations();
 
   // ۲. ایجاد داده‌های اولیه
   results.seed = await seedDatabase();

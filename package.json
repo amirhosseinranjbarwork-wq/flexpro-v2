@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:hot": "vite --host",
+    "dev:sync": "node scripts/dev-sync.js",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
