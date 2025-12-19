@@ -71,6 +71,57 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   }, []);
 
   useEffect(() => {
+    // Always use mock mode for demo
+    if (true) {
+      // Check URL parameters for role
+      const urlParams = new URLSearchParams(window.location.search);
+      const roleFromUrl = urlParams.get('role') || 'coach'; // Default to coach
+      console.log('⚡ Mock Mode: Setting up mock authentication');
+      // Create mock user object
+      const mockUser: User = {
+        id: 'mock-user-id',
+        email: 'mock@flexpro.com',
+        user_metadata: { role: roleFromUrl },
+        app_metadata: {},
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        role: 'authenticated',
+        email_confirmed_at: new Date().toISOString(),
+      };
+
+      // Create mock session
+      const mockSession = {
+        access_token: 'mock-access-token',
+        refresh_token: 'mock-refresh-token',
+        expires_at: Date.now() + (24 * 60 * 60 * 1000), // 24 hours from now
+        expires_in: 24 * 60 * 60, // 24 hours in seconds
+        token_type: 'bearer',
+        user: mockUser,
+      };
+
+      // Create mock profile
+      const mockProfile: Profile = {
+        id: 'mock-user-id',
+        full_name: roleFromUrl === 'coach' ? 'مربی آزمایشی' : 'شاگرد آزمایشی',
+        role: roleFromUrl,
+        email: 'mock@flexpro.com',
+        username: roleFromUrl === 'coach' ? 'mockcoach' : 'mockclient',
+        is_super_admin: roleFromUrl === 'coach',
+      };
+
+      // Set mock data immediately
+      setUser(mockUser);
+      setSession(mockSession as any);
+      setRole('coach');
+      setProfile(mockProfile);
+      setReady(true);
+      setLoading(false);
+
+      console.log('✅ Mock authentication setup complete');
+      return;
+    }
+
     if (!isSupabaseEnabled || !supabase) {
       console.log('Supabase disabled, running in demo mode');
       setReady(true);
@@ -118,6 +169,13 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   }, []);
 
   const signInWithPassword = useCallback(async (identifier: string, password: string) => {
+    // Check if mock mode is enabled
+    if (import.meta.env.VITE_USE_MOCK === 'true') {
+      console.log('⚡ Mock Mode: Simulating successful login');
+      // Return mock success - no actual authentication needed
+      return;
+    }
+
     if (!isSupabaseEnabled || !supabase) {
       const error = new Error('Supabase auth غیرفعال است');
       if (import.meta.env.DEV) console.error('Sign in error:', error);
@@ -163,6 +221,13 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   }, [resolveEmail]);
 
   const signUpWithPassword = useCallback(async (email: string, password: string) => {
+    // Check if mock mode is enabled
+    if (import.meta.env.VITE_USE_MOCK === 'true') {
+      console.log('⚡ Mock Mode: Simulating successful signup');
+      // Return mock success - no actual authentication needed
+      return;
+    }
+
     if (!isSupabaseEnabled || !supabase) throw new Error('Supabase auth غیرفعال است');
     setLoading(true);
     try {
@@ -174,6 +239,16 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   }, []);
 
   const signOut = useCallback(async () => {
+    // Check if mock mode is enabled
+    if (import.meta.env.VITE_USE_MOCK === 'true') {
+      console.log('⚡ Mock Mode: Simulating logout');
+      setUser(null);
+      setSession(null);
+      setRole(null);
+      setProfile(null);
+      return;
+    }
+
     if (!isSupabaseEnabled || !supabase) {
       setUser(null);
       setSession(null);
@@ -185,6 +260,13 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   }, []);
 
   const register: RegisterFn = useCallback(async ({ email, password, fullName, role: r, username }) => {
+    // Check if mock mode is enabled
+    if (import.meta.env.VITE_USE_MOCK === 'true') {
+      console.log('⚡ Mock Mode: Simulating successful registration');
+      // Return mock success - no actual registration needed
+      return;
+    }
+
     if (!isSupabaseEnabled || !supabase) {
       const error = new Error('Supabase auth غیرفعال است');
       if (import.meta.env.DEV) console.error('Register error:', error);

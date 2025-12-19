@@ -56,46 +56,137 @@ const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
   );
 };
 
-// Preset counter variants for common use cases
+// Enhanced stat card with mini chart and trend indicators
 export const StatCounter: React.FC<{
   value: number;
   label: string;
   icon?: React.ReactNode;
   color?: string;
-}> = ({ value, label, icon, color = 'text-blue-600' }) => (
-  <motion.div
-    className="glass-card p-6 text-center"
-    initial={{ opacity: 0, scale: 0.9 }}
-    animate={{ opacity: 1, scale: 1 }}
-    transition={{ duration: 0.5 }}
-    whileHover={{ scale: 1.05 }}
-  >
-    {icon && (
-      <div className="flex justify-center mb-3">
-        <motion.div
-          className={`${color} text-3xl`}
-          animate={{
-            rotate: [0, 10, -10, 0],
-            scale: [1, 1.1, 1]
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            repeatDelay: 3
-          }}
-        >
-          {icon}
-        </motion.div>
+  trend?: { value: number; positive: boolean };
+  miniChart?: number[];
+  gradient?: string;
+}> = ({
+  value,
+  label,
+  icon,
+  color = 'text-blue-600',
+  trend,
+  miniChart,
+  gradient = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+}) => {
+  const getIconColor = () => {
+    if (color.includes('blue')) return 'text-blue-500';
+    if (color.includes('green')) return 'text-green-500';
+    if (color.includes('yellow')) return 'text-yellow-500';
+    if (color.includes('purple')) return 'text-purple-500';
+    return color;
+  };
+
+  const iconColor = getIconColor();
+
+  return (
+    <motion.div
+      className="relative group overflow-hidden"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      whileHover={{
+        scale: 1.02,
+        y: -4,
+        transition: { duration: 0.2 }
+      }}
+    >
+      {/* Background gradient effect */}
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-500 rounded-2xl"
+        style={{ background: gradient }}
+      />
+
+      {/* Glow effect */}
+      <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"
+           style={{ background: `${gradient}, transparent 70%` }} />
+
+      <div className="relative glass-card p-6 border border-[var(--glass-border)] group-hover:border-[var(--accent-color)]/30 transition-all duration-300 rounded-2xl h-full">
+        {/* Header with icon and trend */}
+        <div className="flex items-start justify-between mb-4">
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${iconColor} bg-opacity-10 group-hover:scale-110 transition-transform duration-300`}
+               style={{ backgroundColor: `${gradient.split(',')[0].replace('linear-gradient(135deg, ', '').replace(' 0%', '')}20` }}>
+            {icon}
+          </div>
+
+          {trend && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5 }}
+              className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${
+                trend.positive
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-red-500/10 text-red-600 dark:text-red-400'
+              }`}
+            >
+              <motion.div
+                animate={{ y: trend.positive ? -2 : 2 }}
+                transition={{ duration: 0.5, repeat: Infinity, repeatType: "reverse" }}
+              >
+                {trend.positive ? '↗' : '↘'}
+              </motion.div>
+              <span>{Math.abs(trend.value)}%</span>
+            </motion.div>
+          )}
+        </div>
+
+        {/* Main counter */}
+        <div className="mb-2">
+          <AnimatedCounter
+            value={value}
+            className={`${color} font-black`}
+            fontSize="text-4xl"
+          />
+        </div>
+
+        {/* Label */}
+        <p className="text-[var(--text-secondary)] font-medium mb-3">{label}</p>
+
+        {/* Mini chart */}
+        {miniChart && miniChart.length > 0 && (
+          <div className="mt-4">
+            <div className="flex items-end gap-1 h-8">
+              {miniChart.slice(-7).map((val, index) => {
+                const maxVal = Math.max(...miniChart);
+                const height = maxVal > 0 ? (val / maxVal) * 100 : 0;
+                return (
+                  <motion.div
+                    key={index}
+                    className="flex-1 bg-gradient-to-t rounded-sm opacity-60 group-hover:opacity-100 transition-opacity"
+                    style={{
+                      background: gradient,
+                      height: `${Math.max(height, 10)}%`
+                    }}
+                    initial={{ scaleY: 0 }}
+                    animate={{ scaleY: 1 }}
+                    transition={{
+                      delay: index * 0.1,
+                      duration: 0.5,
+                      ease: "easeOut"
+                    }}
+                  />
+                );
+              })}
+            </div>
+            <p className="text-xs text-[var(--text-secondary)] mt-2 opacity-70">۷ روز گذشته</p>
+          </div>
+        )}
+
+        {/* Hover effect overlay */}
+        <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+             style={{
+               background: `radial-gradient(circle at center, ${gradient.split(',')[0].replace('linear-gradient(135deg, ', '').replace(' 0%', '')}10, transparent 70%)`
+             }} />
       </div>
-    )}
-    <AnimatedCounter
-      value={value}
-      className={`${color} block`}
-      fontSize="text-3xl"
-    />
-    <p className="text-gray-600 dark:text-gray-300 mt-2 font-medium">{label}</p>
-  </motion.div>
-);
+    </motion.div>
+  );
+};
 
 // Floating counter for notifications/badges
 export const FloatingCounter: React.FC<{

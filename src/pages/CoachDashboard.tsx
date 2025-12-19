@@ -2,7 +2,6 @@ import React, { useEffect, useState, useMemo, useCallback, Suspense, lazy } from
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { useData } from '../context/DataContext';
-import LightRays from '../components/backgrounds/LightRays';
 
 // Lazy load heavy panel components
 const TrainingPanel = lazy(() => import('../components/TrainingPanel'));
@@ -14,8 +13,8 @@ const ProfilePanel = lazy(() => import('../components/ProfilePanel'));
 const PanelLoadingFallback = () => (
   <div className="flex items-center justify-center p-8 bg-[var(--glass-bg)] rounded-2xl border border-[var(--glass-border)]">
     <div className="text-center space-y-4">
-      <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-purple-500 border-r-transparent"></div>
-      <p className="text-sm text-slate-300">در حال بارگذاری...</p>
+      <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[var(--accent-color)] border-r-transparent"></div>
+      <p className="text-sm text-[var(--text-secondary)]">در حال بارگذاری...</p>
     </div>
   </div>
 );
@@ -104,20 +103,61 @@ const scaleIn = {
   exit: { opacity: 0, scale: 0.9 }
 };
 
-// ========== Reusable Components ==========
-// Import GlassCard
-import GlassCard from '../components/ui/GlassCard';
+// Advanced animation variants
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2
+    }
+  }
+};
 
+const staggerItem = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 24
+    }
+  }
+};
+
+const bounceIn = {
+  initial: { opacity: 0, scale: 0.3 },
+  animate: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 400,
+      damping: 17,
+      duration: 0.6
+    }
+  }
+};
+
+// ========== Reusable Components ==========
 const GlowCard: React.FC<{
   children: React.ReactNode;
   className?: string;
   glowColor?: string;
   onClick?: () => void;
-}> = ({ children, className = '', glowColor = '#8b5cf6', onClick }) => (
-  <GlassCard
-    className={`relative group overflow-hidden transition-all duration-500 ${onClick ? 'cursor-pointer' : ''} ${className}`}
-    glow={true}
+}> = ({ children, className = '', glowColor = 'var(--accent-color)', onClick }) => (
+  <motion.div
+    whileHover={{ scale: 1.02, y: -4 }}
+    whileTap={{ scale: 0.98 }}
     onClick={onClick}
+    className={`relative group glass-card rounded-2xl border border-[var(--glass-border)] overflow-hidden transition-all duration-500 ${onClick ? 'cursor-pointer' : ''} ${className}`}
+    style={{
+      boxShadow: `0 0 0 1px ${glowColor}10`,
+    }}
   >
     <div
       className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
@@ -126,8 +166,215 @@ const GlowCard: React.FC<{
       }}
     />
     {children}
-  </GlassCard>
+  </motion.div>
 );
+
+// Achievement Notification Component
+const AchievementPopup: React.FC<{
+  title: string;
+  description: string;
+  icon: string;
+  color: string;
+  onClose: () => void;
+}> = ({ title, description, icon, color, onClose }) => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.8, y: 50 }}
+    animate={{ opacity: 1, scale: 1, y: 0 }}
+    exit={{ opacity: 0, scale: 0.8, y: 50 }}
+    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+  >
+    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+    <motion.div
+      className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 max-w-md w-full text-center shadow-2xl"
+      initial={{ scale: 0.9 }}
+      animate={{ scale: 1 }}
+      transition={{ delay: 0.1, type: "spring", stiffness: 300 }}
+    >
+      <motion.div
+        className="text-6xl mb-4"
+        animate={{
+          scale: [1, 1.2, 1],
+          rotate: [0, 10, -10, 0]
+        }}
+        transition={{ duration: 0.8, repeat: 1 }}
+      >
+        {icon}
+      </motion.div>
+
+      <motion.h3
+        className="text-2xl font-bold text-white mb-2"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        {title}
+      </motion.h3>
+
+      <motion.p
+        className="text-slate-400 mb-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
+        {description}
+      </motion.p>
+
+      <motion.button
+        onClick={onClose}
+        className={`px-6 py-3 bg-gradient-to-r ${color} text-white rounded-xl font-bold hover:scale-105 transition-transform`}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        عالی! 🎉
+      </motion.button>
+
+      {/* Confetti effect */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
+        {[...Array(20)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-2 h-2 bg-yellow-400 rounded-full"
+            initial={{
+              x: Math.random() * 400,
+              y: 300,
+              opacity: 0
+            }}
+            animate={{
+              y: -100,
+              opacity: [0, 1, 0],
+              rotate: Math.random() * 360
+            }}
+            transition={{
+              duration: 2,
+              delay: Math.random() * 0.5,
+              repeat: Infinity,
+              repeatDelay: 3
+            }}
+            style={{
+              left: `${Math.random() * 100}%`,
+            }}
+          />
+        ))}
+      </div>
+    </motion.div>
+  </motion.div>
+);
+
+// Smart Reminder Component
+const SmartReminder: React.FC<{
+  type: 'workout' | 'nutrition' | 'supplement' | 'session';
+  title: string;
+  message: string;
+  clientName?: string;
+  onAction?: () => void;
+  onDismiss: () => void;
+}> = ({ type, title, message, clientName, onAction, onDismiss }) => {
+  const getTypeConfig = () => {
+    switch (type) {
+      case 'workout':
+        return {
+          icon: '🏋️',
+          color: 'from-blue-500 to-purple-600',
+          bgColor: 'bg-blue-500/10 border-blue-500/20'
+        };
+      case 'nutrition':
+        return {
+          icon: '🥗',
+          color: 'from-green-500 to-emerald-600',
+          bgColor: 'bg-green-500/10 border-green-500/20'
+        };
+      case 'supplement':
+        return {
+          icon: '💊',
+          color: 'from-orange-500 to-red-600',
+          bgColor: 'bg-orange-500/10 border-orange-500/20'
+        };
+      case 'session':
+        return {
+          icon: '📅',
+          color: 'from-purple-500 to-pink-600',
+          bgColor: 'bg-purple-500/10 border-purple-500/20'
+        };
+      default:
+        return {
+          icon: '🔔',
+          color: 'from-gray-500 to-gray-600',
+          bgColor: 'bg-gray-500/10 border-gray-500/20'
+        };
+    }
+  };
+
+  const config = getTypeConfig();
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -50, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -50, scale: 0.95 }}
+      className="fixed top-4 left-4 right-4 z-40 max-w-md mx-auto"
+    >
+      <div className={`relative ${config.bgColor} border rounded-2xl p-4 shadow-xl backdrop-blur-sm`}>
+        {/* Close button */}
+        <button
+          onClick={onDismiss}
+          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-slate-700/50 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+        >
+          <X size={14} />
+        </button>
+
+        <div className="flex items-start gap-3">
+          {/* Icon */}
+          <motion.div
+            className="text-2xl"
+            animate={{
+              scale: [1, 1.1, 1],
+              rotate: [0, 5, -5, 0]
+            }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            {config.icon}
+          </motion.div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <h4 className="text-sm font-bold text-white mb-1">
+              {title}
+              {clientName && (
+                <span className="text-slate-400 mr-2">- {clientName}</span>
+              )}
+            </h4>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              {message}
+            </p>
+
+            {/* Action button */}
+            {onAction && (
+              <motion.button
+                onClick={onAction}
+                className={`mt-3 px-4 py-2 bg-gradient-to-r ${config.color} text-white text-xs font-semibold rounded-lg hover:scale-105 transition-transform`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                مشاهده
+              </motion.button>
+            )}
+          </div>
+        </div>
+
+        {/* Progress bar for auto-dismiss */}
+        <motion.div
+          className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/20 to-transparent rounded-b-2xl"
+          initial={{ scaleX: 1 }}
+          animate={{ scaleX: 0 }}
+          transition={{ duration: 10, ease: "linear" }}
+        />
+      </div>
+    </motion.div>
+  );
+};
 
 const StatCard: React.FC<{ 
   icon: React.ReactNode; 
@@ -137,10 +384,12 @@ const StatCard: React.FC<{
   gradient: string;
   delay?: number;
 }> = ({ icon, label, value, trend, gradient, delay = 0 }) => (
-  <GlassCard
-    variant="elevated"
-    className="relative overflow-hidden p-6 group hover:border-purple-400/30 transition-all duration-500"
-    animate={false}
+  <motion.div
+    variants={itemVariants}
+    initial="hidden"
+    animate="visible"
+    transition={{ delay }}
+    className="relative overflow-hidden glass-card p-6 rounded-2xl border border-[var(--glass-border)] group hover:border-[var(--accent-color)]/30 transition-all duration-500"
   >
     {/* Background Gradient */}
     <div 
@@ -166,40 +415,80 @@ const StatCard: React.FC<{
         {icon}
       </div>
     </div>
-  </GlassCard>
+  </motion.div>
 );
 
-const NavItem: React.FC<{ 
-  icon: React.ReactNode; 
-  label: string; 
-  active: boolean; 
+const NavItem: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  active: boolean;
   onClick: () => void;
   badge?: number;
   collapsed?: boolean;
 }> = ({ icon, label, active, onClick, badge, collapsed }) => (
   <motion.button
-    whileHover={{ x: collapsed ? 0 : 4 }}
-    whileTap={{ scale: 0.98 }}
+    whileHover={{
+      x: collapsed ? 0 : 6,
+      scale: 1.02,
+      boxShadow: active ? "0 10px 25px -5px rgba(var(--accent-color-rgb), 0.4)" : "0 4px 12px -2px rgba(0,0,0,0.1)"
+    }}
+    whileTap={{ scale: 0.95 }}
     onClick={onClick}
-    className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 relative group ${
+    className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 relative group overflow-hidden ${
       active
-        ? 'bg-gradient-to-l from-purple-500 to-blue-500 text-white shadow-lg shadow-purple-500/30'
-        : 'text-[var(--text-secondary)] hover:bg-[var(--glass-bg)] hover:text-[var(--text-primary)]'
+        ? 'bg-gradient-to-l from-[var(--accent-color)] via-[var(--accent-secondary)] to-purple-600 text-white shadow-xl shadow-[var(--accent-color)]/40 border border-white/20'
+        : 'text-[var(--text-secondary)] hover:bg-gradient-to-r hover:from-[var(--glass-bg)] hover:to-white/5 hover:text-[var(--text-primary)] border border-transparent hover:border-[var(--glass-border)]'
     }`}
   >
-    <span className={`transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-110'}`}>
+    {/* Background glow effect */}
+    {active && (
+      <motion.div
+        layoutId="activeGlow"
+        className="absolute inset-0 bg-gradient-to-l from-white/10 to-transparent rounded-2xl"
+        initial={false}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      />
+    )}
+
+    <motion.span
+      className={`relative z-10 transition-all duration-300 ${active ? 'scale-110 text-white' : 'group-hover:scale-110 group-hover:text-[var(--accent-color)]'}`}
+      whileHover={{ rotate: active ? 0 : 5 }}
+    >
       {icon}
-    </span>
-    {!collapsed && <span className="font-semibold text-sm">{label}</span>}
+    </motion.span>
+
+    {!collapsed && (
+      <motion.span
+        className={`relative z-10 font-semibold text-sm transition-all duration-300 ${
+          active ? 'text-white font-bold' : 'group-hover:text-[var(--text-primary)]'
+        }`}
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        {label}
+      </motion.span>
+    )}
+
+    {/* Badge with enhanced animation */}
     {badge !== undefined && badge > 0 && (
-      <motion.span 
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        className="absolute left-3 top-1/2 -translate-y-1/2 min-w-[22px] h-[22px] rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold px-1 shadow-lg"
+      <motion.span
+        initial={{ scale: 0, rotate: -180 }}
+        animate={{ scale: 1, rotate: 0 }}
+        whileHover={{ scale: 1.1 }}
+        className="absolute left-4 top-1/2 -translate-y-1/2 min-w-[24px] h-[24px] rounded-full bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs flex items-center justify-center font-bold px-1.5 shadow-lg border-2 border-white/30"
       >
         {badge > 99 ? '99+' : badge}
       </motion.span>
     )}
+
+    {/* Hover indicator */}
+    <motion.div
+      className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[var(--accent-color)] to-[var(--accent-secondary)] rounded-l-full opacity-0 group-hover:opacity-100"
+      initial={false}
+      animate={{ opacity: active ? 1 : 0 }}
+      transition={{ duration: 0.2 }}
+    />
   </motion.button>
 );
 
@@ -252,8 +541,8 @@ const EmptyState: React.FC<{
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={action.onClick}
-        className="px-6 py-3 rounded-xl font-semibold text-white shadow-lg shadow-purple-500/30"
-        style={{ background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)' }}
+        className="px-6 py-3 rounded-xl font-semibold text-white shadow-lg shadow-[var(--accent-color)]/30"
+        style={{ background: 'linear-gradient(135deg, var(--accent-color), var(--accent-secondary))' }}
       >
         {action.label}
       </motion.button>
@@ -301,6 +590,25 @@ const CoachDashboard: React.FC = () => {
   const [isSupabaseDebugOpen, setIsSupabaseDebugOpen] = useState(false);
   const [deletingRequestId, setDeletingRequestId] = useState<string | null>(null);
   const [coachCode, setCoachCode] = useState<string | null>(null);
+
+  // Achievement system
+  const [showAchievement, setShowAchievement] = useState(false);
+  const [achievementData, setAchievementData] = useState<{
+    title: string;
+    description: string;
+    icon: string;
+    color: string;
+  } | null>(null);
+
+  // Smart Reminders System
+  const [showReminder, setShowReminder] = useState(false);
+  const [currentReminder, setCurrentReminder] = useState<{
+    type: 'workout' | 'nutrition' | 'supplement' | 'session';
+    title: string;
+    message: string;
+    clientName?: string;
+    action?: () => void;
+  } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<'name' | 'date'>('name');
@@ -434,19 +742,19 @@ const CoachDashboard: React.FC = () => {
   }, [localActiveUser, studentsSubTab, updateActiveUser]);
 
   // ========== Computed ==========
-  
+
   const filteredUsers = useMemo(() => {
     let result = users;
-    
+
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      result = result.filter(u => 
-        u.name.toLowerCase().includes(term) || 
+      result = result.filter(u =>
+        u.name.toLowerCase().includes(term) ||
         u.phone?.includes(term) ||
         u.email?.toLowerCase().includes(term)
       );
     }
-    
+
     // Sort
     result = [...result].sort((a, b) => {
       if (sortBy === 'name') {
@@ -454,7 +762,7 @@ const CoachDashboard: React.FC = () => {
       }
       return 0;
     });
-    
+
     return result;
   }, [users, searchTerm, sortBy]);
 
@@ -474,6 +782,94 @@ const CoachDashboard: React.FC = () => {
     acceptedRequests: acceptedRequests.length,
     activePrograms: users.filter(u => u.plans?.workouts && Object.keys(u.plans.workouts).length > 0).length,
   }), [users, pendingRequests.length, acceptedRequests.length]);
+
+  // ========== Achievement Logic ==========
+  useEffect(() => {
+    // Check for achievements
+    if (users.length >= 5 && !localStorage.getItem('achievement_5_students')) {
+      setAchievementData({
+        title: 'مربی حرفه‌ای! 🏆',
+        description: 'تبریک! شما ۵ شاگرد دارید. مسیر موفقیت را شروع کرده‌اید!',
+        icon: '🏆',
+        color: 'from-yellow-400 to-orange-500'
+      });
+      setShowAchievement(true);
+      localStorage.setItem('achievement_5_students', 'true');
+    }
+
+    if (stats.acceptedRequests >= 10 && !localStorage.getItem('achievement_10_requests')) {
+      setAchievementData({
+        title: 'پذیرش‌کننده عالی! 🎯',
+        description: '۱۰ درخواست برنامه را با موفقیت تأیید کرده‌اید!',
+        icon: '🎯',
+        color: 'from-green-400 to-emerald-500'
+      });
+      setShowAchievement(true);
+      localStorage.setItem('achievement_10_requests', 'true');
+    }
+  }, [users.length, stats.acceptedRequests]);
+
+  // ========== Smart Reminders Logic ==========
+  useEffect(() => {
+    const checkReminders = () => {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+
+      // Workout reminder (every day at 6 AM and 6 PM)
+      if ((currentHour === 6 || currentHour === 18) && currentMinute === 0) {
+        setCurrentReminder({
+          type: 'workout',
+          title: 'زمان تمرین!',
+          message: 'شاگردان شما منتظر برنامه تمرینی امروز هستند. برنامه‌ها را چک کنید.',
+          action: () => setCurrentTab('training')
+        });
+        setShowReminder(true);
+      }
+
+      // Nutrition reminder (meal times)
+      if ((currentHour === 7 || currentHour === 12 || currentHour === 19) && currentMinute === 30) {
+        const mealType = currentHour === 7 ? 'صبحانه' : currentHour === 12 ? 'ناهار' : 'شام';
+        setCurrentReminder({
+          type: 'nutrition',
+          title: `یادآوری تغذیه - ${mealType}`,
+          message: 'زمان وعده غذایی فرا رسیده. برنامه‌های غذایی شاگردان را چک کنید.',
+          action: () => setCurrentTab('nutrition')
+        });
+        setShowReminder(true);
+      }
+
+      // Supplement reminder (twice a day)
+      if ((currentHour === 8 || currentHour === 20) && currentMinute === 0) {
+        setCurrentReminder({
+          type: 'supplement',
+          title: 'یادآوری مکمل‌ها',
+          message: 'زمان مصرف مکمل‌های روزانه فرا رسیده.',
+          action: () => setCurrentTab('supplements')
+        });
+        setShowReminder(true);
+      }
+
+      // Session reminder (check for upcoming sessions)
+      if (currentMinute === 0 && [9, 10, 14, 15, 16, 17].includes(currentHour)) {
+        setCurrentReminder({
+          type: 'session',
+          title: 'یادآوری جلسه',
+          message: 'بررسی کنید آیا جلسات برنامه‌ریزی شده‌ای دارید.',
+          action: () => setCurrentTab('students')
+        });
+        setShowReminder(true);
+      }
+    };
+
+    // Check reminders every minute
+    const interval = setInterval(checkReminders, 60000);
+
+    // Initial check
+    checkReminders();
+
+    return () => clearInterval(interval);
+  }, [currentTab]);
 
   // ========== Handlers ==========
   const handleSaveCoachProfile = async () => {
@@ -772,36 +1168,80 @@ const CoachDashboard: React.FC = () => {
 
   // ========== Render ==========
   return (
-    <LightRays className="opacity-30">
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white flex relative overflow-hidden">
+    <>
+      {/* Achievement Popup */}
+      <AnimatePresence>
+        {showAchievement && achievementData && (
+          <AchievementPopup
+            title={achievementData.title}
+            description={achievementData.description}
+            icon={achievementData.icon}
+            color={achievementData.color}
+            onClose={() => {
+              setShowAchievement(false);
+              setAchievementData(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Smart Reminder */}
+      <AnimatePresence>
+        {showReminder && currentReminder && (
+          <SmartReminder
+            type={currentReminder.type}
+            title={currentReminder.title}
+            message={currentReminder.message}
+            clientName={currentReminder.clientName}
+            onAction={currentReminder.action}
+            onDismiss={() => {
+              setShowReminder(false);
+              setCurrentReminder(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex">
       {/* ==================== Sidebar - Desktop ==================== */}
       <motion.aside
         initial={false}
-        animate={{ width: sidebarOpen ? 280 : 88 }}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className="hidden lg:flex flex-col h-screen sticky top-0 bg-black/20 backdrop-blur-xl border-l border-white/10 shadow-2xl z-30"
+        animate={{ width: sidebarOpen ? 320 : 88 }}
+        transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className="hidden lg:flex flex-col h-screen sticky top-0 bg-gradient-to-b from-[var(--glass-bg)] via-[var(--glass-bg)]/95 to-[var(--glass-bg)]/90 backdrop-blur-xl border-r border-[var(--glass-border)] shadow-2xl shadow-black/10 z-30 overflow-hidden"
       >
         {/* Logo & Brand */}
-        <div className="p-5 border-b border-[var(--glass-border)]">
-          <div className="flex items-center gap-3">
-            <motion.div 
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.6 }}
-              className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-purple-500/30"
+        <div className="p-6 border-b border-[var(--glass-border)] bg-gradient-to-r from-[var(--accent-color)]/5 to-transparent">
+          <div className="flex items-center gap-4">
+            <motion.div
+              whileHover={{ rotate: 360, scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.6, type: "spring", stiffness: 200 }}
+              className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--accent-color)] via-[var(--accent-secondary)] to-purple-600 flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-[var(--accent-color)]/40 overflow-hidden"
             >
-              V2
+              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+              <span className="relative z-10">V2</span>
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
             </motion.div>
             <AnimatePresence>
               {sidebarOpen && (
                 <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
+                  initial={{ opacity: 0, x: -20, scale: 0.8 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: -20, scale: 0.8 }}
+                  transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
+                  className="flex flex-col"
                 >
-                  <h1 className="text-xl font-black bg-gradient-to-l from-purple-500 to-blue-500 bg-clip-text text-transparent">
+                  <h1 className="text-2xl font-black bg-gradient-to-l from-[var(--accent-color)] via-[var(--accent-secondary)] to-purple-600 bg-clip-text text-transparent drop-shadow-sm">
                     VO₂MAX
                   </h1>
-                  <p className="text-xs text-[var(--text-secondary)] font-medium">پنل مدیریت مربی</p>
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: "100%" }}
+                    transition={{ delay: 0.2, duration: 0.4 }}
+                    className="h-0.5 bg-gradient-to-r from-[var(--accent-color)] to-[var(--accent-secondary)] rounded-full mt-1"
+                  ></motion.div>
+                  <p className="text-xs text-[var(--text-secondary)] font-medium mt-1 tracking-wide">پنل مدیریت مربی</p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -809,54 +1249,117 @@ const CoachDashboard: React.FC = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto custom-scrollbar">
-          {navItems.map(item => (
-            <NavItem
-              key={item.id}
-              icon={item.icon}
-              label={item.label}
-              active={currentTab === item.id}
-              onClick={() => setCurrentTab(item.id)}
-              badge={item.badge}
-              collapsed={!sidebarOpen}
-            />
-          ))}
+        <nav className="flex-1 p-5 space-y-2 overflow-y-auto custom-scrollbar">
+          <div className="space-y-1">
+            {navItems.map((item, index) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05, duration: 0.3 }}
+              >
+                <NavItem
+                  icon={item.icon}
+                  label={item.label}
+                  active={currentTab === item.id}
+                  onClick={() => setCurrentTab(item.id)}
+                  badge={item.badge}
+                  collapsed={!sidebarOpen}
+                />
+              </motion.div>
+            ))}
+          </div>
         </nav>
 
         {/* Sidebar Footer */}
-        <div className="p-4 border-t border-[var(--glass-border)] space-y-2">
+        <div className="p-5 border-t border-[var(--glass-border)] space-y-3 bg-gradient-to-t from-black/5 to-transparent">
           <AnimatePresence>
             {sidebarOpen && (
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="space-y-2 overflow-hidden"
+                initial={{ opacity: 0, height: 0, y: 20 }}
+                animate={{ opacity: 1, height: 'auto', y: 0 }}
+                exit={{ opacity: 0, height: 0, y: 20 }}
+                transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
+                className="space-y-3 overflow-hidden"
               >
-                <button
-                  onClick={backupData}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition font-semibold text-sm"
+                {/* Theme Toggle */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.1 }}
+                  className="flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-[var(--glass-bg)] to-white/5 border border-[var(--glass-border)]"
                 >
-                  <FileText size={16} />
+                  <div className="flex items-center gap-3">
+                    <motion.div
+                      animate={{ rotate: theme === 'dark' ? 0 : 180 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
+                    </motion.div>
+                    <span className="text-sm font-medium text-[var(--text-secondary)]">
+                      {theme === 'dark' ? 'تم تاریک' : 'تم روشن'}
+                    </span>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={toggleTheme}
+                    className={`relative w-12 h-6 rounded-full transition-all duration-300 ${
+                      theme === 'dark'
+                        ? 'bg-gradient-to-r from-slate-600 to-slate-800'
+                        : 'bg-gradient-to-r from-amber-400 to-orange-500'
+                    }`}
+                  >
+                    <motion.div
+                      layout
+                      className={`w-5 h-5 rounded-full bg-white shadow-lg flex items-center justify-center transition-all duration-300 ${
+                        theme === 'dark' ? 'ml-0.5' : 'ml-6'
+                      }`}
+                    >
+                      {theme === 'dark' ? (
+                        <Moon size={10} className="text-slate-600" />
+                      ) : (
+                        <Sun size={10} className="text-amber-500" />
+                      )}
+                    </motion.div>
+                  </motion.button>
+                </motion.div>
+
+                <motion.button
+                  whileHover={{ scale: 1.02, boxShadow: "0 4px 12px -2px rgba(16, 185, 129, 0.3)" }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={backupData}
+                  className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-emerald-600/10 text-emerald-600 dark:text-emerald-400 hover:from-emerald-500/20 hover:to-emerald-600/20 transition-all duration-300 font-semibold text-sm border border-emerald-500/20 hover:border-emerald-500/30 shadow-lg shadow-emerald-500/10"
+                >
+                  <FileText size={18} />
                   بکاپ داده‌ها
-                </button>
-                <label className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition font-semibold text-sm cursor-pointer">
-                  <FileText size={16} />
+                </motion.button>
+                <motion.label
+                  whileHover={{ scale: 1.02, boxShadow: "0 4px 12px -2px rgba(59, 130, 246, 0.3)" }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-500/10 to-blue-600/10 text-blue-600 dark:text-blue-400 hover:from-blue-500/20 hover:to-blue-600/20 transition-all duration-300 font-semibold text-sm border border-blue-500/20 hover:border-blue-500/30 shadow-lg shadow-blue-500/10 cursor-pointer"
+                >
+                  <FileText size={18} />
                   بازیابی بکاپ
                   <input type="file" className="hidden" accept=".json" onChange={(e) => e.target.files?.[0] && restoreData(e.target.files[0])} />
-                </label>
+                </motion.label>
               </motion.div>
             )}
           </AnimatePresence>
-          
-          <button
+
+          <motion.button
+            whileHover={{ scale: 1.05, backgroundColor: "rgba(var(--glass-bg-rgb), 0.8)" }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="w-full flex items-center justify-center p-2.5 rounded-xl hover:bg-[var(--glass-bg)] text-[var(--text-secondary)] transition"
+            className="w-full flex items-center justify-center p-3 rounded-2xl hover:bg-[var(--glass-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all duration-300 border border-transparent hover:border-[var(--glass-border)] shadow-lg"
           >
-            <motion.div animate={{ rotate: sidebarOpen ? 0 : 180 }}>
-              <ChevronRight size={20} />
+            <motion.div
+              animate={{ rotate: sidebarOpen ? 0 : 180 }}
+              transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
+            >
+              <ChevronRight size={22} />
             </motion.div>
-          </button>
+          </motion.button>
         </div>
       </motion.aside>
 
@@ -874,56 +1377,86 @@ const CoachDashboard: React.FC = () => {
         {mobileMenuOpen && (
           <>
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+              animate={{ opacity: 1, backdropFilter: "blur(8px)" }}
+              exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+              transition={{ duration: 0.3 }}
               onClick={() => setMobileMenuOpen(false)}
-              className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+              className="lg:hidden fixed inset-0 bg-gradient-to-br from-black/40 via-black/60 to-black/80 z-50"
             />
             <motion.aside
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="lg:hidden fixed right-0 top-0 bottom-0 w-80 glass-panel z-50 flex flex-col shadow-2xl"
+              initial={{ x: '100%', rotateY: -15 }}
+              animate={{ x: 0, rotateY: 0 }}
+              exit={{ x: '100%', rotateY: -15 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 280 }}
+              className="lg:hidden fixed right-0 top-0 bottom-0 w-80 bg-gradient-to-b from-[var(--glass-bg)] via-[var(--glass-bg)]/98 to-[var(--glass-bg)]/95 backdrop-blur-xl z-50 flex flex-col shadow-2xl shadow-black/20 border-l border-[var(--glass-border)] overflow-hidden"
             >
-              <div className="p-5 border-b border-[var(--glass-border)] flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold">
-                    V2
+              <div className="p-6 border-b border-[var(--glass-border)] bg-gradient-to-r from-[var(--accent-color)]/5 to-transparent flex items-center justify-between">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="flex items-center gap-4"
+                >
+                  <motion.div
+                    whileHover={{ rotate: 360, scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ duration: 0.6, type: "spring", stiffness: 200 }}
+                    className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-color)] via-[var(--accent-secondary)] to-purple-600 flex items-center justify-center text-white font-black text-xl shadow-xl shadow-[var(--accent-color)]/40 overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+                    <span className="relative z-10">V2</span>
+                  </motion.div>
+                  <div>
+                    <h1 className="text-xl font-black bg-gradient-to-l from-[var(--accent-color)] to-[var(--accent-secondary)] bg-clip-text text-transparent">VO₂MAX</h1>
+                    <p className="text-xs text-[var(--text-secondary)]">پنل مدیریت</p>
                   </div>
-                  <h1 className="text-lg font-black">VO₂MAX</h1>
-                </div>
-                <button 
+                </motion.div>
+                <motion.button
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="p-2 rounded-xl hover:bg-[var(--glass-bg)] transition"
+                  className="p-3 rounded-2xl hover:bg-[var(--glass-bg)] transition-all duration-300 border border-transparent hover:border-[var(--glass-border)]"
                 >
-                  <X size={24} />
-                </button>
+                  <X size={24} className="text-[var(--text-secondary)]" />
+                </motion.button>
               </div>
-              <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
-                {navItems.map(item => (
-                  <NavItem
-                    key={item.id}
-                    icon={item.icon}
-                    label={item.label}
-                    active={currentTab === item.id}
-                    onClick={() => {
-                      setCurrentTab(item.id);
-                      setMobileMenuOpen(false);
-                    }}
-                    badge={item.badge}
-                  />
-                ))}
+              <nav className="flex-1 p-5 space-y-3 overflow-y-auto custom-scrollbar">
+                <div className="space-y-2">
+                  {navItems.map((item, index) => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.08, duration: 0.3, type: "spring", stiffness: 300 }}
+                    >
+                      <NavItem
+                        icon={item.icon}
+                        label={item.label}
+                        active={currentTab === item.id}
+                        onClick={() => {
+                          setCurrentTab(item.id);
+                          setMobileMenuOpen(false);
+                        }}
+                        badge={item.badge}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
               </nav>
-              <div className="p-4 border-t border-[var(--glass-border)]">
-                <button
+              <div className="p-5 border-t border-[var(--glass-border)] bg-gradient-to-t from-black/5 to-transparent">
+                <motion.button
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.3 }}
+                  whileHover={{ scale: 1.02, boxShadow: "0 4px 12px -2px rgba(239, 68, 68, 0.3)" }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => { signOut(); setMobileMenuOpen(false); }}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition font-semibold"
+                  className="w-full flex items-center justify-center gap-3 px-5 py-4 rounded-2xl bg-gradient-to-r from-red-500/10 to-red-600/10 text-red-500 hover:from-red-500/20 hover:to-red-600/20 transition-all duration-300 font-semibold border border-red-500/20 hover:border-red-500/30 shadow-lg shadow-red-500/10"
                 >
-                  <LogOut size={18} />
+                  <LogOut size={20} />
                   خروج از حساب
-                </button>
+                </motion.button>
               </div>
             </motion.aside>
           </>
@@ -933,7 +1466,7 @@ const CoachDashboard: React.FC = () => {
       {/* ==================== Main Content ==================== */}
       <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
         {/* ==================== Header ==================== */}
-        <header className="sticky top-0 z-40 bg-black/20 backdrop-blur-xl border-b border-white/10 px-4 sm:px-6 py-4 shadow-lg">
+        <header className="sticky top-0 z-40 glass-panel border-b border-[var(--glass-border)] px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="pr-12 lg:pr-0">
               <h2 className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">
@@ -999,7 +1532,7 @@ const CoachDashboard: React.FC = () => {
                 </div>
                 <motion.div 
                   whileHover={{ scale: 1.05 }}
-                  className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold shadow-lg cursor-pointer"
+                  className="w-11 h-11 rounded-xl bg-gradient-to-br from-[var(--accent-color)] to-[var(--accent-secondary)] flex items-center justify-center text-white font-bold shadow-lg cursor-pointer"
                   onClick={() => setCurrentTab('profile')}
                 >
                   {coachProfile.fullName?.charAt(0) || 'م'}
@@ -1033,60 +1566,211 @@ const CoachDashboard: React.FC = () => {
                 exit={{ opacity: 0 }}
                 className="space-y-6"
               >
-                {/* Welcome Message */}
-                <motion.div variants={itemVariants} className="glass-card p-6 rounded-2xl border border-[var(--glass-border)] relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-64 h-64 rounded-full bg-gradient-to-br from-purple-500/20 to-transparent blur-3xl pointer-events-none" />
+                {/* Enhanced Welcome Message with Achievements */}
+                <motion.div
+                  variants={bounceIn}
+                  className="glass-card p-6 rounded-2xl border border-[var(--glass-border)] relative overflow-hidden"
+                >
+                  {/* Animated background particles */}
+                  <div className="absolute inset-0 overflow-hidden rounded-2xl">
+                    {[...Array(6)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className="absolute w-2 h-2 bg-[var(--accent-color)]/20 rounded-full"
+                        initial={{
+                          x: Math.random() * 400,
+                          y: Math.random() * 200,
+                          opacity: 0
+                        }}
+                        animate={{
+                          x: Math.random() * 400,
+                          y: Math.random() * 200,
+                          opacity: [0, 0.5, 0],
+                        }}
+                        transition={{
+                          duration: 4,
+                          repeat: Infinity,
+                          delay: i * 0.5,
+                          ease: "easeInOut"
+                        }}
+                      />
+                    ))}
+                  </div>
+
                   <div className="relative">
-                    <h3 className="text-2xl font-black mb-2">
-                      سلام {coachProfile.fullName?.split(' ')[0] || 'مربی'} عزیز! 👋
-                    </h3>
-                    <p className="text-[var(--text-secondary)]">
-                      به پنل مدیریت خوش آمدید. امروز {users.length} شاگرد و {pendingRequests.length} درخواست در انتظار دارید.
-                    </p>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        <h3 className="text-2xl font-black mb-2 flex items-center gap-2">
+                          سلام {coachProfile.fullName?.split(' ')[0] || 'مربی'} عزیز!
+                          <motion.span
+                            animate={{
+                              rotate: [0, 10, -10, 0],
+                              scale: [1, 1.1, 1]
+                            }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              repeatDelay: 5
+                            }}
+                          >
+                            👋
+                          </motion.span>
+                        </h3>
+                        <motion.p
+                          className="text-[var(--text-secondary)] mb-3"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.4 }}
+                        >
+                          به پنل مدیریت خوش آمدید. امروز {users.length} شاگرد و {pendingRequests.length} درخواست در انتظار دارید.
+                        </motion.p>
+                      </motion.div>
+
+                      {/* Achievement Badges */}
+                      <motion.div
+                        className="flex gap-2"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.6 }}
+                      >
+                        <motion.div
+                          whileHover={{ scale: 1.1, rotate: 5 }}
+                          className="relative cursor-pointer"
+                        >
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white font-bold shadow-lg hover:shadow-yellow-500/30 transition-shadow">
+                            🏆
+                          </div>
+                          <motion.div
+                            className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center"
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          >
+                            <span className="text-xs font-bold text-white">5</span>
+                          </motion.div>
+                        </motion.div>
+
+                        <motion.div
+                          whileHover={{ scale: 1.1, rotate: -5 }}
+                          className="relative cursor-pointer"
+                        >
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold shadow-lg hover:shadow-purple-500/30 transition-shadow">
+                            ⭐
+                          </div>
+                          <motion.div
+                            className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center"
+                            animate={{
+                              scale: [1, 1.3, 1],
+                              rotate: [0, 180, 360]
+                            }}
+                            transition={{ duration: 3, repeat: Infinity }}
+                          >
+                            <span className="text-xs font-bold text-white">!</span>
+                          </motion.div>
+                        </motion.div>
+                      </motion.div>
+                    </div>
+
+                    {/* Progress Streak with Animation */}
+                    <motion.div
+                      className="mt-4 p-3 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-xl border border-emerald-500/20"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.8 }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <motion.div
+                            className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center"
+                            animate={{
+                              scale: [1, 1.1, 1],
+                              rotate: [0, 5, -5, 0]
+                            }}
+                            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                          >
+                            <span className="text-white text-sm font-bold">🔥</span>
+                          </motion.div>
+                          <div>
+                            <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">رشته فعالیت ۱۴ روزه! 🔥</p>
+                            <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70">شاگردان شما در بهترین شرایط هستند</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <motion.p
+                            className="text-lg font-black text-emerald-600 dark:text-emerald-400"
+                            animate={{ scale: [1, 1.05, 1] }}
+                            transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 2 }}
+                          >
+                            ۱۴
+                          </motion.p>
+                          <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70">روز متوالی</p>
+                        </div>
+                      </div>
+                    </motion.div>
                   </div>
                 </motion.div>
 
-                {/* Stats Grid with React Bits Components */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <HoverCard variant="glow" className="transform hover:scale-105 transition-all duration-300">
+                {/* Enhanced Stats Grid with Stagger Animation */}
+                <motion.div
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+                  variants={staggerContainer}
+                  initial="hidden"
+                  animate="visible"
+                >
+                  <motion.div variants={staggerItem}>
                     <StatCounter
                       value={stats.totalStudents}
                       label="کل شاگردان"
-                      icon={<Users className="text-blue-500" />}
-                      color="text-blue-600"
+                      icon={<Users className="w-6 h-6" />}
+                      color="text-blue-400"
+                      trend={{ value: 12, positive: true }}
+                      miniChart={[8, 9, 12, 15, 18, 20, 22]}
+                      gradient="linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)"
                     />
-                  </HoverCard>
+                  </motion.div>
 
-                  <HoverCard variant="tilt" className="transform hover:scale-105 transition-all duration-300">
+                  <motion.div variants={staggerItem}>
                     <StatCounter
                       value={stats.pendingRequests}
                       label="درخواست در انتظار"
-                      icon={<Clock className="text-yellow-500" />}
-                      color="text-yellow-600"
+                      icon={<Clock className="w-6 h-6" />}
+                      color="text-yellow-400"
+                      trend={{ value: -8, positive: false }}
+                      miniChart={[5, 7, 6, 8, 4, 3, 2]}
+                      gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
                     />
-                  </HoverCard>
+                  </motion.div>
 
-                  <HoverCard variant="morph" className="transform hover:scale-105 transition-all duration-300">
+                  <motion.div variants={staggerItem}>
                     <StatCounter
                       value={stats.acceptedRequests}
                       label="درخواست تأیید شده"
-                      icon={<CheckCircle className="text-green-500" />}
-                      color="text-green-600"
+                      icon={<CheckCircle className="w-6 h-6" />}
+                      color="text-green-400"
+                      trend={{ value: 25, positive: true }}
+                      miniChart={[3, 5, 8, 12, 15, 18, 20]}
+                      gradient="linear-gradient(135deg, #10b981 0%, #059669 100%)"
                     />
-                  </HoverCard>
+                  </motion.div>
 
-                  <HoverCard variant="border" className="transform hover:scale-105 transition-all duration-300">
+                  <motion.div variants={staggerItem}>
                     <StatCounter
                       value={stats.activePrograms}
                       label="برنامه فعال"
-                      icon={<Activity className="text-purple-500" />}
-                      color="text-purple-600"
+                      icon={<Activity className="w-6 h-6" />}
+                      color="text-purple-400"
+                      trend={{ value: 15, positive: true }}
+                      miniChart={[2, 3, 5, 7, 9, 11, 13]}
+                      gradient="linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)"
                     />
-                  </HoverCard>
-                </div>
+                  </motion.div>
+                </motion.div>
 
-                {/* Coach Code & Quick Actions */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Coach Code, Quick Actions & Smart Reminders */}
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                   {/* Coach Code Card */}
                   <motion.div variants={itemVariants} className="lg:col-span-1">
                     <GlowCard className="h-full">
@@ -1100,7 +1784,7 @@ const CoachDashboard: React.FC = () => {
                             <p className="text-xs text-[var(--text-secondary)]">برای ارتباط شاگردان</p>
                           </div>
                         </div>
-                        
+
                         {coachCode ? (
                           <motion.div
                             whileHover={{ scale: 1.02 }}
@@ -1123,7 +1807,7 @@ const CoachDashboard: React.FC = () => {
                             </p>
                           </div>
                         )}
-                        
+
                         <p className="text-xs text-center text-[var(--text-secondary)] mt-3">
                           این کد = ۵ رقم آخر موبایل شما
                         </p>
@@ -1132,37 +1816,150 @@ const CoachDashboard: React.FC = () => {
                   </motion.div>
 
                   {/* Quick Actions */}
+                  <motion.div variants={itemVariants} className="lg:col-span-1">
+                    <GlowCard className="h-full">
+                      <div className="p-6">
+                        <h4 className="font-bold mb-4 flex items-center gap-2">
+                          <Zap size={18} className="text-[var(--accent-color)]" />
+                          دسترسی سریع
+                        </h4>
+                        <div className="space-y-3">
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handleOpenUserModal()}
+                            className="w-full p-3 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-sm font-semibold transition-colors flex items-center gap-2"
+                          >
+                            <Plus size={16} />
+                            شاگرد جدید
+                          </motion.button>
+
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setCurrentTab('training')}
+                            className="w-full p-3 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-sm font-semibold transition-colors flex items-center gap-2"
+                          >
+                            <Dumbbell size={16} />
+                            برنامه تمرین
+                          </motion.button>
+
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setCurrentTab('nutrition')}
+                            className="w-full p-3 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 text-sm font-semibold transition-colors flex items-center gap-2"
+                          >
+                            <UtensilsCrossed size={16} />
+                            رژیم غذایی
+                          </motion.button>
+
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setCurrentTab('print')}
+                            className="w-full p-3 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 text-sm font-semibold transition-colors flex items-center gap-2"
+                          >
+                            <Printer size={16} />
+                            پرینت برنامه
+                          </motion.button>
+                        </div>
+                      </div>
+                    </GlowCard>
+                  </motion.div>
+
+                  {/* Smart Reminders */}
                   <motion.div variants={itemVariants} className="lg:col-span-2">
-                    <h4 className="font-bold mb-4 flex items-center gap-2">
-                      <Zap size={18} className="text-[var(--accent-color)]" />
-                      دسترسی سریع
-                    </h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <QuickAction
-                        icon={<Plus size={20} />}
-                        label="شاگرد جدید"
-                        onClick={() => handleOpenUserModal()}
-                        gradient="linear-gradient(135deg, #3b82f6, #1d4ed8)"
-                      />
-                      <QuickAction
-                        icon={<Dumbbell size={20} />}
-                        label="برنامه تمرین"
-                        onClick={() => setCurrentTab('training')}
-                        gradient="linear-gradient(135deg, #8b5cf6, #6d28d9)"
-                      />
-                      <QuickAction
-                        icon={<UtensilsCrossed size={20} />}
-                        label="رژیم غذایی"
-                        onClick={() => setCurrentTab('nutrition')}
-                        gradient="linear-gradient(135deg, #10b981, #059669)"
-                      />
-                      <QuickAction
-                        icon={<Printer size={20} />}
-                        label="پرینت برنامه"
-                        onClick={() => setCurrentTab('print')}
-                        gradient="linear-gradient(135deg, #f59e0b, #d97706)"
-                      />
-                    </div>
+                    <GlowCard className="h-full">
+                      <div className="p-6">
+                        <h4 className="font-bold mb-4 flex items-center gap-2">
+                          <Bell size={18} className="text-[var(--accent-color)]" />
+                          یادآوری هوشمند
+                        </h4>
+                        <p className="text-sm text-[var(--text-secondary)] mb-4">
+                          سیستم یادآوری خودکار برای تمرین، تغذیه و مکمل‌ها
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                          {/* Test buttons for different reminder types */}
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => {
+                              setCurrentReminder({
+                                type: 'workout',
+                                title: 'زمان تمرین!',
+                                message: 'شاگردان شما منتظر برنامه تمرینی امروز هستند.',
+                                action: () => setCurrentTab('training')
+                              });
+                              setShowReminder(true);
+                            }}
+                            className="p-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-sm rounded-lg transition-colors flex items-center gap-2"
+                          >
+                            🏋️ تمرین
+                          </motion.button>
+
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => {
+                              setCurrentReminder({
+                                type: 'nutrition',
+                                title: 'یادآوری تغذیه',
+                                message: 'زمان وعده غذایی فرا رسیده است.',
+                                action: () => setCurrentTab('nutrition')
+                              });
+                              setShowReminder(true);
+                            }}
+                            className="p-3 bg-green-500/20 hover:bg-green-500/30 text-green-400 text-sm rounded-lg transition-colors flex items-center gap-2"
+                          >
+                            🥗 تغذیه
+                          </motion.button>
+
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => {
+                              setCurrentReminder({
+                                type: 'supplement',
+                                title: 'یادآوری مکمل‌ها',
+                                message: 'زمان مصرف مکمل‌های روزانه فرا رسیده.',
+                                action: () => setCurrentTab('supplements')
+                              });
+                              setShowReminder(true);
+                            }}
+                            className="p-3 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 text-sm rounded-lg transition-colors flex items-center gap-2"
+                          >
+                            💊 مکمل
+                          </motion.button>
+
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => {
+                              setCurrentReminder({
+                                type: 'session',
+                                title: 'یادآوری جلسه',
+                                message: 'جلسه با علی رضا در ساعت ۱۷ امروز.',
+                                clientName: 'علی رضا',
+                                action: () => setCurrentTab('students')
+                              });
+                              setShowReminder(true);
+                            }}
+                            className="p-3 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-sm rounded-lg transition-colors flex items-center gap-2"
+                          >
+                            📅 جلسه
+                          </motion.button>
+                        </div>
+
+                        <div className="pt-3 border-t border-[var(--glass-border)]">
+                          <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            یادآوری‌ها به صورت خودکار در زمان‌های مناسب نمایش داده می‌شوند
+                          </div>
+                        </div>
+                      </div>
+                    </GlowCard>
                   </motion.div>
                 </div>
 
@@ -2350,8 +3147,8 @@ const CoachDashboard: React.FC = () => {
         isOpen={isSupabaseDebugOpen}
         onClose={() => setIsSupabaseDebugOpen(false)}
       />
-      </div>
-    </LightRays>
+    </div>
+    </>
   );
 };
 
