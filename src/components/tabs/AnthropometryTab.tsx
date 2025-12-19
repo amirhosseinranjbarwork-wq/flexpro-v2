@@ -196,7 +196,7 @@ export const AnthropometryTab: React.FC<AnthropometryTabProps> = ({ form }) => {
             )}
           </AnimatePresence>
         </motion.div>
-      </div>
+      </motion.div>
 
       {/* Body Measurements */}
       <div className="glass-card p-4 rounded-xl border border-[var(--glass-border)]">
