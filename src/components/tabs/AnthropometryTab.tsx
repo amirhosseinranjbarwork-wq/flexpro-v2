@@ -1,5 +1,6 @@
 import React from 'react';
-import { Ruler, Scale, Calculator, TrendingUp, Target } from 'lucide-react';
+import { Ruler, Scale, Calculator, TrendingUp, Target, Activity } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { UseUserFormReturn } from '../../hooks/useUserForm';
 
 interface AnthropometryTabProps {
@@ -10,64 +11,191 @@ export const AnthropometryTab: React.FC<AnthropometryTabProps> = ({ form }) => {
   const { formData, errors, calculations, updateField, updateNestedField } = form;
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="space-y-8"
+    >
+      {/* Section Header */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.1, duration: 0.3 }}
+        className="text-center pb-6 border-b border-[var(--glass-border)]"
+      >
+        <motion.div
+          whileHover={{ rotate: 360 }}
+          transition={{ duration: 0.6 }}
+          className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-green-500 via-teal-500 to-cyan-500 flex items-center justify-center text-white text-2xl shadow-lg shadow-green-500/30"
+        >
+          📏
+        </motion.div>
+        <h3 className="text-xl font-black text-[var(--text-primary)] mb-2">اندازه‌گیری‌های بدنی</h3>
+        <p className="text-[var(--text-secondary)]">اطلاعات فیزیکی و محاسبات تغذیه‌ای</p>
+      </motion.div>
+
       {/* Basic Measurements */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm font-semibold mb-2 text-[var(--text-primary)]">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.4 }}
+        className="grid grid-cols-1 md:grid-cols-3 gap-6"
+      >
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3, duration: 0.3 }}
+          className="group"
+        >
+          <label className="block text-sm font-bold mb-3 text-[var(--text-primary)] flex items-center gap-2">
+            <Activity size={16} className="text-[var(--accent-color)]" />
             سن (سال) *
           </label>
-            <input
+          <div className="relative">
+            <motion.input
+              whileFocus={{ scale: 1.02, boxShadow: "0 0 0 3px rgba(var(--accent-color-rgb), 0.1)" }}
               type="number"
               value={formData.age || ''}
               onChange={(e) => updateField('age', e.target.value)}
-              className={`input-glass ${errors.age ? 'border-red-500' : ''}`}
+              className={`input-glass h-12 text-lg font-medium transition-all duration-300 border-2 ${
+                errors.age
+                  ? 'border-red-500 focus:border-red-500'
+                  : 'border-[var(--glass-border)] focus:border-[var(--accent-color)]'
+              }`}
               placeholder="25"
               min="10"
               max="120"
             />
-          {errors.age && <p className="text-red-500 text-xs mt-1">{errors.age}</p>}
-        </div>
+            <motion.div
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--text-secondary)] bg-[var(--glass-bg)] px-2 py-1 rounded-lg border border-[var(--glass-border)]"
+              whileHover={{ scale: 1.05 }}
+            >
+              سال
+            </motion.div>
+          </div>
+          <AnimatePresence>
+            {errors.age && (
+              <motion.p
+                initial={{ opacity: 0, y: -10, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: 'auto' }}
+                exit={{ opacity: 0, y: -10, height: 0 }}
+                className="text-red-500 text-xs mt-2 flex items-center gap-1"
+              >
+                <span className="animate-pulse">⚠️</span>
+                {errors.age}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
-        <div>
-          <label className="block text-sm font-semibold mb-2 text-[var(--text-primary)]">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.3 }}
+          className="group"
+        >
+          <label className="block text-sm font-bold mb-3 text-[var(--text-primary)] flex items-center gap-2">
+            <Ruler size={16} className="text-[var(--accent-color)]" />
             قد (cm) *
           </label>
           <div className="relative">
-            <Ruler className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)]" />
-            <input
+            <motion.input
+              whileFocus={{ scale: 1.02, boxShadow: "0 0 0 3px rgba(var(--accent-color-rgb), 0.1)" }}
               type="number"
               value={formData.height || ''}
               onChange={(e) => updateField('height', e.target.value)}
-              className={`input-glass pr-8 ${errors.height ? 'border-red-500' : ''}`}
+              className={`input-glass pr-12 h-12 text-lg font-medium transition-all duration-300 border-2 ${
+                errors.height
+                  ? 'border-red-500 focus:border-red-500'
+                  : 'border-[var(--glass-border)] focus:border-[var(--accent-color)]'
+              }`}
               placeholder="175"
               min="100"
               max="250"
               step="0.1"
             />
+            <motion.div
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-secondary)] group-hover:text-[var(--accent-color)] transition-colors duration-300"
+              whileHover={{ scale: 1.1, rotate: 5 }}
+            >
+              <Ruler size={20} />
+            </motion.div>
+            <motion.div
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--text-secondary)] bg-[var(--glass-bg)] px-2 py-1 rounded-lg border border-[var(--glass-border)]"
+              whileHover={{ scale: 1.05 }}
+            >
+              cm
+            </motion.div>
           </div>
-          {errors.height && <p className="text-red-500 text-xs mt-1">{errors.height}</p>}
-        </div>
+          <AnimatePresence>
+            {errors.height && (
+              <motion.p
+                initial={{ opacity: 0, y: -10, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: 'auto' }}
+                exit={{ opacity: 0, y: -10, height: 0 }}
+                className="text-red-500 text-xs mt-2 flex items-center gap-1"
+              >
+                <span className="animate-pulse">📏</span>
+                {errors.height}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
-        <div>
-          <label className="block text-sm font-semibold mb-2 text-[var(--text-primary)]">
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.5, duration: 0.3 }}
+          className="group"
+        >
+          <label className="block text-sm font-bold mb-3 text-[var(--text-primary)] flex items-center gap-2">
+            <Scale size={16} className="text-[var(--accent-color)]" />
             وزن (kg) *
           </label>
           <div className="relative">
-            <Scale className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)]" />
-            <input
+            <motion.input
+              whileFocus={{ scale: 1.02, boxShadow: "0 0 0 3px rgba(var(--accent-color-rgb), 0.1)" }}
               type="number"
               value={formData.weight || ''}
               onChange={(e) => updateField('weight', e.target.value)}
-              className={`input-glass pr-8 ${errors.weight ? 'border-red-500' : ''}`}
+              className={`input-glass pr-12 h-12 text-lg font-medium transition-all duration-300 border-2 ${
+                errors.weight
+                  ? 'border-red-500 focus:border-red-500'
+                  : 'border-[var(--glass-border)] focus:border-[var(--accent-color)]'
+              }`}
               placeholder="75"
               min="30"
               max="300"
               step="0.1"
             />
+            <motion.div
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-secondary)] group-hover:text-[var(--accent-color)] transition-colors duration-300"
+              whileHover={{ scale: 1.1, rotate: 5 }}
+            >
+              <Scale size={20} />
+            </motion.div>
+            <motion.div
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--text-secondary)] bg-[var(--glass-bg)] px-2 py-1 rounded-lg border border-[var(--glass-border)]"
+              whileHover={{ scale: 1.05 }}
+            >
+              kg
+            </motion.div>
           </div>
-          {errors.weight && <p className="text-red-500 text-xs mt-1">{errors.weight}</p>}
-        </div>
+          <AnimatePresence>
+            {errors.weight && (
+              <motion.p
+                initial={{ opacity: 0, y: -10, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: 'auto' }}
+                exit={{ opacity: 0, y: -10, height: 0 }}
+                className="text-red-500 text-xs mt-2 flex items-center gap-1"
+              >
+                <span className="animate-pulse">⚖️</span>
+                {errors.weight}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </div>
 
       {/* Body Measurements */}
