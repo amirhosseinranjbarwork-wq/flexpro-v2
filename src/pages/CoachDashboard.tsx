@@ -2109,222 +2109,71 @@ const CoachDashboard: React.FC = () => {
                 className="space-y-6"
               >
                 {/* Sub Tabs */}
-                <div className="relative">
-                  <div className="flex flex-wrap gap-3 bg-gradient-to-r from-[var(--glass-bg)]/50 to-transparent backdrop-blur-sm rounded-2xl p-2 border border-[var(--glass-border)]">
-                    {[
-                      { id: 'list' as StudentsSubTab, label: 'لیست شاگردان', icon: <Users size={18} />, color: 'from-blue-500 to-cyan-500' },
-                      { id: 'requests' as StudentsSubTab, label: 'درخواست‌ها', icon: <Bell size={18} />, badge: pendingRequests.length, color: 'from-orange-500 to-red-500' },
-                      { id: 'info' as StudentsSubTab, label: 'اطلاعات شاگرد', icon: <FileText size={18} />, disabled: !localActiveUser, color: 'from-purple-500 to-pink-500' },
-                    ].map((tab, index) => (
-                      <motion.button
-                        key={tab.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1, duration: 0.3, type: "spring", stiffness: 300 }}
-                        whileHover={{
-                          scale: 1.05,
-                          y: -2,
-                          boxShadow: !tab.disabled ? "0 8px 25px -5px rgba(var(--accent-color-rgb), 0.3)" : "none"
-                        }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => !tab.disabled && setStudentsSubTab(tab.id)}
-                        disabled={tab.disabled}
-                        className={`relative flex items-center gap-3 px-6 py-4 rounded-xl font-bold transition-all duration-300 overflow-hidden ${
-                          studentsSubTab === tab.id
-                            ? 'bg-gradient-to-l from-[var(--accent-color)] via-[var(--accent-secondary)] to-purple-600 text-white shadow-xl shadow-[var(--accent-color)]/40 border-2 border-white/20'
-                            : tab.disabled
-                            ? 'text-[var(--text-secondary)]/40 cursor-not-allowed bg-[var(--glass-bg)] border border-[var(--glass-border)]/50'
-                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--glass-bg)] hover:bg-gradient-to-r hover:from-white/10 hover:to-transparent border border-transparent hover:border-[var(--glass-border)] hover:shadow-lg'
-                        }`}
-                      >
-                        {/* Background glow for active tab */}
-                        {studentsSubTab === tab.id && (
-                          <motion.div
-                            layoutId="activeTabGlow"
-                            className="absolute inset-0 bg-gradient-to-l from-white/20 to-transparent rounded-xl"
-                            initial={false}
-                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                          />
-                        )}
-
-                        {/* Icon with animation */}
-                        <motion.div
-                          className={`relative z-10 ${studentsSubTab === tab.id ? 'text-white' : tab.disabled ? 'text-[var(--text-secondary)]/40' : 'text-[var(--text-secondary)] group-hover:text-[var(--accent-color)]'} transition-colors duration-300`}
-                          whileHover={{ rotate: studentsSubTab !== tab.id ? 5 : 0, scale: 1.1 }}
-                        >
-                          {tab.icon}
-                        </motion.div>
-
-                        {/* Label */}
-                        <span className={`relative z-10 hidden sm:inline transition-all duration-300 ${
-                          studentsSubTab === tab.id ? 'text-white font-black' : 'font-semibold'
-                        }`}>
-                          {tab.label}
+                <div className="flex flex-wrap gap-2 border-b border-[var(--glass-border)] pb-4">
+                  {[
+                    { id: 'list' as StudentsSubTab, label: 'لیست شاگردان', icon: <Users size={16} /> },
+                    { id: 'requests' as StudentsSubTab, label: 'درخواست‌ها', icon: <Bell size={16} />, badge: pendingRequests.length },
+                    { id: 'info' as StudentsSubTab, label: 'اطلاعات شاگرد', icon: <FileText size={16} />, disabled: !localActiveUser },
+                  ].map(tab => (
+                    <motion.button
+                      key={tab.id}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => !tab.disabled && setStudentsSubTab(tab.id)}
+                      disabled={tab.disabled}
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold transition relative ${
+                        studentsSubTab === tab.id
+                          ? 'bg-gradient-to-l from-[var(--accent-color)] to-[var(--accent-secondary)] text-white shadow-lg'
+                          : tab.disabled
+                          ? 'text-[var(--text-secondary)]/40 cursor-not-allowed bg-[var(--glass-bg)]'
+                          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--glass-bg)] hover:bg-[var(--glass-border)]'
+                      }`}
+                    >
+                      {tab.icon}
+                      <span className="hidden sm:inline">{tab.label}</span>
+                      {tab.badge !== undefined && tab.badge > 0 && (
+                        <span className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">
+                          {tab.badge}
                         </span>
-
-                        {/* Badge with enhanced animation */}
-                        {tab.badge !== undefined && tab.badge > 0 && (
-                          <motion.span
-                            initial={{ scale: 0, rotate: -180 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            whileHover={{ scale: 1.2 }}
-                            className="relative z-10 min-w-[24px] h-6 rounded-full bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs flex items-center justify-center font-bold shadow-lg border-2 border-white/30"
-                          >
-                            {tab.badge > 99 ? '99+' : tab.badge}
-                          </motion.span>
-                        )}
-
-                        {/* Disabled overlay */}
-                        {tab.disabled && (
-                          <motion.div
-                            className="absolute inset-0 bg-black/10 rounded-xl flex items-center justify-center"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                          >
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                              className="w-4 h-4 border-2 border-[var(--text-secondary)]/40 border-t-transparent rounded-full"
-                            />
-                          </motion.div>
-                        )}
-
-                        {/* Hover effect indicator */}
-                        <motion.div
-                          className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${tab.color} rounded-b-xl`}
-                          initial={{ scaleX: 0 }}
-                          animate={{ scaleX: studentsSubTab === tab.id ? 1 : 0 }}
-                          transition={{ duration: 0.3, ease: "easeInOut" }}
-                        />
-                      </motion.button>
-                    ))}
-                  </div>
-
-                  {/* Active tab indicator */}
-                  <motion.div
-                    className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-[var(--accent-color)] to-[var(--accent-secondary)] rounded-full"
-                    layoutId="activeTabIndicator"
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    style={{
-                      width: `${100 / 3}%`,
-                      left: `${(['list', 'requests', 'info'].indexOf(studentsSubTab)) * (100 / 3)}%`
-                    }}
-                  />
+                      )}
+                    </motion.button>
+                  ))}
                 </div>
 
                 {/* Students List */}
                 {studentsSubTab === 'list' && (
                   <motion.div variants={itemVariants} className="space-y-4">
                     {/* Search & Add */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2, duration: 0.4 }}
-                      className="flex flex-col lg:flex-row gap-4 p-6 bg-gradient-to-r from-[var(--glass-bg)] to-white/5 backdrop-blur-sm rounded-2xl border border-[var(--glass-border)] shadow-lg"
-                    >
-                      {/* Search Input */}
-                      <div className="flex-1 relative group">
-                        <motion.div
-                          whileHover={{ scale: 1.02 }}
-                          className="relative"
-                        >
-                          <Search size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] group-hover:text-[var(--accent-color)] transition-colors duration-300" />
-                          <input
-                            type="text"
-                            placeholder="جستجوی شاگرد با نام، تلفن یا ایمیل..."
-                            value={searchTerm}
-                            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                            className="input-glass pr-12 w-full h-12 text-lg font-medium transition-all duration-300 focus:ring-2 focus:ring-[var(--accent-color)]/50 focus:border-[var(--accent-color)]"
-                          />
-                          <motion.div
-                            className="absolute inset-0 rounded-xl bg-gradient-to-r from-[var(--accent-color)]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                            initial={false}
-                          />
-                        </motion.div>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <div className="flex-1 relative">
+                        <Search size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
+                        <input
+                          type="text"
+                          placeholder="جستجوی شاگرد با نام، تلفن یا ایمیل..."
+                          value={searchTerm}
+                          onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                          className="input-glass pr-12 w-full"
+                        />
                       </div>
-
-                      {/* Sort Select */}
-                      <motion.div
-                        whileHover={{ scale: 1.02 }}
-                        className="relative"
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as 'name' | 'date')}
+                        className="input-glass w-full sm:w-40"
                       >
-                        <select
-                          value={sortBy}
-                          onChange={(e) => setSortBy(e.target.value as 'name' | 'date')}
-                          className="input-glass w-full lg:w-48 h-12 px-4 pr-10 appearance-none bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl font-semibold transition-all duration-300 focus:ring-2 focus:ring-[var(--accent-color)]/50 focus:border-[var(--accent-color)]"
-                        >
-                          <option value="name">🔤 ترتیب نام</option>
-                          <option value="date">📅 ترتیب تاریخ</option>
-                        </select>
-                        <ChevronRight size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] rotate-90 pointer-events-none" />
-                      </motion.div>
-
-                      {/* Add Student Button */}
+                        <option value="name">ترتیب نام</option>
+                        <option value="date">ترتیب تاریخ</option>
+                      </select>
                       <motion.button
-                        whileHover={{
-                          scale: 1.05,
-                          boxShadow: "0 10px 30px -5px rgba(var(--accent-color-rgb), 0.4)"
-                        }}
-                        whileTap={{ scale: 0.95 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={() => handleOpenUserModal()}
-                        className="group relative flex items-center justify-center gap-3 px-8 py-3 h-12 rounded-xl text-white font-black text-lg shadow-xl overflow-hidden"
+                        className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-white font-bold shadow-lg shadow-[var(--accent-color)]/30"
+                        style={{ background: 'linear-gradient(135deg, var(--accent-color), var(--accent-secondary))' }}
                       >
-                        {/* Background gradient */}
-                        <div className="absolute inset-0 bg-gradient-to-l from-[var(--accent-color)] via-[var(--accent-secondary)] to-purple-600 transition-all duration-300 group-hover:scale-110" />
-
-                        {/* Glow effect */}
-                        <div className="absolute inset-0 bg-gradient-to-l from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                        {/* Content */}
-                        <motion.div
-                          className="relative z-10 flex items-center gap-3"
-                          whileHover={{ gap: 12 }}
-                        >
-                          <motion.div
-                            whileHover={{ rotate: 180, scale: 1.2 }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            <Plus size={20} />
-                          </motion.div>
-                          <span className="relative">
-                            شاگرد جدید
-                            {/* Animated underline */}
-                            <motion.div
-                              className="absolute -bottom-1 left-0 right-0 h-0.5 bg-white/80 rounded-full"
-                              initial={{ scaleX: 0 }}
-                              whileHover={{ scaleX: 1 }}
-                              transition={{ duration: 0.3 }}
-                            />
-                          </span>
-                        </motion.div>
-
-                        {/* Sparkle effects */}
-                        <motion.div
-                          className="absolute top-2 right-2 w-2 h-2 bg-white/60 rounded-full"
-                          animate={{
-                            scale: [0, 1, 0],
-                            opacity: [0, 1, 0]
-                          }}
-                          transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            delay: 0
-                          }}
-                        />
-                        <motion.div
-                          className="absolute bottom-2 left-2 w-1.5 h-1.5 bg-white/40 rounded-full"
-                          animate={{
-                            scale: [0, 1, 0],
-                            opacity: [0, 1, 0]
-                          }}
-                          transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            delay: 1
-                          }}
-                        />
+                        <Plus size={18} />
+                        <span>شاگرد جدید</span>
                       </motion.button>
-                    </motion.div>
+                    </div>
 
                     {/* Users Grid */}
                     {paginatedUsers.length === 0 ? (
