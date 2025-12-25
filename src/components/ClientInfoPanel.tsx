@@ -19,12 +19,24 @@ import {
   FileText,
   Scale,
   Dumbbell,
-  ChefHat,
   Plus,
   ArrowRight
 } from 'lucide-react';
 import type { Client, User as UserType } from '../types/index';
 import { LoadingSpinner } from './index';
+
+interface InfoItem {
+  label: string;
+  value: string | number | undefined;
+  suffix?: string;
+  icon?: React.ReactNode;
+}
+
+interface InfoSection {
+  title: string;
+  icon: React.ReactNode;
+  items: InfoItem[];
+}
 
 interface ClientInfoPanelProps {
   client: Client | null;
@@ -38,10 +50,11 @@ const ClientInfoPanel: React.FC<ClientInfoPanelProps> = ({ client, loading, onNa
     return client.profile_data as UserType;
   }, [client]);
 
-  const infoSections = useMemo(() => {
+  const infoSections = useMemo((): Record<string, InfoSection> | null => {
     if (!client && !profileData) return null;
 
-    const pd = profileData || {};
+    // Use profileData with proper typing, defaulting to empty partial
+    const pd: Partial<UserType> = profileData || {};
     
     return {
       personal: {

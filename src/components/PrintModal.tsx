@@ -46,8 +46,92 @@ const sanitizeHTML = (html: string): string => {
   });
 };
 
+// Get print styles for the print window
+const getPrintStyles = (): string => {
+  return `
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Vazirmatn', Tahoma, Arial, sans-serif;
+      direction: rtl;
+      text-align: right;
+      line-height: 1.6;
+      color: #000;
+      background: #fff;
+      padding: 20mm;
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+      margin-bottom: 0.5em;
+      font-weight: 700;
+    }
+    
+    h1 { font-size: 24pt; }
+    h2 { font-size: 18pt; }
+    h3 { font-size: 14pt; }
+    h4 { font-size: 12pt; }
+    
+    p {
+      margin-bottom: 0.5em;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1em 0;
+    }
+    
+    th, td {
+      border: 1px solid #333;
+      padding: 8px 12px;
+      text-align: right;
+    }
+    
+    th {
+      background: #f5f5f5;
+      font-weight: 700;
+    }
+    
+    tr:nth-child(even) {
+      background: #fafafa;
+    }
+    
+    ul, ol {
+      margin: 0.5em 0;
+      padding-right: 2em;
+    }
+    
+    li {
+      margin-bottom: 0.25em;
+    }
+    
+    .page-break {
+      page-break-before: always;
+    }
+    
+    .no-break {
+      page-break-inside: avoid;
+    }
+    
+    @media print {
+      body {
+        padding: 0;
+      }
+      
+      @page {
+        margin: 15mm;
+        size: A4;
+      }
+    }
+  `;
+};
+
 // Legacy sanitization function (kept for compatibility but not used)
-const legacySanitizeHTML = (html: string): string => {
+const _legacySanitizeHTML = (html: string): string => {
   if (!html || typeof html !== 'string') return '';
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const stack: Element[] = Array.from(doc.body.children);

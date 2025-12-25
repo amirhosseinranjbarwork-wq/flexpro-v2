@@ -3,7 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Activity, Zap, BarChart3, Shield, Users, LayoutDashboard, Star, Award, TrendingUp, Target, ChevronDown } from 'lucide-react';
 
 // Typing Animation Component
-const TypingAnimation = ({ texts, speed = 100, delay = 2000 }) => {
+interface TypingAnimationProps {
+  texts: string[];
+  speed?: number;
+  delay?: number;
+}
+
+const TypingAnimation: React.FC<TypingAnimationProps> = ({ texts, speed = 100, delay = 2000 }) => {
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [currentText, setCurrentText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -50,7 +56,12 @@ const TypingAnimation = ({ texts, speed = 100, delay = 2000 }) => {
 };
 
 // Stats Counter Component
-const AnimatedCounter = ({ target, duration = 2000 }) => {
+interface AnimatedCounterProps {
+  target: number;
+  duration?: number;
+}
+
+const AnimatedCounter: React.FC<AnimatedCounterProps> = ({ target, duration = 2000 }) => {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -68,12 +79,21 @@ const AnimatedCounter = ({ target, duration = 2000 }) => {
 };
 
 // Particle Background Component
-const ParticleBackground = () => {
-  const [particles, setParticles] = useState([]);
+interface Particle {
+  id: number;
+  x: number;
+  y: number;
+  size: number;
+  speed: number;
+  opacity: number;
+}
+
+const ParticleBackground: React.FC = () => {
+  const [particles, setParticles] = useState<Particle[]>([]);
 
   useEffect(() => {
     const generateParticles = () => {
-      const newParticles = [];
+      const newParticles: Particle[] = [];
       for (let i = 0; i < 50; i++) {
         newParticles.push({
           id: i,
@@ -95,23 +115,17 @@ const ParticleBackground = () => {
       {particles.map((particle) => (
         <div
           key={particle.id}
-          className="absolute rounded-full bg-gradient-to-r from-blue-400/20 to-purple-400/20 animate-pulse"
+          className="absolute rounded-full bg-gradient-to-r from-blue-400/20 to-purple-400/20 animate-float"
           style={{
             left: `${particle.x}%`,
             top: `${particle.y}%`,
             width: `${particle.size}px`,
             height: `${particle.size}px`,
             opacity: particle.opacity,
-            animation: `float ${particle.speed * 10}s ease-in-out infinite`,
+            animationDuration: `${particle.speed * 10}s`,
           }}
         />
       ))}
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(180deg); }
-        }
-      `}</style>
     </div>
   );
 };
