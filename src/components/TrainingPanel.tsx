@@ -137,12 +137,16 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
 
   const warmupExercises = useMemo(() => {
     if (!exercisesData) return null;
-    return exercisesData.filter((ex: any) => ex.type === 'warmup').map((ex: any) => ex.name);
+    return exercisesData
+      .filter((ex: Exercise) => ex.category === 'warmup' || ex.type === 'warmup')
+      .map((ex: Exercise) => ex.name);
   }, [exercisesData]);
 
   const cooldownExercises = useMemo(() => {
     if (!exercisesData) return null;
-    return exercisesData.filter((ex: any) => ex.type === 'cooldown').map((ex: any) => ex.name);
+    return exercisesData
+      .filter((ex: Exercise) => ex.category === 'cooldown' || ex.type === 'cooldown')
+      .map((ex: Exercise) => ex.name);
   }, [exercisesData]);
 
   const dataLoaded = !exercisesLoading;
@@ -241,7 +245,7 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
     onUpdateUser(u);
   }, [canEdit, activeUser, day, onUpdateUser]);
 
-  const handleAddExercise = (): void => {
+  const handleAddExercise = useCallback((): void => {
     if (!canEdit) {
       toast.error('دسترسی مربی لازم است');
       return;
@@ -311,9 +315,6 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
         tempo: formData.tempo || '',
         holdTime: formData.holdTime || ''
       };
-      
-      // Reset form after successful add
-      setFormData(initialFormState);
     } else if (mode === 'cardio') {
       if (!formData.cType || !formData.cTime) {
         toast.error('نوع تمرین و مدت زمان الزامی است');
@@ -349,9 +350,11 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
     onUpdateUser(newUser);
     setFormData(initialFormState);
     toast.success('ثبت شد');
-  };
+  }, [canEdit, activeUser, day, mode, formData, onUpdateUser]);
 
-  const workoutItems = activeUser.plans?.workouts?.[day] || [];
+  const workoutItems = useMemo(() => {
+    return activeUser.plans?.workouts?.[day] || [];
+  }, [activeUser.plans?.workouts, day]);
 
   // Show enhanced loading state until data is loaded
   if (!dataLoaded) {
@@ -797,17 +800,20 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
               <input className="input-glass" placeholder="توضیحات فنی" value={formData.note} onChange={e => setFormData({ ...formData, note: e.target.value })} />
             </div>
             
-            <button
+            <motion.button
               onClick={handleAddExercise}
               disabled={!canEdit}
-              className={`w-full btn-glass text-white mt-6 py-3.5 font-bold text-sm transition-all duration-300 hover:scale-[1.02] ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`w-full btn-glass text-white mt-6 py-3.5 font-bold text-sm transition-all duration-300 ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
               style={!canEdit ? {} : { background: `linear-gradient(135deg, var(--accent-color), var(--accent-secondary))` }}
+              whileHover={!canEdit ? {} : { scale: 1.02, boxShadow: '0 10px 30px rgba(14, 165, 233, 0.4)' }}
+              whileTap={!canEdit ? {} : { scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
               aria-label="افزودن حرکت به برنامه"
               aria-disabled={!canEdit}
               type="button"
             >
               <Plus size={18} className="inline ml-2"/> ثبت در برنامه
-            </button>
+            </motion.button>
           </div>
         </div>
 

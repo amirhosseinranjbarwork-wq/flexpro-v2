@@ -1,7 +1,37 @@
-import { useState, useCallback } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import React, { useState, useCallback } from 'react';
+import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
 import { ProgressPhoto, PhotoComparison, UseProgressPhotosReturn } from '../types/interactive';
 import { useAuth } from '../context/AuthContext';
+
+// Local storage helpers
+const STORAGE_KEY = 'flexpro_progress_photos';
+
+function getLocalPhotos(userId: string): ProgressPhoto[] {
+  try {
+    const stored = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalPhotos(userId: string, photos: ProgressPhoto[]): void {
+  try {
+    localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(photos));
+  } catch (error) {
+    console.warn('Failed to save photos to localStorage:', error);
+  }
+}
+
+// Convert file to base64 for local storage
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = error => reject(error);
+  });
+}
 
 export function useProgressPhotos(userId: string): UseProgressPhotosReturn {
   const { user } = useAuth();
@@ -15,18 +45,30 @@ export function useProgressPhotos(userId: string): UseProgressPhotosReturn {
     setError(null);
 
     try {
-      const { data, error: fetchError } = await supabase
-        .from('progress_photos')
-        .select('*')
-        .eq('user_id', userId)
-        .order('photo_date', { ascending: false });
+      let data: ProgressPhoto[] = [];
 
-      if (fetchError) throw fetchError;
+      // Use local storage if Supabase is not enabled
+      if (!isSupabaseEnabled || !supabase) {
+        data = getLocalPhotos(userId);
+      } else {
+        const { data: fetchedData, error: fetchError } = await supabase
+          .from('progress_photos')
+          .select('*')
+          .eq('user_id', userId)
+          .order('photo_date', { ascending: false });
 
-      setPhotos(data || []);
-    } catch (err: any) {
-      setError(err.message || 'خطا در بارگذاری عکس‌ها');
+        if (fetchError) throw fetchError;
+        data = fetchedData || [];
+      }
+
+      setPhotos(data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'خطا در بارگذاری عکس‌ها';
+      setError(errorMessage);
       console.error('Error loading progress photos:', err);
+      // Fallback to local storage
+      const localPhotos = getLocalPhotos(userId);
+      setPhotos(localPhotos);
     } finally {
       setIsLoading(false);
     }
@@ -40,53 +82,84 @@ export function useProgressPhotos(userId: string): UseProgressPhotosReturn {
     setError(null);
 
     try {
-      // Create unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}/${Date.now()}.${fileExt}`;
+      let photoUrl: string;
+      let photoData: ProgressPhoto;
 
-      // Upload to storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('progress-photos')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+      // Use local storage if Supabase is not enabled
+      if (!isSupabaseEnabled || !supabase) {
+        // Convert file to base64 for local storage
+        photoUrl = await fileToBase64(file);
+        
+        photoData = {
+          id: `photo-${Date.now()}`,
+          user_id: userId,
+          photo_url: photoUrl,
+          photo_date: metadata.photo_date || new Date().toISOString().split('T')[0],
+          pose_type: metadata.pose_type || 'front',
+          weight: metadata.weight,
+          height: metadata.height,
+          body_fat_percentage: metadata.body_fat_percentage,
+          notes: metadata.notes,
+          is_private: metadata.is_private || false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
 
-      if (uploadError) throw uploadError;
+        // Save to local storage
+        const localPhotos = getLocalPhotos(userId);
+        localPhotos.unshift(photoData);
+        saveLocalPhotos(userId, localPhotos);
+      } else {
+        // Create unique filename
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${userId}/${Date.now()}.${fileExt}`;
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('progress-photos')
-        .getPublicUrl(fileName);
+        // Upload to storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('progress-photos')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
-      if (!urlData.publicUrl) throw new Error('Failed to get photo URL');
+        if (uploadError) throw uploadError;
 
-      // Save metadata to database
-      const photoData: Omit<ProgressPhoto, 'id' | 'created_at' | 'updated_at'> = {
-        user_id: userId,
-        photo_url: urlData.publicUrl,
-        photo_date: metadata.photo_date || new Date().toISOString().split('T')[0],
-        pose_type: metadata.pose_type || 'front',
-        weight: metadata.weight,
-        height: metadata.height,
-        body_fat_percentage: metadata.body_fat_percentage,
-        notes: metadata.notes,
-        is_private: metadata.is_private || false
-      };
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('progress-photos')
+          .getPublicUrl(fileName);
 
-      const { data, error: saveError } = await supabase
-        .from('progress_photos')
-        .insert(photoData)
-        .select()
-        .single();
+        if (!urlData.publicUrl) throw new Error('Failed to get photo URL');
 
-      if (saveError) throw saveError;
+        // Save metadata to database
+        const photoPayload: Omit<ProgressPhoto, 'id' | 'created_at' | 'updated_at'> = {
+          user_id: userId,
+          photo_url: urlData.publicUrl,
+          photo_date: metadata.photo_date || new Date().toISOString().split('T')[0],
+          pose_type: metadata.pose_type || 'front',
+          weight: metadata.weight,
+          height: metadata.height,
+          body_fat_percentage: metadata.body_fat_percentage,
+          notes: metadata.notes,
+          is_private: metadata.is_private || false
+        };
+
+        const { data, error: saveError } = await supabase
+          .from('progress_photos')
+          .insert(photoPayload)
+          .select()
+          .single();
+
+        if (saveError) throw saveError;
+        photoData = data;
+      }
 
       // Add to local state
-      setPhotos(prev => [data, ...prev]);
+      setPhotos(prev => [photoData, ...prev]);
 
-    } catch (err: any) {
-      setError(err.message || 'خطا در آپلود عکس');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'خطا در آپلود عکس';
+      setError(errorMessage);
       console.error('Error uploading progress photo:', err);
       throw err;
     } finally {
@@ -102,6 +175,15 @@ export function useProgressPhotos(userId: string): UseProgressPhotosReturn {
     setError(null);
 
     try {
+      // Use local storage if Supabase is not enabled
+      if (!isSupabaseEnabled || !supabase) {
+        const localPhotos = getLocalPhotos(userId);
+        const filtered = localPhotos.filter(p => p.id !== photoId);
+        saveLocalPhotos(userId, filtered);
+        setPhotos(filtered);
+        return;
+      }
+
       // Get photo data first
       const { data: photo, error: fetchError } = await supabase
         .from('progress_photos')
@@ -135,10 +217,12 @@ export function useProgressPhotos(userId: string): UseProgressPhotosReturn {
       // Remove from local state
       setPhotos(prev => prev.filter(p => p.id !== photoId));
 
-    } catch (err: any) {
-      setError(err.message || 'خطا در حذف عکس');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'خطا در حذف عکس';
+      setError(errorMessage);
       console.error('Error deleting progress photo:', err);
-      throw err;
+      // Fallback: remove from local state anyway
+      setPhotos(prev => prev.filter(p => p.id !== photoId));
     } finally {
       setIsLoading(false);
     }

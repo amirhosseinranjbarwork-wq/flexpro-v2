@@ -129,15 +129,7 @@ const PrintModal: React.FC<PrintModalProps> = ({ data, onClose, onDownload, onPr
         <title>${title}</title>
         <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;900&display=swap" rel="stylesheet">
         <style>
-          * { box-sizing: border-box; margin: 0; padding: 0; }
-          body { font-family: 'Vazirmatn', sans-serif; direction: rtl; }
-          @media print {
-            body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            table { page-break-inside: auto; }
-            tr { page-break-inside: avoid; page-break-after: auto; }
-            thead { display: table-header-group; }
-            .page-break { page-break-before: always; }
-          }
+          ${getPrintStyles()}
         </style>
       </head>
       <body>

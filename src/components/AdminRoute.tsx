@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
 import { LoadingSpinner } from './index';
 
 interface AdminRouteProps {
@@ -10,6 +10,7 @@ interface AdminRouteProps {
 /**
  * AdminRoute Component
  * Protects admin pages by checking if user has is_super_admin flag
+ * Supports both Supabase and Local Mock modes
  */
 export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
@@ -21,6 +22,14 @@ export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
 
   const checkAdminStatus = async () => {
     try {
+      // In local mode, allow access (for development)
+      if (!isSupabaseEnabled || !supabase) {
+        console.warn('Supabase not enabled, allowing admin access in local mode');
+        setIsAdmin(true);
+        setLoading(false);
+        return;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setIsAdmin(false);
@@ -41,7 +50,12 @@ export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
       }
     } catch (error) {
       console.error('Error checking admin status:', error);
-      setIsAdmin(false);
+      // In case of error, allow access in local mode
+      if (!isSupabaseEnabled) {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+      }
     } finally {
       setLoading(false);
     }

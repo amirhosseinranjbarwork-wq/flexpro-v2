@@ -1,7 +1,29 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
 import { Message, OptimisticMessage, UseChatReturn } from '../types/interactive';
 import { useAuth } from '../context/AuthContext';
+
+// Local storage helpers
+const STORAGE_KEY = 'flexpro_chat_messages';
+
+function getLocalMessages(userId: string, otherUserId: string): Message[] {
+  try {
+    const stored = localStorage.getItem(`${STORAGE_KEY}_${userId}_${otherUserId}`);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalMessage(userId: string, otherUserId: string, message: Message): void {
+  try {
+    const messages = getLocalMessages(userId, otherUserId);
+    messages.push(message);
+    localStorage.setItem(`${STORAGE_KEY}_${userId}_${otherUserId}`, JSON.stringify(messages));
+  } catch (error) {
+    console.warn('Failed to save message to localStorage:', error);
+  }
+}
 
 export function useChat(otherUserId: string): UseChatReturn {
   const { user } = useAuth();
@@ -13,7 +35,7 @@ export function useChat(otherUserId: string): UseChatReturn {
 
   const currentOffset = useRef(0);
   const PAGE_SIZE = 50;
-  const channelRef = useRef<any>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   // Load initial messages
   const loadMessages = useCallback(async (loadMore = false) => {
@@ -23,19 +45,30 @@ export function useChat(otherUserId: string): UseChatReturn {
     setError(null);
 
     try {
-      const offset = loadMore ? currentOffset.current : 0;
+      let newMessages: Message[] = [];
 
-      const { data, error: fetchError } = await supabase
-        .from('messages')
-        .select('*')
-        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + PAGE_SIZE - 1);
+      // Use local storage if Supabase is not enabled
+      if (!isSupabaseEnabled || !supabase) {
+        const localMessages = getLocalMessages(user.id, otherUserId);
+        const offset = loadMore ? currentOffset.current : 0;
+        newMessages = localMessages
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(offset, offset + PAGE_SIZE);
+        setHasMore(localMessages.length > offset + PAGE_SIZE);
+      } else {
+        const offset = loadMore ? currentOffset.current : 0;
 
-      if (fetchError) throw fetchError;
+        const { data, error: fetchError } = await supabase
+          .from('messages')
+          .select('*')
+          .or(`and(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`)
+          .order('created_at', { ascending: false })
+          .range(offset, offset + PAGE_SIZE - 1);
 
-      const newMessages = data || [];
-      setHasMore(newMessages.length === PAGE_SIZE);
+        if (fetchError) throw fetchError;
+        newMessages = data || [];
+        setHasMore(newMessages.length === PAGE_SIZE);
+      }
 
       if (loadMore) {
         setMessages(prev => [...newMessages.reverse(), ...prev]);
@@ -43,11 +76,15 @@ export function useChat(otherUserId: string): UseChatReturn {
         setMessages(newMessages.reverse());
       }
 
-      currentOffset.current = offset + newMessages.length;
+      currentOffset.current = (loadMore ? currentOffset.current : 0) + newMessages.length;
 
-    } catch (err: any) {
-      setError(err.message || 'خطا در بارگذاری پیام‌ها');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'خطا در بارگذاری پیام‌ها';
+      setError(errorMessage);
       console.error('Error loading messages:', err);
+      // Fallback to local storage
+      const localMessages = getLocalMessages(user.id, otherUserId);
+      setMessages(localMessages);
     } finally {
       setIsLoading(false);
     }
@@ -71,37 +108,51 @@ export function useChat(otherUserId: string): UseChatReturn {
     setMessages(prev => [...prev, optimisticMessage]);
 
     try {
-      const { data, error: sendError } = await supabase
-        .from('messages')
-        .insert({
-          sender_id: user.id,
-          receiver_id: otherUserId,
-          content: content.trim()
-        })
-        .select()
-        .single();
+      let savedMessage: Message;
 
-      if (sendError) throw sendError;
+      // Use local storage if Supabase is not enabled
+      if (!isSupabaseEnabled || !supabase) {
+        savedMessage = {
+          ...optimisticMessage,
+          id: `msg-${Date.now()}`,
+          status: 'sent' as const
+        } as Message;
+        saveLocalMessage(user.id, otherUserId, savedMessage);
+      } else {
+        const { data, error: sendError } = await supabase
+          .from('messages')
+          .insert({
+            sender_id: user.id,
+            receiver_id: otherUserId,
+            content: content.trim()
+          })
+          .select()
+          .single();
+
+        if (sendError) throw sendError;
+        savedMessage = data;
+      }
 
       // Replace optimistic message with real one
       setMessages(prev =>
         prev.map(msg =>
           msg.id === optimisticMessage.id
-            ? { ...data, status: 'sent' as const }
+            ? { ...savedMessage, status: 'sent' as const }
             : msg
         )
       );
 
-    } catch (err: any) {
+    } catch (err) {
       // Mark as failed and show error
       setMessages(prev =>
         prev.map(msg =>
           msg.id === optimisticMessage.id
-            ? { ...msg, status: 'sending' as const }
+            ? { ...msg, status: 'failed' as const }
             : msg
         )
       );
-      setError('خطا در ارسال پیام');
+      const errorMessage = err instanceof Error ? err.message : 'خطا در ارسال پیام';
+      setError(errorMessage);
       console.error('Error sending message:', err);
     }
   }, [user?.id, otherUserId]);
@@ -110,6 +161,20 @@ export function useChat(otherUserId: string): UseChatReturn {
   const markAsRead = useCallback(async () => {
     if (!user?.id || !otherUserId) return;
 
+    // Update local state immediately
+    setMessages(prev =>
+      prev.map(msg =>
+        msg.sender_id === otherUserId && msg.receiver_id === user.id
+          ? { ...msg, is_read: true }
+          : msg
+      )
+    );
+
+    // Skip Supabase call if not enabled
+    if (!isSupabaseEnabled || !supabase) {
+      return;
+    }
+
     try {
       const { error } = await supabase.rpc('mark_messages_as_read', {
         sender_uuid: otherUserId,
@@ -117,17 +182,7 @@ export function useChat(otherUserId: string): UseChatReturn {
       });
 
       if (error) throw error;
-
-      // Update local state
-      setMessages(prev =>
-        prev.map(msg =>
-          msg.sender_id === otherUserId && msg.receiver_id === user.id
-            ? { ...msg, is_read: true }
-            : msg
-        )
-      );
-
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error marking messages as read:', err);
     }
   }, [user?.id, otherUserId]);
@@ -144,9 +199,9 @@ export function useChat(otherUserId: string): UseChatReturn {
     setIsTyping(typing);
   }, []);
 
-  // Real-time subscription
+  // Real-time subscription (only if Supabase is enabled)
   useEffect(() => {
-    if (!user?.id || !otherUserId) return;
+    if (!user?.id || !otherUserId || !isSupabaseEnabled || !supabase) return;
 
     // Create channel for real-time messages
     const channel = supabase.channel(`messages-${user.id}-${otherUserId}`)
@@ -196,7 +251,7 @@ export function useChat(otherUserId: string): UseChatReturn {
     channelRef.current = channel;
 
     return () => {
-      if (channelRef.current) {
+      if (channelRef.current && supabase) {
         supabase.removeChannel(channelRef.current);
       }
     };

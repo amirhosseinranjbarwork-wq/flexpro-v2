@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { SyncMetadata, LocalChange } from '../types/database';
 
@@ -96,6 +96,24 @@ export function useSync(): UseSyncReturn {
   const syncNow = useCallback(async () => {
     if (!user?.id || !isOnline) return;
 
+    // Skip sync if Supabase is not enabled
+    if (!isSupabaseEnabled || !supabase) {
+      console.warn('Supabase not enabled, skipping sync');
+      // Mark all changes as synced in local mode (they're already local)
+      const storedChanges = localStorage.getItem(SYNC_STORAGE_KEY);
+      if (storedChanges) {
+        const changes: LocalChange[] = JSON.parse(storedChanges);
+        changes.forEach(change => {
+          change.synced = true;
+          change.timestamp = Date.now();
+        });
+        localStorage.setItem(SYNC_STORAGE_KEY, JSON.stringify(changes));
+        setPendingChanges(0);
+        setLastSynced(new Date());
+      }
+      return;
+    }
+
     setIsSyncing(true);
 
     try {
@@ -171,6 +189,12 @@ export function useSync(): UseSyncReturn {
  * Process a single change
  */
 async function processChange(change: LocalChange): Promise<void> {
+  // Skip if Supabase is not enabled
+  if (!isSupabaseEnabled || !supabase) {
+    console.warn('Supabase not enabled, skipping change processing');
+    return;
+  }
+
   const { table, operation, data } = change;
 
   // Skip user-specific tables that shouldn't be synced from local changes
@@ -181,33 +205,38 @@ async function processChange(change: LocalChange): Promise<void> {
     throw new Error(`Cannot sync protected table: ${table}`);
   }
 
-  switch (operation) {
-    case 'insert':
-      const { error: insertError } = await supabase
-        .from(table)
-        .insert(data);
-      if (insertError) throw insertError;
-      break;
+  try {
+    switch (operation) {
+      case 'insert':
+        const { error: insertError } = await supabase
+          .from(table)
+          .insert(data);
+        if (insertError) throw insertError;
+        break;
 
-    case 'update':
-      const { id, ...updateData } = data;
-      const { error: updateError } = await supabase
-        .from(table)
-        .update(updateData)
-        .eq('id', id);
-      if (updateError) throw updateError;
-      break;
+      case 'update':
+        const { id, ...updateData } = data;
+        const { error: updateError } = await supabase
+          .from(table)
+          .update(updateData)
+          .eq('id', id);
+        if (updateError) throw updateError;
+        break;
 
-    case 'delete':
-      const { error: deleteError } = await supabase
-        .from(table)
-        .delete()
-        .eq('id', data.id);
-      if (deleteError) throw deleteError;
-      break;
+      case 'delete':
+        const { error: deleteError } = await supabase
+          .from(table)
+          .delete()
+          .eq('id', data.id);
+        if (deleteError) throw deleteError;
+        break;
 
-    default:
-      throw new Error(`Unknown operation: ${operation}`);
+      default:
+        throw new Error(`Unknown operation: ${operation}`);
+    }
+  } catch (error) {
+    console.error(`Error processing change for table ${table}:`, error);
+    throw error;
   }
 }
 

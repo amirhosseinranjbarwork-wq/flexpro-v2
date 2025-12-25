@@ -277,32 +277,32 @@ const SmartReminder: React.FC<{
       case 'workout':
         return {
           icon: '🏋️',
-          color: 'from-blue-500 to-purple-600',
-          bgColor: 'bg-blue-500/10 border-blue-500/20'
+          color: 'from-[var(--color-info)] to-[var(--accent-secondary)]',
+          bgColor: 'bg-[var(--color-info)]/10 border-[var(--color-info)]/20'
         };
       case 'nutrition':
         return {
           icon: '🥗',
-          color: 'from-green-500 to-emerald-600',
-          bgColor: 'bg-green-500/10 border-green-500/20'
+          color: 'from-[var(--color-success)] to-emerald-600',
+          bgColor: 'bg-[var(--color-success)]/10 border-[var(--color-success)]/20'
         };
       case 'supplement':
         return {
           icon: '💊',
-          color: 'from-orange-500 to-red-600',
-          bgColor: 'bg-orange-500/10 border-orange-500/20'
+          color: 'from-[var(--color-warning)] to-[var(--color-error)]',
+          bgColor: 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/20'
         };
       case 'session':
         return {
           icon: '📅',
-          color: 'from-purple-500 to-pink-600',
-          bgColor: 'bg-purple-500/10 border-purple-500/20'
+          color: 'from-[var(--accent-secondary)] to-pink-600',
+          bgColor: 'bg-[var(--accent-secondary)]/10 border-[var(--accent-secondary)]/20'
         };
       default:
         return {
           icon: '🔔',
-          color: 'from-gray-500 to-gray-600',
-          bgColor: 'bg-gray-500/10 border-gray-500/20'
+          color: 'from-[var(--text-secondary)] to-[var(--text-secondary)]',
+          bgColor: 'bg-[var(--glass-bg)] border-[var(--glass-border)]'
         };
     }
   };
@@ -959,94 +959,245 @@ const CoachDashboard: React.FC = () => {
 
   // HTML Generation Functions
   const generateProgramHTML = (user: User, programType: string): string => {
-    let html = `
-      <div style="font-family: 'Vazirmatn', sans-serif; direction: rtl; padding: 40px; background: white;">
-        <div style="text-align: center; margin-bottom: 40px; border-bottom: 3px solid #f59e0b; padding-bottom: 20px;">
-          <h1 style="color: #1f2937; font-size: 28px; margin: 0;">برنامه ${programType === 'workout' ? 'تمرینی' : programType === 'diet' ? 'غذایی' : 'مکمل'}</h1>
-          <h2 style="color: #6b7280; font-size: 20px; margin: 10px 0;">${user.name}</h2>
-          <p style="color: #9ca3af; font-size: 14px;">${new Date().toLocaleDateString('fa-IR')}</p>
+    const title = programType === 'workout' ? 'برنامه تمرینی' :
+                  programType === 'diet' ? 'برنامه غذایی' :
+                  programType === 'supplements' ? 'برنامه مکمل' :
+                  programType === 'all' ? 'برنامه کامل' : 'برنامه';
+
+    let contentHtml = '';
+
+    if ((programType === 'workout' || programType === 'all') && user.plans?.workouts) {
+      contentHtml += `
+        <div class="print-section">
+          <h2 style="color: #1e293b; margin-bottom: 16pt; font-size: 16pt;">🏋️ برنامه تمرینی هفتگی</h2>
+      `;
+
+      Object.entries(user.plans.workouts).forEach(([day, exercises]) => {
+        contentHtml += `
+          <div class="print-section no-break">
+            <h3 style="color: #334155; margin-bottom: 12pt; font-size: 14pt; border-bottom: 1pt solid #e2e8f0; padding-bottom: 4pt;">${day}</h3>
+        `;
+
+        if (Array.isArray(exercises) && exercises.length > 0) {
+          contentHtml += `
+            <table class="workout-table">
+              <thead>
+                <tr>
+                  <th>تمرین</th>
+                  <th>ست</th>
+                  <th>تکرار</th>
+                  <th>وزنه/زمان</th>
+                  <th>استراحت</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+
+          exercises.forEach((exercise: any) => {
+            contentHtml += `
+              <tr>
+                <td class="exercise-name">${exercise.name || 'تمرین'}</td>
+                <td>${exercise.sets || '-'}</td>
+                <td>${exercise.reps || '-'}</td>
+                <td>${exercise.weight || exercise.duration || '-'}</td>
+                <td>${exercise.rest || '-'}</td>
+              </tr>
+            `;
+          });
+
+          contentHtml += `
+              </tbody>
+            </table>
+          `;
+        } else {
+          contentHtml += '<p style="color: #64748b; font-style: italic;">هیچ تمرینی برای این روز برنامه‌ریزی نشده است.</p>';
+        }
+
+        contentHtml += '</div>';
+      });
+
+      contentHtml += '</div>';
+
+      // Add page break before diet section if printing all
+      if (programType === 'all') {
+        contentHtml += '<div class="section-break"></div>';
+      }
+    }
+
+    if ((programType === 'diet' || programType === 'all') && user.plans?.diet) {
+      contentHtml += `
+        <div class="print-section">
+          <h2 style="color: #065f46; margin-bottom: 16pt; font-size: 16pt;">🥗 برنامه غذایی روزانه</h2>
+      `;
+
+      user.plans.diet.forEach((meal: any, index: number) => {
+        contentHtml += `
+          <div class="meal-card no-break">
+            <h4 class="meal-name">وعده ${index + 1}: ${meal.name || 'وعده غذایی'}</h4>
+            <div class="meal-description">
+              ${meal.description || 'توضیحی برای این وعده غذایی موجود نیست.'}
+            </div>
+            ${meal.ingredients ? `<div style="margin-top: 8pt; font-size: 9pt; color: #6b7280;">مواد تشکیل‌دهنده: ${meal.ingredients}</div>` : ''}
+            ${meal.calories ? `<div style="margin-top: 4pt; font-size: 9pt; color: #059669; font-weight: 600;">کالری: ${meal.calories}</div>` : ''}
+          </div>
+        `;
+      });
+
+      contentHtml += '</div>';
+
+      // Add page break before supplements section if printing all
+      if (programType === 'all') {
+        contentHtml += '<div class="section-break"></div>';
+      }
+    }
+
+    if ((programType === 'supplements' || programType === 'all') && user.plans?.supps) {
+      contentHtml += `
+        <div class="print-section">
+          <h2 style="color: #92400e; margin-bottom: 16pt; font-size: 16pt;">💊 برنامه مکمل‌های غذایی</h2>
+      `;
+
+      user.plans.supps.forEach((supp: any) => {
+        contentHtml += `
+          <div class="supplement-card no-break">
+            <div class="supplement-name">${supp.name || 'مکمل'}</div>
+            <div class="supplement-details">
+              ${supp.dosage ? `میزان مصرف: ${supp.dosage}` : ''}
+              ${supp.timing ? `زمان مصرف: ${supp.timing}` : ''}
+              ${supp.notes ? `<br>توضیحات: ${supp.notes}` : ''}
+            </div>
+          </div>
+        `;
+      });
+
+      contentHtml += '</div>';
+    }
+
+    // Wrap everything in the premium layout structure
+    const html = `
+      <div class="print-header">
+        <div class="header-logo">FLEXPRO</div>
+        <div class="header-client-info">
+          <div class="client-name">${user.name}</div>
+          <div class="client-date">${new Date().toLocaleDateString('fa-IR')}</div>
         </div>
+      </div>
+
+      <div class="watermark">FLEXPRO</div>
+
+      <div style="text-align: center; margin: 24pt 0 32pt 0;">
+        <h1 style="font-size: 24pt; margin-bottom: 8pt; color: #1f2937;">${title}</h1>
+        <p style="font-size: 12pt; color: #6b7280;">برنامه اختصاصی ${user.name}</p>
+      </div>
+
+      ${contentHtml}
+
+      <div class="print-footer">
+        <div class="page-info">صفحه <span class="page-number"></span></div>
+        <div class="coach-info">FlexPro - مربی شخصی حرفه‌ای</div>
+      </div>
     `;
 
-    if (programType === 'workout' && user.plans?.workouts) {
-      html += '<h3 style="color: #1f2937; margin: 30px 0 20px;">برنامه تمرینی</h3>';
-      Object.entries(user.plans.workouts).forEach(([day, exercises]) => {
-        html += `<div style="margin-bottom: 20px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px;">
-          <h4 style="color: #374151; margin: 0 0 10px;">${day}</h4>`;
-        if (Array.isArray(exercises)) {
-          exercises.forEach((exercise: any) => {
-            html += `<div style="margin-bottom: 8px; padding: 8px; background: #f9fafb; border-radius: 4px;">
-              <strong>${exercise.name || 'تمرین'}</strong> - ${exercise.sets || 0} ست × ${exercise.reps || 0} تکرار
-            </div>`;
-          });
-        }
-        html += '</div>';
-      });
-    }
-
-    if (programType === 'diet' && user.plans?.diet) {
-      html += '<h3 style="color: #1f2937; margin: 30px 0 20px;">برنامه غذایی</h3>';
-      user.plans.diet.forEach((meal: any, index: number) => {
-        html += `<div style="margin-bottom: 20px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px;">
-          <h4 style="color: #374151; margin: 0 0 10px;">وعده ${index + 1}: ${meal.name || 'وعده غذایی'}</h4>
-          <p style="color: #6b7280;">${meal.description || ''}</p>
-        </div>`;
-      });
-    }
-
-    if (programType === 'supplements' && user.plans?.supps) {
-      html += '<h3 style="color: #1f2937; margin: 30px 0 20px;">برنامه مکمل</h3>';
-      user.plans.supps.forEach((supp: any) => {
-        html += `<div style="margin-bottom: 10px; padding: 10px; background: #f0f9ff; border-radius: 6px;">
-          <strong>${supp.name || 'مکمل'}</strong> - ${supp.dosage || ''} ${supp.timing || ''}
-        </div>`;
-      });
-    }
-
-    html += '</div>';
     return html;
   };
 
   const generateClientReportHTML = (user: User): string => {
     return `
-      <div style="font-family: 'Vazirmatn', sans-serif; direction: rtl; padding: 40px; background: white;">
-        <div style="text-align: center; margin-bottom: 40px; border-bottom: 3px solid #3b82f6; padding-bottom: 20px;">
-          <h1 style="color: #1f2937; font-size: 28px; margin: 0;">گزارش اطلاعات شاگرد</h1>
-          <h2 style="color: #6b7280; font-size: 20px; margin: 10px 0;">${user.name}</h2>
-          <p style="color: #9ca3af; font-size: 14px;">${new Date().toLocaleDateString('fa-IR')}</p>
+      <div class="print-header">
+        <div class="header-logo">FLEXPRO</div>
+        <div class="header-client-info">
+          <div class="client-name">${user.name}</div>
+          <div class="client-date">${new Date().toLocaleDateString('fa-IR')}</div>
         </div>
+      </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 40px;">
-          <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px;">
-            <h3 style="color: #1f2937; margin-bottom: 15px;">اطلاعات شخصی</h3>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>نام:</span><strong>${user.name}</strong></div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>جنسیت:</span><strong>${user.gender === 'male' ? 'آقا' : 'خانم'}</strong></div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>سن:</span><strong>${user.age} سال</strong></div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>قد:</span><strong>${user.height} سانتی‌متر</strong></div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>وزن:</span><strong>${user.weight} کیلوگرم</strong></div>
-            <div style="display: flex; justify-content: space-between;"><span>سطح:</span><strong>${user.level || 'نامشخص'}</strong></div>
-          </div>
+      <div class="watermark">FLEXPRO</div>
 
-          <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px;">
-            <h3 style="color: #1f2937; margin-bottom: 15px;">آمار برنامه‌ها</h3>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>برنامه تمرینی:</span><strong>${user.plans?.workouts ? Object.keys(user.plans.workouts).length : 0}</strong></div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>وعده غذایی:</span><strong>${user.plans?.diet ? user.plans.diet.length : 0}</strong></div>
-            <div style="display: flex; justify-content: space-between;"><span>مکمل غذایی:</span><strong>${user.plans?.supps ? user.plans.supps.length : 0}</strong></div>
+      <div style="text-align: center; margin: 24pt 0 32pt 0;">
+        <h1 style="font-size: 24pt; margin-bottom: 8pt; color: #1f2937;">گزارش اطلاعات شاگرد</h1>
+        <p style="font-size: 12pt; color: #6b7280;">گزارش کامل ${user.name}</p>
+      </div>
+
+      <div class="print-section">
+        <h2 style="color: #1e293b; margin-bottom: 16pt; font-size: 16pt;">👤 اطلاعات شخصی</h2>
+        <div class="exercise-card no-break">
+          <table class="workout-table" style="margin: 0;">
+            <tbody>
+              <tr>
+                <td style="font-weight: 600; width: 30%;">نام:</td>
+                <td>${user.name}</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600;">جنسیت:</td>
+                <td>${user.gender === 'male' ? 'آقا' : user.gender === 'female' ? 'خانم' : 'نامشخص'}</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600;">سن:</td>
+                <td>${user.age} سال</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600;">قد:</td>
+                <td>${user.height} سانتی‌متر</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600;">وزن:</td>
+                <td>${user.weight} کیلوگرم</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600;">سطح تمرینی:</td>
+                <td>${user.level || 'نامشخص'}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="print-section">
+        <h2 style="color: #1e293b; margin-bottom: 16pt; font-size: 16pt;">📊 آمار برنامه‌ها</h2>
+        <div class="exercise-card no-break">
+          <table class="workout-table" style="margin: 0;">
+            <tbody>
+              <tr>
+                <td style="font-weight: 600; width: 40%;">برنامه تمرینی:</td>
+                <td style="color: #3b82f6; font-weight: 700;">${user.plans?.workouts ? Object.keys(user.plans.workouts).length : 0} برنامه</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600;">وعده غذایی:</td>
+                <td style="color: #10b981; font-weight: 700;">${user.plans?.diet ? user.plans.diet.length : 0} وعده</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600;">مکمل غذایی:</td>
+                <td style="color: #f59e0b; font-weight: 700;">${user.plans?.supps ? user.plans.supps.length : 0} مکمل</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      ${user.nutritionGoals ? `
+        <div class="print-section">
+          <h2 style="color: #065f46; margin-bottom: 16pt; font-size: 16pt;">🥗 اهداف تغذیه‌ای</h2>
+          <div class="meal-card no-break">
+            ${user.nutritionGoals.calories ? `<div style="margin-bottom: 8pt;"><strong style="color: #065f46;">کالری روزانه:</strong> ${user.nutritionGoals.calories} kcal</div>` : ''}
+            ${user.nutritionGoals.protein ? `<div style="margin-bottom: 8pt;"><strong style="color: #065f46;">پروتئین:</strong> ${user.nutritionGoals.protein}g</div>` : ''}
+            ${user.nutritionGoals.carbs ? `<div style="margin-bottom: 8pt;"><strong style="color: #065f46;">کربوهیدرات:</strong> ${user.nutritionGoals.carbs}g</div>` : ''}
+            ${user.nutritionGoals.fat ? `<div style="margin-bottom: 8pt;"><strong style="color: #065f46;">چربی:</strong> ${user.nutritionGoals.fat}g</div>` : ''}
           </div>
         </div>
+      ` : ''}
 
-        ${user.notes ? `<div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-          <h3 style="color: #1f2937; margin-bottom: 10px;">یادداشت‌ها</h3>
-          <p style="color: #6b7280;">${user.notes}</p>
-        </div>` : ''}
+      ${user.notes ? `
+        <div class="print-section">
+          <h2 style="color: #7c3aed; margin-bottom: 16pt; font-size: 16pt;">📝 یادداشت‌ها</h2>
+          <div class="exercise-card no-break">
+            <p style="line-height: 1.6; margin: 0; color: #374151;">${user.notes}</p>
+          </div>
+        </div>
+      ` : ''}
 
-        ${user.nutritionGoals ? `<div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px;">
-          <h3 style="color: #1f2937; margin-bottom: 15px;">اهداف تغذیه‌ای</h3>
-          ${user.nutritionGoals.calories ? `<div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>کالری روزانه:</span><strong>${user.nutritionGoals.calories} kcal</strong></div>` : ''}
-          ${user.nutritionGoals.protein ? `<div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>پروتئین:</span><strong>${user.nutritionGoals.protein}g</strong></div>` : ''}
-          ${user.nutritionGoals.carbs ? `<div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>کربوهیدرات:</span><strong>${user.nutritionGoals.carbs}g</strong></div>` : ''}
-          ${user.nutritionGoals.fat ? `<div style="display: flex; justify-content: space-between;"><span>چربی:</span><strong>${user.nutritionGoals.fat}g</strong></div>` : ''}
-        </div>` : ''}
+      <div class="print-footer">
+        <div class="page-info">صفحه <span class="page-number"></span></div>
+        <div class="coach-info">FlexPro - مربی شخصی حرفه‌ای</div>
       </div>
     `;
   };

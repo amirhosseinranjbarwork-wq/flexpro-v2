@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import ErrorMessage from '../components/ui/ErrorMessage';
+import { toast } from 'react-hot-toast';
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -25,6 +26,18 @@ interface Statistics {
   banned_users: number;
 }
 
+// Mock data for local mode
+const MOCK_USERS: UserData[] = [
+  {
+    id: 'admin-1',
+    email: 'admin@flexpro.com',
+    full_name: 'مدیر سیستم',
+    role: 'admin',
+    is_banned: false,
+    created_at: new Date().toISOString()
+  }
+];
+
 /**
  * AdminDashboard Component
  * Displays all users/coaches and system statistics
@@ -39,13 +52,24 @@ const AdminDashboard: React.FC = () => {
   const { data: users, isLoading: usersLoading, error: usersError } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Use mock data if Supabase is not enabled
+      if (!isSupabaseEnabled || !supabase) {
+        console.warn('Supabase not enabled, using mock data for Admin Dashboard');
+        return MOCK_USERS;
+      }
 
-      if (error) throw error;
-      return data as UserData[];
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data as UserData[];
+      } catch (error) {
+        console.warn('Supabase fetch failed, using mock data:', error);
+        return MOCK_USERS;
+      }
     },
   });
 
@@ -53,60 +77,110 @@ const AdminDashboard: React.FC = () => {
   const { data: stats } = useQuery({
     queryKey: ['admin-statistics'],
     queryFn: async () => {
-      const { data: allUsers, error: usersError } = await supabase
-        .from('profiles')
-        .select('role, is_banned');
+      // Use mock data if Supabase is not enabled
+      if (!isSupabaseEnabled || !supabase) {
+        return {
+          total_users: 0,
+          total_coaches: 0,
+          active_subscriptions: 0,
+          banned_users: 0,
+        };
+      }
 
-      if (usersError) throw usersError;
+      try {
+        const { data: allUsers, error: usersError } = await supabase
+          .from('profiles')
+          .select('role, is_banned');
 
-      const statistics: Statistics = {
-        total_users: allUsers?.filter(u => u.role === 'client').length || 0,
-        total_coaches: allUsers?.filter(u => u.role === 'coach').length || 0,
-        active_subscriptions: allUsers?.filter(u => u.role === 'coach').length || 0,
-        banned_users: allUsers?.filter(u => u.is_banned === true).length || 0,
-      };
+        if (usersError) throw usersError;
 
-      return statistics;
+        const statistics: Statistics = {
+          total_users: allUsers?.filter(u => u.role === 'client').length || 0,
+          total_coaches: allUsers?.filter(u => u.role === 'coach').length || 0,
+          active_subscriptions: allUsers?.filter(u => u.role === 'coach').length || 0,
+          banned_users: allUsers?.filter(u => u.is_banned === true).length || 0,
+        };
+
+        return statistics;
+      } catch (error) {
+        console.warn('Supabase statistics fetch failed:', error);
+        return {
+          total_users: 0,
+          total_coaches: 0,
+          active_subscriptions: 0,
+          banned_users: 0,
+        };
+      }
     },
   });
 
   // Ban user mutation
   const banUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          is_banned: true,
-          ban_reason: banReason,
-          banned_at: new Date().toISOString(),
-        })
-        .eq('id', userId);
+      // In local mode, just show a message
+      if (!isSupabaseEnabled || !supabase) {
+        toast.warning('این قابلیت فقط در حالت Supabase فعال است');
+        return;
+      }
 
-      if (error) throw error;
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            is_banned: true,
+            ban_reason: banReason,
+            banned_at: new Date().toISOString(),
+          })
+          .eq('id', userId);
+
+        if (error) throw error;
+      } catch (error) {
+        console.error('Failed to ban user:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       setSelectedUser(null);
       setBanReason('');
+      toast.success('کاربر با موفقیت مسدود شد');
+    },
+    onError: () => {
+      toast.error('خطا در مسدود کردن کاربر');
     },
   });
 
   // Unban user mutation
   const unbanUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          is_banned: false,
-          ban_reason: null,
-          banned_at: null,
-        })
-        .eq('id', userId);
+      // In local mode, just show a message
+      if (!isSupabaseEnabled || !supabase) {
+        toast.warning('این قابلیت فقط در حالت Supabase فعال است');
+        return;
+      }
 
-      if (error) throw error;
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            is_banned: false,
+            ban_reason: null,
+            banned_at: null,
+          })
+          .eq('id', userId);
+
+        if (error) throw error;
+      } catch (error) {
+        console.error('Failed to unban user:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      toast.success('مسدودیت کاربر با موفقیت رفع شد');
+    },
+    onError: () => {
+      toast.error('خطا در رفع مسدودیت کاربر');
     },
   });
 

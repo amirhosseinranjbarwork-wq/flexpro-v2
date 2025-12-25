@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
 import { ExerciseSearchResult, ExerciseSearchParams } from '../types/database';
+import { searchExercises } from '../lib/database';
 
 interface UseExerciseSearchReturn {
   results: ExerciseSearchResult[];
@@ -21,31 +22,9 @@ export function useExerciseSearch(params: ExerciseSearchParams): UseExerciseSear
   } = useQuery({
     queryKey: ['exercises', params],
     queryFn: async () => {
-      let query = supabase
-        .from('exercises')
-        .select('*')
-        .limit(params.limit || 20)
-        .range(params.offset || 0, (params.offset || 0) + (params.limit || 20) - 1);
-
-      // Add search filter
-      if (params.query && params.query.trim()) {
-        query = query.ilike('name', `%${params.query.trim()}%`);
-      }
-
-      // Add muscle group filter
-      if (params.muscle_group) {
-        query = query.eq('muscle_group', params.muscle_group);
-      }
-
-      // Add type filter
-      if (params.type) {
-        query = query.eq('type', params.type);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as ExerciseSearchResult[];
+      // Use database.ts function which handles both Supabase and local data
+      const result = await searchExercises(params);
+      return result.data;
     },
     enabled: Boolean(params.query?.trim()) || Boolean(params.muscle_group) || Boolean(params.type),
     staleTime: 5 * 60 * 1000, // 5 minutes

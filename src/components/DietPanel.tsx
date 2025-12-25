@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, memo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { motion } from 'framer-motion';
 import { ShoppingBag, GripVertical, Trash2, Search, Copy, Plus, Dumbbell, Moon, UtensilsCrossed } from 'lucide-react';
 import type { DietItem } from '../types/index';
 import toast from 'react-hot-toast';
@@ -147,11 +148,11 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
     ? foodsList.filter(f => f.toLowerCase().includes(debouncedSearch.toLowerCase()))
     : foodsList;
 
-  // دریافت کلید برنامه غذایی بر اساس نوع روز
-  const getDietKey = () => dayType === 'training' ? 'diet' : 'dietRest';
+  // دریافت کلید برنامه غذایی بر اساس نوع روز - استفاده مستقیم از dayType
+  const dietKey = useMemo(() => dayType === 'training' ? 'diet' : 'dietRest', [dayType]);
 
-  // هندلر جابجایی
-  const handleDragEnd = (event: DragEndEvent) => {
+  // هندلر جابجایی - بهینه‌سازی با useCallback
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     if (!canEdit) return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -160,28 +161,28 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
     const newIndex = parseInt(over.id.split('-')[1]) || 0;
     if (isNaN(oldIndex) || isNaN(newIndex)) return;
 
-    const dietKey = getDietKey();
+    const dietKey = dayType === 'training' ? 'diet' : 'dietRest';
     const newUser = { ...activeUser };
     if (!newUser.plans[dietKey]) newUser.plans[dietKey] = [];
     if (oldIndex < 0 || oldIndex >= newUser.plans[dietKey].length) return;
     if (newIndex < 0 || newIndex >= newUser.plans[dietKey].length) return;
     newUser.plans[dietKey] = arrayMove(newUser.plans[dietKey], oldIndex, newIndex);
     onUpdateUser(newUser);
-  };
+  }, [canEdit, activeUser, dayType, onUpdateUser]);
 
-  const handleDeleteFood = (idx) => {
+  const handleDeleteFood = useCallback((idx: number) => {
     if (!canEdit) {
       toast.error('دسترسی مربی لازم است');
       return;
     }
-    const dietKey = getDietKey();
+    const dietKey = dayType === 'training' ? 'diet' : 'dietRest';
     const u = { ...activeUser };
     if (!u.plans[dietKey]) return;
     u.plans[dietKey].splice(idx, 1);
     onUpdateUser(u);
-  };
+  }, [canEdit, activeUser, dayType, onUpdateUser]);
 
-  const handleAddFood = () => {
+  const handleAddFood = useCallback(() => {
     if (!canEdit) {
       toast.error('دسترسی مربی لازم است');
       return;
@@ -254,16 +255,16 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
       return;
     }
     
-    const dietKey = getDietKey();
+    const dietKey = dayType === 'training' ? 'diet' : 'dietRest';
     const newUser = { ...activeUser };
     if (!newUser.plans[dietKey]) newUser.plans[dietKey] = [];
     newUser.plans[dietKey].push(newItem);
     onUpdateUser(newUser);
     setAmount('');
     toast.success('اضافه شد');
-  };
+  }, [canEdit, foodName, amount, foodData, category, meal, activeUser, dayType, onUpdateUser]);
 
-  const handleAddCustomFood = () => {
+  const handleAddCustomFood = useCallback(() => {
     if (!canEdit) {
       toast.error('دسترسی مربی لازم است');
       return;
@@ -328,14 +329,14 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
       ch: carbNum,
       f: fatNum
     };
-    const dietKey = getDietKey();
+    const dietKey = dayType === 'training' ? 'diet' : 'dietRest';
     const newUser = { ...activeUser };
     if (!newUser.plans[dietKey]) newUser.plans[dietKey] = [];
     newUser.plans[dietKey].push(newItem);
     onUpdateUser(newUser);
     setCustomFood({ name: '', cal: '', protein: '', carb: '', fat: '', unit: 'گرم', base: 100 });
     toast.success('غذای سفارشی اضافه شد');
-  };
+  }, [canEdit, customFood, meal, activeUser, dayType, onUpdateUser]);
 
   const generateShoppingList = () => {
       const items = {};
@@ -414,7 +415,7 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
       toast.error('دسترسی مربی لازم است');
       return;
     }
-    const fromKey = getDietKey();
+    const fromKey = dayType === 'training' ? 'diet' : 'dietRest';
     const toKey = dayType === 'training' ? 'dietRest' : 'diet';
     const fromLabel = dayType === 'training' ? 'روز تمرینی' : 'روز استراحت';
     const toLabel = dayType === 'training' ? 'روز استراحت' : 'روز تمرینی';
@@ -436,17 +437,23 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
     }
   };
 
-  // محاسبه مجموع برای نوع روز فعلی
-  const dietKey = getDietKey();
-  const currentDietItems = activeUser.plans[dietKey] || [];
+  // محاسبه مجموع برای نوع روز فعلی - استفاده از dietKey که قبلاً تعریف شد
+  const currentDietItems = useMemo(() => {
+    const key = dayType === 'training' ? 'diet' : 'dietRest';
+    return activeUser.plans[key] || [];
+  }, [activeUser.plans, dayType]);
   
-  const total = currentDietItems.reduce(
-    (acc, i) => ({ c: acc.c + i.c, p: acc.p + i.p, ch: acc.ch + i.ch, f: acc.f + i.f }),
-    { c: 0, p: 0, ch: 0, f: 0 }
-  );
+  // بهینه‌سازی: استفاده از useMemo برای محاسبه total
+  const total = useMemo(() => {
+    return currentDietItems.reduce(
+      (acc, i) => ({ c: acc.c + i.c, p: acc.p + i.p, ch: acc.ch + i.ch, f: acc.f + i.f }),
+      { c: 0, p: 0, ch: 0, f: 0 }
+    );
+  }, [currentDietItems]);
 
   // محاسبات علمی پیشرفته (با در نظر گرفتن نوع روز)
-  const calcNutritionTargets = () => {
+  // بهینه‌سازی: این تابع باید فقط در useMemo استفاده شود
+  const calcNutritionTargets = useCallback(() => {
     const w = parseFloat(String(activeUser.weight ?? '')) || 0;
     const h = parseFloat(String(activeUser.height ?? '')) || 0;
     const a = parseFloat(String(activeUser.age ?? '')) || 0;
@@ -677,9 +684,32 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
     }
 
     return { bmr, tdee, targetCalories, protein, carbs, fat };
-  };
+  }, [
+    activeUser.weight,
+    activeUser.height,
+    activeUser.age,
+    activeUser.gender,
+    activeUser.activity,
+    activeUser.days,
+    activeUser.nutritionGoals,
+    activeUser.bodyFat,
+    dayType
+  ]);
 
-  const { bmr, tdee, targetCalories, protein: targetP, carbs: targetC, fat: targetF } = calcNutritionTargets();
+  // بهینه‌سازی: استفاده از useMemo برای محاسبات سنگین
+  const { bmr, tdee, targetCalories, protein: targetP, carbs: targetC, fat: targetF } = useMemo(() => {
+    return calcNutritionTargets();
+  }, [
+    activeUser.weight,
+    activeUser.height,
+    activeUser.age,
+    activeUser.gender,
+    activeUser.activity,
+    activeUser.days,
+    activeUser.nutritionGoals,
+    activeUser.bodyFat,
+    dayType
+  ]);
 
   const dietItems = currentDietItems;
 
@@ -862,14 +892,17 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
               <input type="number" className="input-glass text-center font-bold" placeholder="مقدار" value={amount} onChange={e => setAmount(e.target.value)} />
               <span className="absolute left-3 top-3 text-xs text-slate-400">{unit}</span>
             </div>
-            <button
+            <motion.button
               onClick={handleAddFood}
               disabled={!canEdit}
               className={`btn-glass text-white px-4 sm:px-6 ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
               style={!canEdit ? {} : { background: `linear-gradient(135deg, var(--accent-color), var(--accent-secondary))` }}
+              whileHover={!canEdit ? {} : { scale: 1.05, boxShadow: '0 10px 30px rgba(14, 165, 233, 0.4)' }}
+              whileTap={!canEdit ? {} : { scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
             >
               <Plus size={16} /> افزودن
-            </button>
+            </motion.button>
           </div>
 
           {/* افزودن غذای سفارشی */}

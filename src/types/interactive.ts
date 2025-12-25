@@ -2,6 +2,8 @@
 // Interactive Features Types for FlexPro v2
 // ============================================
 
+import type { DietItem, UserPlans } from './types';
+
 // ========== Chat Types ==========
 export interface Message {
   id: string;
@@ -34,8 +36,8 @@ export interface DietTemplate {
   coach_id: string;
   name: string;
   description?: string;
-  diet_data: any[]; // DietItem array
-  diet_rest_data?: any[]; // DietItem array for rest days
+  diet_data: DietItem[]; // DietItem array
+  diet_rest_data?: DietItem[]; // DietItem array for rest days
   is_public: boolean;
   created_at: string;
   updated_at: string;
@@ -170,7 +172,7 @@ export interface ChatWindowProps {
 }
 
 export interface ActiveWorkoutModeProps {
-  workoutPlan: any; // UserPlans['workouts']
+  workoutPlan: UserPlans['workouts'];
   onSaveSession: (session: WorkoutSession) => Promise<void>;
   onLogUpdate: (logs: WorkoutLog[]) => void;
 }
@@ -182,8 +184,8 @@ export interface GalleryPanelProps {
 }
 
 export interface DietTemplateManagerProps {
-  currentDiet: any[]; // DietItem[]
-  currentDietRest?: any[]; // DietItem[]
+  currentDiet: DietItem[];
+  currentDietRest?: DietItem[];
   onLoadTemplate: (template: DietTemplate) => void;
   className?: string;
 }

@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabaseClient';
+import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
 
 export interface PushSubscriptionData {
   endpoint: string;
@@ -78,6 +78,21 @@ export class PushNotificationManager {
 
   // Send subscription to backend
   async saveSubscriptionToBackend(subscription: PushSubscription): Promise<void> {
+    // Skip if Supabase is not enabled
+    if (!isSupabaseEnabled || !supabase) {
+      console.warn('Supabase not enabled, skipping push subscription save');
+      // Save to localStorage as fallback
+      const subscriptionData: PushSubscriptionData = {
+        endpoint: subscription.endpoint,
+        keys: {
+          p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')!))),
+          auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')!)))
+        }
+      };
+      localStorage.setItem('flexpro_push_subscription', JSON.stringify(subscriptionData));
+      return;
+    }
+
     const subscriptionData: PushSubscriptionData = {
       endpoint: subscription.endpoint,
       keys: {
@@ -86,24 +101,29 @@ export class PushNotificationManager {
       }
     };
 
-    const { data: { user } } = await supabase.auth.getUser();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
 
-    // Save subscription to user profile or dedicated table
-    const { error } = await supabase
-      .from('user_push_subscriptions')
-      .upsert({
-        user_id: user.id,
-        subscription: subscriptionData,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
+      // Save subscription to user profile or dedicated table
+      const { error } = await supabase
+        .from('user_push_subscriptions')
+        .upsert({
+          user_id: user.id,
+          subscription: subscriptionData,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
 
-    if (error) {
-      throw error;
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.warn('Failed to save subscription to Supabase, saving locally:', error);
+      localStorage.setItem('flexpro_push_subscription', JSON.stringify(subscriptionData));
     }
   }
 
@@ -135,21 +155,45 @@ export class PushNotificationManager {
     userId?: string;
     actions?: Array<{ action: string; title: string }>;
   }): Promise<void> {
-    const { data: { session } } = await supabase.auth.getSession();
-
-    if (!session) {
-      throw new Error('User not authenticated');
+    // Skip if Supabase is not enabled
+    if (!isSupabaseEnabled || !supabase) {
+      console.warn('Supabase not enabled, showing browser notification instead');
+      // Fallback to browser notification
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(message.title, {
+          body: message.body,
+          icon: '/pwa-192x192.svg',
+        });
+      }
+      return;
     }
 
-    const { error } = await supabase.functions.invoke('send-push-notification', {
-      body: message,
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    });
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
 
-    if (error) {
-      throw error;
+      if (!session) {
+        throw new Error('User not authenticated');
+      }
+
+      const { error } = await supabase.functions.invoke('send-push-notification', {
+        body: message,
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.warn('Failed to send notification via Supabase, using browser notification:', error);
+      // Fallback to browser notification
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(message.title, {
+          body: message.body,
+          icon: '/pwa-192x192.svg',
+        });
+      }
     }
   }
 

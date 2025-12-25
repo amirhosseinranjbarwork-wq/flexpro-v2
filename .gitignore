@@ -64,3 +64,15 @@ coverage
 # Misc
 *.tgz
 *.tar.gz
+
+# Windows shortcuts
+*.lnk
+
+# Test apps (separate projects)
+test-app/
+
+# Legacy data (deprecated)
+src/data/legacy/
+
+# Temporary text files
+landingpage.txt

@@ -1,7 +1,27 @@
-import { useState, useCallback } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import React, { useState, useCallback } from 'react';
+import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
 import { WorkoutLog, WorkoutSession, UseWorkoutLogReturn } from '../types/interactive';
 import { useAuth } from '../context/AuthContext';
+
+// Local storage helpers
+const STORAGE_KEY = 'flexpro_workout_logs';
+
+function getLocalLogs(userId: string): WorkoutLog[] {
+  try {
+    const stored = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalLogs(userId: string, logs: WorkoutLog[]): void {
+  try {
+    localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(logs));
+  } catch (error) {
+    console.warn('Failed to save logs to localStorage:', error);
+  }
+}
 
 export function useWorkoutLog(): UseWorkoutLogReturn {
   const { user } = useAuth();
@@ -18,6 +38,33 @@ export function useWorkoutLog(): UseWorkoutLogReturn {
       ...logData,
       user_id: user.id
     };
+
+    // Use local storage if Supabase is not enabled
+    if (!isSupabaseEnabled || !supabase) {
+      const localLogs = getLocalLogs(user.id);
+      const newLog: WorkoutLog = {
+        ...completeLogData,
+        id: `log-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      
+      const existingIndex = localLogs.findIndex(log =>
+        log.workout_date === newLog.workout_date &&
+        log.exercise_name === newLog.exercise_name &&
+        log.set_number === newLog.set_number
+      );
+
+      if (existingIndex >= 0) {
+        localLogs[existingIndex] = newLog;
+      } else {
+        localLogs.push(newLog);
+      }
+
+      saveLocalLogs(user.id, localLogs);
+      setLogs(localLogs);
+      return newLog;
+    }
 
     try {
       const { data, error: saveError } = await supabase
@@ -48,8 +95,9 @@ export function useWorkoutLog(): UseWorkoutLogReturn {
       });
 
       return data;
-    } catch (err: any) {
-      setError(err.message || 'خطا در ذخیره لاگ تمرین');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'خطا در ذخیره لاگ تمرین';
+      setError(errorMessage);
       console.error('Error saving workout log:', err);
       throw err;
     }
@@ -108,8 +156,9 @@ export function useWorkoutLog(): UseWorkoutLogReturn {
         }
       });
 
-    } catch (err: any) {
-      setError(err.message || 'خطا در ذخیره جلسه تمرین');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'خطا در ذخیره جلسه تمرین';
+      setError(errorMessage);
       console.error('Error saving workout session:', err);
       throw err;
     } finally {
@@ -135,32 +184,49 @@ export function useWorkoutLog(): UseWorkoutLogReturn {
     setError(null);
 
     try {
-      let query = supabase
-        .from('workout_logs')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('workout_date', { ascending: false })
-        .order('exercise_name', { ascending: true })
-        .order('set_number', { ascending: true });
+      let data: WorkoutLog[] = [];
 
-      if (startDate) {
-        query = query.gte('workout_date', startDate);
+      // Use local storage if Supabase is not enabled
+      if (!isSupabaseEnabled || !supabase) {
+        data = getLocalLogs(user.id);
+      } else {
+        let query = supabase
+          .from('workout_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('workout_date', { ascending: false })
+          .order('exercise_name', { ascending: true })
+          .order('set_number', { ascending: true });
+
+        if (startDate) {
+          query = query.gte('workout_date', startDate);
+        }
+
+        if (endDate) {
+          query = query.lte('workout_date', endDate);
+        }
+
+        const { data: fetchedData, error: fetchError } = await query;
+
+        if (fetchError) throw fetchError;
+        data = fetchedData || [];
       }
 
-      if (endDate) {
-        query = query.lte('workout_date', endDate);
+      // Filter by date range if needed
+      if (startDate || endDate) {
+        data = data.filter(log => {
+          if (startDate && log.workout_date < startDate) return false;
+          if (endDate && log.workout_date > endDate) return false;
+          return true;
+        });
       }
 
-      const { data, error: fetchError } = await query;
-
-      if (fetchError) throw fetchError;
-
-      setLogs(data || []);
+      setLogs(data);
 
       // Group logs into sessions
       const sessionMap = new Map<string, WorkoutLog[]>();
 
-      (data || []).forEach(log => {
+      data.forEach(log => {
         if (!sessionMap.has(log.workout_date)) {
           sessionMap.set(log.workout_date, []);
         }
@@ -179,9 +245,13 @@ export function useWorkoutLog(): UseWorkoutLogReturn {
 
       setSessions(sessionsArray);
 
-    } catch (err: any) {
-      setError(err.message || 'خطا در بارگذاری لاگ‌های تمرین');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'خطا در بارگذاری لاگ‌های تمرین';
+      setError(errorMessage);
       console.error('Error loading workout logs:', err);
+      // Fallback to local storage on error
+      const localLogs = getLocalLogs(user.id);
+      setLogs(localLogs);
     } finally {
       setIsLoading(false);
     }

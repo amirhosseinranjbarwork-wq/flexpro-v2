@@ -521,6 +521,7 @@ body::after {
     .btn-icon-lg {
         @apply w-12 h-12 p-0 justify-center;
     }
+}
 
 @keyframes spin {
     from { transform: rotate(0deg); }
@@ -1276,4 +1277,31 @@ html {
 }
 
 /* بهبود selection - حذف duplicate */
+
+/* Landing Page Custom Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.8s ease-out;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-custom {
+  animation: pulse 4s ease-in-out infinite;
 }

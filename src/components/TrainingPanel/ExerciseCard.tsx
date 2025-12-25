@@ -15,15 +15,15 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
   onClick,
   showScientificData = true
 }) => {
-  // تعیین رنگ بر اساس دسته‌بندی
+  // تعیین رنگ بر اساس دسته‌بندی - استفاده از CSS Variables
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'bodybuilding': return 'border-red-500 bg-red-50 dark:bg-red-950';
-      case 'cardio': return 'border-blue-500 bg-blue-50 dark:bg-blue-950';
-      case 'corrective': return 'border-green-500 bg-green-50 dark:bg-green-950';
-      case 'warmup': return 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950';
-      case 'cooldown': return 'border-purple-500 bg-purple-50 dark:bg-purple-950';
-      default: return 'border-gray-500 bg-gray-50 dark:bg-gray-950';
+      case 'bodybuilding': return 'border-[var(--color-error)] bg-[var(--color-error)]/10 dark:bg-[var(--color-error)]/20';
+      case 'cardio': return 'border-[var(--color-info)] bg-[var(--color-info)]/10 dark:bg-[var(--color-info)]/20';
+      case 'corrective': return 'border-[var(--color-success)] bg-[var(--color-success)]/10 dark:bg-[var(--color-success)]/20';
+      case 'warmup': return 'border-[var(--color-warning)] bg-[var(--color-warning)]/10 dark:bg-[var(--color-warning)]/20';
+      case 'cooldown': return 'border-[var(--accent-secondary)] bg-[var(--accent-secondary)]/10 dark:bg-[var(--accent-secondary)]/20';
+      default: return 'border-[var(--glass-border)] bg-[var(--glass-bg)]';
     }
   };
 
@@ -40,10 +40,10 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
   const getDifficultyColor = (level: string) => {
     switch (level) {
-      case 'beginner': return 'text-green-600 bg-green-100 dark:bg-green-900';
-      case 'intermediate': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900';
-      case 'advanced': return 'text-red-600 bg-red-100 dark:bg-red-900';
-      default: return 'text-gray-600 bg-gray-100 dark:bg-gray-900';
+      case 'beginner': return 'text-[var(--color-success)] bg-[var(--color-success)]/20 dark:bg-[var(--color-success)]/30';
+      case 'intermediate': return 'text-[var(--color-warning)] bg-[var(--color-warning)]/20 dark:bg-[var(--color-warning)]/30';
+      case 'advanced': return 'text-[var(--color-error)] bg-[var(--color-error)]/20 dark:bg-[var(--color-error)]/30';
+      default: return 'text-[var(--text-secondary)] bg-[var(--glass-bg)]';
     }
   };
 
@@ -62,7 +62,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">
           {getCategoryIcon(exercise.category)}
-          <h3 className="font-semibold text-sm text-gray-900 dark:text-white">
+          <h3 className="font-semibold text-sm text-[var(--text-primary)]">
             {exercise.name}
           </h3>
         </div>
@@ -72,7 +72,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       </div>
 
       {/* Primary Muscle */}
-      <div className="text-xs text-gray-600 dark:text-gray-300 mb-2">
+      <div className="text-xs text-[var(--text-secondary)] mb-2">
         <strong>Primary:</strong> {exercise.primary_muscle || exercise.muscle_group}
       </div>
 
@@ -118,13 +118,13 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       )}
 
       {/* Equipment */}
-      <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+      <div className="mt-2 text-xs text-[var(--text-secondary)] opacity-70">
         {exercise.equipment_standardized}
       </div>
 
       {/* Selection Indicator */}
       {isSelected && (
-        <div className="absolute top-2 right-2 w-3 h-3 bg-blue-500 rounded-full"></div>
+        <div className="absolute top-2 right-2 w-3 h-3 bg-[var(--accent-color)] rounded-full animate-pulse"></div>
       )}
     </motion.div>
   );

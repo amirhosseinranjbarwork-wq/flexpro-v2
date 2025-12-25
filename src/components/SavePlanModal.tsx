@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useSaveTemplate } from '../hooks/useTemplates';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
 import SuccessMessage from './ui/SuccessMessage';
 import ErrorMessage from './ui/ErrorMessage';
+import { toast } from 'react-hot-toast';
 
 interface SavePlanModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface SavePlanModalProps {
 /**
  * SavePlanModal Component
  * Modal for saving entire week's workout plan as a template
+ * Supports both Supabase and Local Mock modes
  */
 const SavePlanModal: React.FC<SavePlanModalProps> = ({ isOpen, onClose, fullWeekData }) => {
   const [name, setName] = useState('');
@@ -24,6 +26,34 @@ const SavePlanModal: React.FC<SavePlanModalProps> = ({ isOpen, onClose, fullWeek
   const handleSave = async () => {
     if (!name.trim()) {
       setErrorMessage('لطفاً نام برنامه را وارد کنید');
+      return;
+    }
+
+    // In local mode, save to localStorage
+    if (!isSupabaseEnabled || !supabase) {
+      try {
+        const templates = JSON.parse(localStorage.getItem('flexpro_templates') || '[]');
+        const newTemplate = {
+          id: `template-${Date.now()}`,
+          name: name.trim(),
+          description: description.trim(),
+          full_week_data: fullWeekData,
+          created_by: 'local-user',
+          created_at: new Date().toISOString(),
+        };
+        templates.push(newTemplate);
+        localStorage.setItem('flexpro_templates', JSON.stringify(templates));
+        
+        setSuccessMessage('برنامه با موفقیت ذخیره شد (حالت محلی)');
+        setTimeout(() => {
+          setName('');
+          setDescription('');
+          setSuccessMessage('');
+          onClose();
+        }, 2000);
+      } catch (error) {
+        setErrorMessage('خطا در ذخیره برنامه');
+      }
       return;
     }
 

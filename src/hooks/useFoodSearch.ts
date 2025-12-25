@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
 import { FoodSearchResult, FoodSearchParams } from '../types/database';
+import { searchFoods } from '../lib/database';
 
 interface UseFoodSearchReturn {
   results: FoodSearchResult[];
@@ -21,21 +22,9 @@ export function useFoodSearch(params: FoodSearchParams): UseFoodSearchReturn {
   } = useQuery({
     queryKey: ['foods', params],
     queryFn: async () => {
-      let query = supabase
-        .from('foods')
-        .select('*')
-        .limit(params.limit || 20)
-        .range(params.offset || 0, (params.offset || 0) + (params.limit || 20) - 1);
-
-      // Add search filter
-      if (params.query && params.query.trim()) {
-        query = query.ilike('name', `%${params.query.trim()}%`);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as FoodSearchResult[];
+      // Use database.ts function which handles both Supabase and local data
+      const result = await searchFoods(params);
+      return result.data;
     },
     enabled: Boolean(params.query?.trim()),
     staleTime: 5 * 60 * 1000, // 5 minutes
