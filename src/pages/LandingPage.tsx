@@ -1,542 +1,519 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Zap, BarChart3, Shield, Users, LayoutDashboard, Star, Award, TrendingUp, Target, ChevronDown } from 'lucide-react';
+import { 
+  Activity, Zap, BarChart3, Shield, Users, Target, 
+  Award, Star, Dumbbell, Heart, Trophy,
+  ArrowRight, ChevronRight, Sparkles, CheckCircle2,
+  Menu, X, Clock, Flame
+} from 'lucide-react';
 
-// Typing Animation Component
-const TypingAnimation = ({ texts, speed = 100, delay = 2000 }) => {
-  const [currentTextIndex, setCurrentTextIndex] = useState(0);
-  const [currentText, setCurrentText] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [showCursor, setShowCursor] = useState(true);
-
-  useEffect(() => {
-    const text = texts[currentTextIndex];
-    const typingDelay = isDeleting ? speed / 2 : speed;
-    const timeoutDelay = !isDeleting && currentText.length === text.length ? delay : typingDelay;
-
-    const timeout = setTimeout(() => {
-      if (!isDeleting) {
-        if (currentText.length < text.length) {
-          setCurrentText(text.slice(0, currentText.length + 1));
-        } else {
-          setIsDeleting(true);
-        }
-      } else {
-        if (currentText.length > 0) {
-          setCurrentText(currentText.slice(0, -1));
-        } else {
-          setIsDeleting(false);
-          setCurrentTextIndex((prev) => (prev + 1) % texts.length);
-        }
-      }
-    }, timeoutDelay);
-
-    return () => clearTimeout(timeout);
-  }, [currentText, isDeleting, currentTextIndex, texts, speed, delay]);
-
-  useEffect(() => {
-    const cursorInterval = setInterval(() => {
-      setShowCursor(prev => !prev);
-    }, 500);
-    return () => clearInterval(cursorInterval);
-  }, []);
-
+// Animated Background Component
+const AnimatedBackground = () => {
   return (
-    <span className="inline-block">
-      {currentText}
-      <span className={`inline-block w-1 h-12 bg-gradient-to-r from-blue-400 to-purple-400 ml-1 ${showCursor ? 'opacity-100' : 'opacity-0'} transition-opacity duration-100`} />
-    </span>
-  );
-};
-
-// Stats Counter Component
-const AnimatedCounter = ({ target, duration = 2000 }) => {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    let startTime = null;
-    const animate = (currentTime) => {
-      if (!startTime) startTime = currentTime;
-      const progress = Math.min((currentTime - startTime) / duration, 1);
-      setCount(Math.floor(progress * target));
-      if (progress < 1) requestAnimationFrame(animate);
-    };
-    requestAnimationFrame(animate);
-  }, [target, duration]);
-
-  return <span>{count.toLocaleString('fa-IR')}</span>;
-};
-
-// Particle Background Component
-const ParticleBackground = () => {
-  const [particles, setParticles] = useState([]);
-
-  useEffect(() => {
-    const generateParticles = () => {
-      const newParticles = [];
-      for (let i = 0; i < 50; i++) {
-        newParticles.push({
-          id: i,
-          x: Math.random() * 100,
-          y: Math.random() * 100,
-          size: Math.random() * 3 + 1,
-          speed: Math.random() * 0.5 + 0.1,
-          opacity: Math.random() * 0.5 + 0.3,
-        });
-      }
-      setParticles(newParticles);
-    };
-
-    generateParticles();
-  }, []);
-
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {particles.map((particle) => (
+    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+      {/* Gradient Orbs */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/30 rounded-full blur-[120px] animate-pulse" 
+           style={{ animation: 'float 8s ease-in-out infinite' }} />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/30 rounded-full blur-[120px]" 
+           style={{ animation: 'float 10s ease-in-out infinite reverse' }} />
+      <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-pink-500/20 rounded-full blur-[100px]" 
+           style={{ animation: 'float 12s ease-in-out infinite' }} />
+      
+      {/* Grid Pattern */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:64px_64px]" />
+      
+      {/* Floating Particles */}
+      {[...Array(20)].map((_, i) => (
         <div
-          key={particle.id}
-          className="absolute rounded-full bg-gradient-to-r from-blue-400/20 to-purple-400/20 animate-pulse"
+          key={i}
+          className="absolute w-2 h-2 bg-blue-400/20 rounded-full"
           style={{
-            left: `${particle.x}%`,
-            top: `${particle.y}%`,
-            width: `${particle.size}px`,
-            height: `${particle.size}px`,
-            opacity: particle.opacity,
-            animation: `float ${particle.speed * 10}s ease-in-out infinite`,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animation: `float ${5 + Math.random() * 10}s ease-in-out infinite`,
+            animationDelay: `${Math.random() * 5}s`
           }}
         />
       ))}
-      <style jsx>{`
+      
+      <style>{`
         @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(180deg); }
+          0%, 100% { transform: translate(0, 0) rotate(0deg); }
+          33% { transform: translate(30px, -30px) rotate(120deg); }
+          66% { transform: translate(-20px, 20px) rotate(240deg); }
         }
       `}</style>
     </div>
   );
 };
 
-export default function LandingPage() {
-  const navigate = useNavigate();
+// Typing Animation Component
+const TypingText = ({ texts }: { texts: string[] }) => {
+  const [index, setIndex] = useState(0);
+  const [displayText, setDisplayText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const currentText = texts[index];
+    const timeout = setTimeout(() => {
+      if (!isDeleting) {
+        setDisplayText(currentText.slice(0, displayText.length + 1));
+        if (displayText === currentText) {
+          setTimeout(() => setIsDeleting(true), 2000);
+        }
+      } else {
+        setDisplayText(currentText.slice(0, displayText.length - 1));
+        if (displayText === '') {
+          setIsDeleting(false);
+          setIndex((index + 1) % texts.length);
+        }
+      }
+    }, isDeleting ? 50 : 100);
+
+    return () => clearTimeout(timeout);
+  }, [displayText, isDeleting, index, texts]);
 
   return (
-    <div dir="rtl" className="min-h-screen bg-slate-950 text-white selection:bg-blue-500 selection:text-white overflow-hidden font-sans">
+    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
+      {displayText}
+      <span className="animate-pulse">|</span>
+    </span>
+  );
+};
 
-      {/* Navbar */}
-      <nav className="fixed w-full z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
+// Stats Counter Component
+const Counter = ({ end, suffix = '' }: { end: number; suffix?: string }) => {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const duration = 2000;
+    const steps = 60;
+    const increment = end / steps;
+    let current = 0;
+    
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= end) {
+        setCount(end);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(current));
+      }
+    }, duration / steps);
+
+    return () => clearInterval(timer);
+  }, [end]);
+
+  return <span>{count.toLocaleString('fa-IR')}{suffix}</span>;
+};
+
+export default function LandingPage() {
+  const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const features = [
+    {
+      icon: Zap,
+      title: 'طراحی هوشمند برنامه',
+      description: 'ساخت برنامه‌های تمرینی و تغذیه‌ای شخصی‌سازی شده در چند کلیک',
+      color: 'from-blue-500 to-cyan-500',
+      delay: '0'
+    },
+    {
+      icon: BarChart3,
+      title: 'تحلیل پیشرفته',
+      description: 'نمودارها و آمار دقیق برای پیگیری روند پیشرفت ورزشی',
+      color: 'from-purple-500 to-pink-500',
+      delay: '100'
+    },
+    {
+      icon: Users,
+      title: 'مدیریت شاگردان',
+      description: 'مدیریت آسان و حرفه‌ای تمام شاگردان در یک پنل واحد',
+      color: 'from-pink-500 to-rose-500',
+      delay: '200'
+    },
+    {
+      icon: Target,
+      title: 'هدف‌گذاری هوشمند',
+      description: 'تعیین و پیگیری اهداف با الگوریتم‌های پیشرفته',
+      color: 'from-orange-500 to-yellow-500',
+      delay: '300'
+    },
+    {
+      icon: Shield,
+      title: 'امنیت بالا',
+      description: 'حفاظت کامل از اطلاعات شخصی و داده‌های حساس',
+      color: 'from-green-500 to-emerald-500',
+      delay: '400'
+    },
+    {
+      icon: Heart,
+      title: 'پشتیبانی ۲۴/۷',
+      description: 'تیم پشتیبانی همیشه آماده کمک به شما',
+      color: 'from-red-500 to-pink-500',
+      delay: '500'
+    }
+  ];
+
+  const testimonials = [
+    {
+      name: 'سارا احمدی',
+      role: 'مربی بدنسازی حرفه‌ای',
+      image: '👩‍🏫',
+      text: 'فلکس‌پرو بهترین ابزاری است که برای مدیریت شاگردانم پیدا کردم. همه چیز در یک جا!',
+      rating: 5
+    },
+    {
+      name: 'علی رضایی',
+      role: 'قهرمان بدنسازی',
+      image: '🏋️',
+      text: 'با این پلتفرم توانستم پیشرفتم را به صورت دقیق پیگیری کنم. عالی است!',
+      rating: 5
+    },
+    {
+      name: 'مریم کریمی',
+      role: 'مربی فیتنس',
+      image: '💪',
+      text: 'رابط کاربری فوق‌العاده و امکانات کامل. دقیقاً همان چیزی که نیاز داشتم.',
+      rating: 5
+    }
+  ];
+
+  return (
+    <div dir="rtl" className="min-h-screen bg-slate-950 text-white overflow-hidden">
+      <AnimatedBackground />
+
+      {/* Navigation */}
+      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+        scrollY > 50 ? 'bg-slate-950/90 backdrop-blur-xl shadow-lg shadow-blue-500/10' : 'bg-transparent'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <Activity className="w-5 h-5 text-white" />
+          <div className="flex justify-between items-center h-20">
+            {/* Logo */}
+            <div className="flex items-center gap-3 group cursor-pointer" onClick={() => navigate('/')}>
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur opacity-75 group-hover:opacity-100 transition" />
+                <div className="relative w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl">
+                  <Activity className="w-7 h-7 text-white" />
+                </div>
               </div>
-              <span className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-l from-blue-400 to-purple-500 tracking-tight">
+              <span className="text-3xl font-black bg-gradient-to-l from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                 فلکس‌پرو
               </span>
             </div>
 
-            <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-300">
-              <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center gap-2">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                </span>
-                نسخه توسعه آفلاین
-              </span>
+            {/* Desktop Menu */}
+            <div className="hidden md:flex items-center gap-8">
+              <a href="#features" className="text-slate-300 hover:text-white transition font-medium">ویژگی‌ها</a>
+              <a href="#stats" className="text-slate-300 hover:text-white transition font-medium">آمار</a>
+              <a href="#testimonials" className="text-slate-300 hover:text-white transition font-medium">نظرات</a>
             </div>
+
+            {/* CTA Buttons */}
+            <div className="hidden md:flex items-center gap-4">
+              <button
+                onClick={() => navigate('/login')}
+                className="px-6 py-2.5 text-white hover:text-blue-400 transition font-semibold"
+              >
+                ورود
+              </button>
+              <button
+                onClick={() => navigate('/register')}
+                className="relative group px-6 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl font-semibold overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 opacity-0 group-hover:opacity-100 transition" />
+                <span className="relative flex items-center gap-2">
+                  ثبت‌نام رایگان
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+                </span>
+              </button>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 text-white"
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-slate-900/95 backdrop-blur-xl border-t border-slate-800">
+            <div className="px-4 py-6 space-y-4">
+              <a href="#features" className="block text-slate-300 hover:text-white transition py-2">ویژگی‌ها</a>
+              <a href="#stats" className="block text-slate-300 hover:text-white transition py-2">آمار</a>
+              <a href="#testimonials" className="block text-slate-300 hover:text-white transition py-2">نظرات</a>
+              <button
+                onClick={() => navigate('/login')}
+                className="w-full px-6 py-3 text-center border border-slate-700 rounded-xl hover:border-blue-500 transition"
+              >
+                ورود
+              </button>
+              <button
+                onClick={() => navigate('/register')}
+                className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl font-semibold"
+              >
+                ثبت‌نام رایگان
+              </button>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
-        {/* Particle Background */}
-        <ParticleBackground />
-
-        {/* Enhanced Background Effects */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl pointer-events-none">
-          <div className="absolute top-20 right-20 w-72 h-72 bg-blue-600/30 rounded-full blur-[120px] animate-pulse" style={{ animation: 'pulse 4s ease-in-out infinite' }} />
-          <div className="absolute bottom-20 left-20 w-96 h-96 bg-purple-600/30 rounded-full blur-[120px]" style={{ animation: 'pulse 6s ease-in-out infinite reverse' }} />
-          <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-pink-600/20 rounded-full blur-[80px]" style={{ animation: 'float 8s ease-in-out infinite' }} />
-        </div>
-
-        {/* Floating Shapes */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/4 right-10 w-20 h-20 border border-blue-400/20 rounded-lg rotate-45 animate-bounce" style={{ animationDelay: '0s', animationDuration: '3s' }} />
-          <div className="absolute top-3/4 left-10 w-16 h-16 bg-gradient-to-br from-purple-400/10 to-pink-400/10 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
-          <div className="absolute top-1/2 right-1/4 w-12 h-12 border border-pink-400/30 rounded-full animate-spin" style={{ animationDuration: '20s' }} />
-        </div>
-
+      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32">
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
-
-          <div className="mb-8">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900/50 border border-slate-700 rounded-full backdrop-blur-sm mb-8">
-              <Star className="w-4 h-4 text-yellow-400 fill-current" />
-              <span className="text-sm text-slate-300">پلتفرم برتر مدیریت بدنسازی</span>
-            </div>
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-full backdrop-blur-sm mb-8 animate-fade-in">
+            <Sparkles className="w-4 h-4 text-blue-400" />
+            <span className="text-sm text-blue-400 font-medium">پلتفرم هوشمند مدیریت ورزش</span>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 leading-tight min-h-[200px] md:min-h-[280px] flex items-center justify-center">
-            <div className="flex flex-col items-center gap-4">
-              <span className="text-white">پلتفرم هوشمند</span>
-              <TypingAnimation
-                texts={[
-                  "مدیریت بدنسازی",
-                  "طراحی برنامه تمرینی",
-                  "پیگیری پیشرفت",
-                  "مدیریت تغذیه"
-                ]}
-                speed={150}
-                delay={3000}
-              />
-            </div>
+          {/* Main Heading */}
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black mb-6 leading-tight">
+            <div className="mb-4">آینده مدیریت</div>
+            <TypingText texts={['بدنسازی', 'تمرینات', 'تغذیه', 'پیشرفت']} />
           </h1>
 
-          <p className="mt-4 text-xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed animate-fade-in">
-            پیشرفته‌ترین ابزار برای مربیان و ورزشکاران حرفه‌ای.
-            طراحی برنامه‌های تمرینی هوشمند، پیگیری پیشرفت لحظه‌ای و مدیریت تغذیه تخصصی در یک محیط یکپارچه و کاربرپسند.
+          {/* Description */}
+          <p className="text-xl md:text-2xl text-slate-400 max-w-3xl mx-auto mb-12 leading-relaxed">
+            پیشرفته‌ترین پلتفرم برای مربیان و ورزشکاران حرفه‌ای.
+            طراحی برنامه، پیگیری پیشرفت و مدیریت کامل در یک محیط زیبا.
           </p>
 
-          {/* Action Buttons - Enhanced */}
-          <div className="flex flex-col sm:flex-row gap-8 justify-center items-center">
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-16">
+            <button
+              onClick={() => navigate('/register')}
+              className="group relative px-12 py-5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl font-bold text-lg shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105 transition-all duration-300 overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 opacity-0 group-hover:opacity-100 transition" />
+              <span className="relative flex items-center gap-3">
+                <Flame className="w-6 h-6" />
+                شروع رایگان
+                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition" />
+              </span>
+            </button>
 
-            <div className="text-center group">
-              <button
-                onClick={() => navigate('/dashboard?role=coach')}
-                className="group relative px-12 py-6 bg-gradient-to-r from-blue-600 via-blue-700 to-purple-600 hover:from-blue-700 hover:via-blue-800 hover:to-purple-700 text-white rounded-3xl font-bold text-lg shadow-2xl shadow-blue-500/40 transition-all duration-500 hover:scale-110 hover:shadow-blue-500/60 flex items-center gap-3 overflow-hidden mb-4 transform hover:-translate-y-2 hover:rotate-1"
-                style={{
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #6366f1 100%)',
-                  boxShadow: '0 20px 40px -12px rgba(59, 130, 246, 0.5), 0 0 0 1px rgba(59, 130, 246, 0.3)',
-                }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                <LayoutDashboard className="w-7 h-7 transition-all duration-300 group-hover:scale-110 group-hover:rotate-12" />
-                <span className="relative z-10">ورود به پنل مربی</span>
-                <div className="ml-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
-                  <ChevronDown className="w-5 h-5 rotate-[-90deg]" />
-                </div>
-              </button>
-              <p className="text-sm text-slate-400 transition-all duration-300 group-hover:text-blue-400 group-hover:scale-105">مدیریت شاگردان، طراحی برنامه، پیگیری پیشرفت</p>
-            </div>
-
-            <div className="text-center group">
-              <button
-                onClick={() => navigate('/dashboard?role=client')}
-                className="group relative px-12 py-6 bg-slate-900/80 backdrop-blur-sm border-2 border-slate-700 hover:border-purple-500/80 hover:bg-slate-800/80 text-white rounded-3xl font-bold text-lg transition-all duration-500 hover:scale-110 hover:shadow-purple-500/40 flex items-center gap-3 mb-4 transform hover:-translate-y-2 hover:-rotate-1 overflow-hidden"
-                style={{
-                  boxShadow: '0 0 0 1px rgba(148, 163, 184, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-                }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <Users className="w-7 h-7 text-slate-400 group-hover:text-purple-400 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-12" />
-                <span className="relative z-10">ورود به پنل شاگرد</span>
-                <div className="ml-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
-                  <ChevronDown className="w-5 h-5 rotate-[-90deg]" />
-                </div>
-              </button>
-              <p className="text-sm text-slate-400 transition-all duration-300 group-hover:text-purple-400 group-hover:scale-105">مشاهده برنامه، ثبت پیشرفت، پیگیری تغذیه</p>
-            </div>
+            <button
+              onClick={() => navigate('/login')}
+              className="px-12 py-5 bg-slate-900/50 backdrop-blur-sm border-2 border-slate-700 hover:border-purple-500 rounded-2xl font-bold text-lg hover:bg-slate-800/50 transition-all duration-300"
+            >
+              ورود به حساب
+            </button>
           </div>
 
-          <div className="mt-8 p-4 bg-slate-900/50 border border-slate-700 rounded-xl max-w-md mx-auto backdrop-blur-sm">
-            <div className="flex items-center gap-2 justify-center mb-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-500/50"></div>
-              <span className="text-sm font-medium text-green-400">نسخه توسعه فعال</span>
+          {/* Trust Badges */}
+          <div className="flex flex-wrap items-center justify-center gap-8 text-slate-400">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-green-400" />
+              <span>بدون نیاز به کارت اعتباری</span>
             </div>
-            <p className="text-xs text-slate-500 text-center">
-              دسترسی مستقیم بدون نیاز به ثبت‌نام یا رمز عبور
-            </p>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-green-400" />
+              <span>نصب آسان در ۳۰ ثانیه</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-green-400" />
+              <span>پشتیبانی رایگان</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 3D Cards Mockup */}
+        <div className="relative max-w-6xl mx-auto px-4 mt-20" style={{ transform: `translateY(${scrollY * 0.2}px)` }}>
+          <div className="relative aspect-video rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 shadow-2xl shadow-blue-500/20 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10" />
+            <div className="p-8 flex items-center justify-center h-full">
+              <div className="grid grid-cols-3 gap-4 w-full max-w-4xl">
+                {[Dumbbell, BarChart3, Trophy].map((Icon, i) => (
+                  <div key={i} className="aspect-square bg-slate-800/50 backdrop-blur rounded-2xl border border-slate-700 flex items-center justify-center hover:scale-105 transition-transform">
+                    <Icon className="w-16 h-16 text-blue-400" />
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              اعداد و ارقام فلکس‌پرو
-            </h2>
-            <p className="text-lg text-slate-400 max-w-2xl mx-auto">
-              آمار و ارقام نشان‌دهنده کیفیت و محبوبیت پلتفرم ما
-            </p>
-          </div>
-
+      <section id="stats" className="py-24 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div className="text-center group">
-              <div className="relative mb-4">
-                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <Target className="w-10 h-10 text-blue-400" />
+            {[
+              { icon: Target, value: 5000, suffix: '+', label: 'برنامه تمرینی' },
+              { icon: Users, value: 1200, suffix: '+', label: 'کاربر فعال' },
+              { icon: Clock, value: 85000, suffix: '+', label: 'ساعت تمرین' },
+              { icon: Award, value: 95, suffix: '%', label: 'رضایت کاربران' }
+            ].map((stat, i) => (
+              <div key={i} className="text-center group">
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-3xl blur-xl group-hover:blur-2xl transition" />
+                  <div className="relative w-20 h-20 mx-auto bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl flex items-center justify-center border border-slate-700 group-hover:scale-110 transition">
+                    <stat.icon className="w-10 h-10 text-blue-400" />
+                  </div>
                 </div>
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </div>
-              <div className="text-4xl md:text-5xl font-bold text-white mb-2">
-                <AnimatedCounter target={5000} />
-                <span className="text-2xl">+</span>
-              </div>
-              <p className="text-slate-400">برنامه تمرینی طراحی شده</p>
-            </div>
-
-            <div className="text-center group">
-              <div className="relative mb-4">
-                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <Users className="w-10 h-10 text-purple-400" />
+                <div className="text-5xl font-black text-white mb-2">
+                  <Counter end={stat.value} suffix={stat.suffix} />
                 </div>
-                <div className="absolute -inset-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <p className="text-slate-400">{stat.label}</p>
               </div>
-              <div className="text-4xl md:text-5xl font-bold text-white mb-2">
-                <AnimatedCounter target={1200} />
-                <span className="text-2xl">+</span>
-              </div>
-              <p className="text-slate-400">کاربر فعال</p>
-            </div>
-
-            <div className="text-center group">
-              <div className="relative mb-4">
-                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-pink-500/20 to-pink-600/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <TrendingUp className="w-10 h-10 text-pink-400" />
-                </div>
-                <div className="absolute -inset-1 bg-gradient-to-r from-pink-500/20 to-blue-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </div>
-              <div className="text-4xl md:text-5xl font-bold text-white mb-2">
-                <AnimatedCounter target={85000} />
-                <span className="text-2xl">+</span>
-              </div>
-              <p className="text-slate-400">ساعت تمرین پیگیری شده</p>
-            </div>
-
-            <div className="text-center group">
-              <div className="relative mb-4">
-                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <Award className="w-10 h-10 text-green-400" />
-                </div>
-                <div className="absolute -inset-1 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </div>
-              <div className="text-4xl md:text-5xl font-bold text-white mb-2">
-                <AnimatedCounter target={95} />
-                <span className="text-2xl">%</span>
-              </div>
-              <p className="text-slate-400">رضایت کاربران</p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Enhanced Features Grid */}
-      <section className="py-24 bg-slate-950/50 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-500/5 to-transparent" />
-          <div className="absolute bottom-0 left-0 w-1/2 h-full bg-gradient-to-r from-purple-500/5 to-transparent" />
-        </div>
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900/50 border border-slate-700 rounded-full backdrop-blur-sm mb-4">
-              <Activity className="w-4 h-4 text-blue-400" />
-              <span className="text-sm text-slate-300">ویژگی‌های منحصر به فرد</span>
+      {/* Features Section */}
+      <section id="features" className="py-24 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-20">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-full backdrop-blur-sm mb-6">
+              <Star className="w-4 h-4 text-purple-400" />
+              <span className="text-sm text-purple-400 font-medium">ویژگی‌های منحصر به فرد</span>
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            <h2 className="text-4xl md:text-6xl font-black text-white mb-6">
               چرا فلکس‌پرو؟
             </h2>
-            <p className="text-lg text-slate-400 max-w-2xl mx-auto">
-              تجربه‌ای بی‌نظیر در مدیریت بدنسازی با ابزارهای پیشرفته و رابط کاربری مدرن
+            <p className="text-xl text-slate-400 max-w-3xl mx-auto">
+              ابزارهای پیشرفته برای موفقیت بیشتر شما
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Enhanced Feature 1 */}
-            <div className="group relative p-8 rounded-3xl bg-gradient-to-b from-slate-900/90 to-slate-900/50 border border-slate-800/50 hover:border-blue-500/60 transition-all duration-500 backdrop-blur-sm overflow-hidden hover:scale-105 hover:-translate-y-2 transform">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-colors duration-500" />
-              <div className="relative z-10">
-                <div className="w-18 h-18 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg shadow-blue-500/10">
-                  <Zap className="w-9 h-9 text-blue-400 group-hover:text-blue-300 transition-colors" />
-                </div>
-                <h3 className="text-xl font-bold text-white mb-4 group-hover:text-blue-300 transition-colors">طراحی هوشمند برنامه</h3>
-                <p className="text-slate-400 leading-relaxed group-hover:text-slate-300 transition-colors">ساخت برنامه‌های تمرینی و غذایی پیچیده در چند ثانیه با رابط کاربری پیشرفته و الگوریتم‌های هوشمند.</p>
-                <div className="mt-4 flex items-center gap-2 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <span className="text-sm">بیشتر بدانید</span>
-                  <ChevronDown className="w-4 h-4 rotate-[-90deg]" />
-                </div>
-              </div>
-            </div>
-
-            {/* Enhanced Feature 2 */}
-            <div className="group relative p-8 rounded-3xl bg-gradient-to-b from-slate-900/90 to-slate-900/50 border border-slate-800/50 hover:border-purple-500/60 transition-all duration-500 backdrop-blur-sm overflow-hidden hover:scale-105 hover:-translate-y-2 transform" style={{ animationDelay: '0.1s' }}>
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-colors duration-500" />
-              <div className="relative z-10">
-                <div className="w-18 h-18 bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:-rotate-6 transition-all duration-300 shadow-lg shadow-purple-500/10">
-                  <BarChart3 className="w-9 h-9 text-purple-400 group-hover:text-purple-300 transition-colors" />
-                </div>
-                <h3 className="text-xl font-bold text-white mb-4 group-hover:text-purple-300 transition-colors">آنالیز پیشرفته پیشرفت</h3>
-                <p className="text-slate-400 leading-relaxed group-hover:text-slate-300 transition-colors">مشاهده نمودارهای دقیق حجم تمرین، شدت، تغییرات بدن و تحلیل روند پیشرفت به صورت لحظه‌ای و تعاملی.</p>
-                <div className="mt-4 flex items-center gap-2 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <span className="text-sm">بیشتر بدانید</span>
-                  <ChevronDown className="w-4 h-4 rotate-[-90deg]" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, i) => (
+              <div
+                key={i}
+                className="group relative p-8 bg-gradient-to-br from-slate-900/90 to-slate-900/50 backdrop-blur-sm rounded-3xl border border-slate-800/50 hover:border-slate-700 transition-all duration-300 hover:scale-105 hover:-translate-y-2"
+                style={{ animationDelay: `${feature.delay}ms` }}
+              >
+                <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-10 rounded-3xl transition`} />
+                
+                <div className="relative">
+                  <div className={`w-16 h-16 bg-gradient-to-br ${feature.color} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all shadow-lg`}>
+                    <feature.icon className="w-8 h-8 text-white" />
+                  </div>
+                  
+                  <h3 className="text-2xl font-bold text-white mb-4">
+                    {feature.title}
+                  </h3>
+                  
+                  <p className="text-slate-400 leading-relaxed mb-4">
+                    {feature.description}
+                  </p>
+                  
+                  <div className="flex items-center gap-2 text-blue-400 opacity-0 group-hover:opacity-100 transition">
+                    <span className="text-sm font-semibold">بیشتر بدانید</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* Enhanced Feature 3 */}
-            <div className="group relative p-8 rounded-3xl bg-gradient-to-b from-slate-900/90 to-slate-900/50 border border-slate-800/50 hover:border-pink-500/60 transition-all duration-500 backdrop-blur-sm overflow-hidden hover:scale-105 hover:-translate-y-2 transform" style={{ animationDelay: '0.2s' }}>
-              <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-transparent to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/10 rounded-full blur-3xl group-hover:bg-pink-500/20 transition-colors duration-500" />
-              <div className="relative z-10">
-                <div className="w-18 h-18 bg-gradient-to-br from-pink-500/20 to-pink-600/20 rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg shadow-pink-500/10">
-                  <Shield className="w-9 h-9 text-pink-400 group-hover:text-pink-300 transition-colors" />
-                </div>
-                <h3 className="text-xl font-bold text-white mb-4 group-hover:text-pink-300 transition-colors">دسترسی کامل آفلاین</h3>
-                <p className="text-slate-400 leading-relaxed group-hover:text-slate-300 transition-colors">کارکرد کامل بدون اینترنت، سرعت بالا، امنیت داده‌ها و پشتیبان‌گیری خودکار در نسخه توسعه.</p>
-                <div className="mt-4 flex items-center gap-2 text-pink-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <span className="text-sm">بیشتر بدانید</span>
-                  <ChevronDown className="w-4 h-4 rotate-[-90deg]" />
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-20 bg-gradient-to-b from-slate-950 to-slate-900 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/50 via-transparent to-slate-900/50" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              نظرات کاربران
+      <section id="testimonials" className="py-24 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-20">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-pink-500/10 border border-pink-500/20 rounded-full backdrop-blur-sm mb-6">
+              <Heart className="w-4 h-4 text-pink-400" />
+              <span className="text-sm text-pink-400 font-medium">نظرات کاربران</span>
+            </div>
+            <h2 className="text-4xl md:text-6xl font-black text-white mb-6">
+              تجربه واقعی کاربران
             </h2>
-            <p className="text-lg text-slate-400 max-w-2xl mx-auto">
-              تجربه کاربران واقعی از استفاده از فلکس‌پرو
-            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="group relative p-6 rounded-2xl bg-gradient-to-b from-slate-900/80 to-slate-900/40 border border-slate-800/50 backdrop-blur-sm hover:scale-105 transition-all duration-300">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="flex items-center gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                ))}
-              </div>
-              <p className="text-slate-300 mb-4 leading-relaxed">
-                "بهترین پلتفرمی که تا حالا استفاده کردم. طراحی برنامه‌های تمرینی خیلی سریع و راحت شده."
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">س</span>
+            {testimonials.map((testimonial, i) => (
+              <div
+                key={i}
+                className="group relative p-8 bg-gradient-to-br from-slate-900/90 to-slate-900/50 backdrop-blur-sm rounded-3xl border border-slate-800/50 hover:border-slate-700 transition-all duration-300 hover:scale-105"
+              >
+                <div className="flex items-center gap-1 mb-6">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                  ))}
                 </div>
-                <div>
-                  <p className="text-white font-medium">سارا احمدی</p>
-                  <p className="text-slate-400 text-sm">مربی بدنسازی</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="group relative p-6 rounded-2xl bg-gradient-to-b from-slate-900/80 to-slate-900/40 border border-slate-800/50 backdrop-blur-sm hover:scale-105 transition-all duration-300" style={{ animationDelay: '0.1s' }}>
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="flex items-center gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                ))}
-              </div>
-              <p className="text-slate-300 mb-4 leading-relaxed">
-                "پیگیری پیشرفت و نمودارها عالی هستن. واقعاً کمک کرده تا بهتر تمرین کنم."
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">ا</span>
-                </div>
-                <div>
-                  <p className="text-white font-medium">علی رضایی</p>
-                  <p className="text-slate-400 text-sm">ورزشکار حرفه‌ای</p>
+                
+                <p className="text-slate-300 leading-relaxed mb-6 text-lg">
+                  "{testimonial.text}"
+                </p>
+                
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center text-3xl">
+                    {testimonial.image}
+                  </div>
+                  <div>
+                    <div className="font-bold text-white">{testimonial.name}</div>
+                    <div className="text-sm text-slate-400">{testimonial.role}</div>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="group relative p-6 rounded-2xl bg-gradient-to-b from-slate-900/80 to-slate-900/40 border border-slate-800/50 backdrop-blur-sm hover:scale-105 transition-all duration-300" style={{ animationDelay: '0.2s' }}>
-              <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="flex items-center gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                ))}
-              </div>
-              <p className="text-slate-300 mb-4 leading-relaxed">
-                "مدیریت تغذیه و برنامه غذایی فوق‌العاده کاربردی است. وزنم رو کنترل کردم."
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-red-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">م</span>
-                </div>
-                <div>
-                  <p className="text-white font-medium">مریم کریمی</p>
-                  <p className="text-slate-400 text-sm">مربی تغذیه</p>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Enhanced Footer */}
-      <footer className="border-t border-slate-800/50 bg-gradient-to-b from-slate-950/80 to-slate-950 backdrop-blur-sm relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-purple-500/5" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
+      {/* CTA Section */}
+      <section className="py-32 relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 blur-3xl" />
+        
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl md:text-6xl font-black text-white mb-6">
+            آماده شروع هستید؟
+          </h2>
+          <p className="text-xl text-slate-400 mb-12">
+            همین حالا به جمع هزاران کاربر راضی بپیوندید
+          </p>
+          
+          <button
+            onClick={() => navigate('/register')}
+            className="group relative px-16 py-6 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl font-bold text-xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105 transition-all duration-300 overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 opacity-0 group-hover:opacity-100 transition" />
+            <span className="relative flex items-center gap-3">
+              ثبت‌نام رایگان
+              <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition" />
+            </span>
+          </button>
+        </div>
+      </section>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20 animate-pulse">
-                <Activity className="w-6 h-6 text-white" />
+      {/* Footer */}
+      <footer className="border-t border-slate-800/50 bg-slate-950/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="flex flex-col items-center text-center gap-8">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl">
+                <Activity className="w-7 h-7 text-white" />
               </div>
-              <span className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-l from-blue-400 via-purple-400 to-pink-400 tracking-tight">
+              <span className="text-3xl font-black bg-gradient-to-l from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                 فلکس‌پرو
               </span>
             </div>
-            <p className="text-slate-400 mb-8 text-lg max-w-2xl mx-auto leading-relaxed">
-              پیشرفته‌ترین پلتفرم مدیریت بدنسازی و ورزش حرفه‌ای با ابزارهای هوشمند و رابط کاربری مدرن
+            
+            <p className="text-slate-400 max-w-2xl">
+              پیشرفته‌ترین پلتفرم مدیریت بدنسازی و ورزش حرفه‌ای
             </p>
-
-            {/* CTA Button */}
-            <button
-              onClick={() => navigate('/dashboard?role=coach')}
-              className="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-2xl font-bold text-lg shadow-xl shadow-blue-500/30 transition-all duration-300 hover:scale-105 hover:shadow-blue-500/50 mb-8"
-            >
-              <span>شروع رایگان</span>
-              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 rounded-2xl" />
-            </button>
-
-            <div className="flex justify-center gap-8 text-sm text-slate-500 mb-8">
-              <span className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                نسخه توسعه 2.0
-              </span>
+            
+            <div className="flex items-center gap-6 text-slate-500 text-sm">
+              <span>© 2024 فلکس‌پرو</span>
               <span>•</span>
-              <span>طراحی و توسعه با ❤️</span>
-              <span>•</span>
-              <span>2024</span>
-            </div>
-
-            {/* Social Links or Additional Info */}
-            <div className="flex justify-center gap-6 text-slate-600">
-              <div className="flex items-center gap-2 hover:text-blue-400 transition-colors cursor-pointer">
-                <Activity className="w-4 h-4" />
-                <span className="text-sm">شبکه‌های اجتماعی</span>
-              </div>
-              <div className="flex items-center gap-2 hover:text-purple-400 transition-colors cursor-pointer">
-                <Shield className="w-4 h-4" />
-                <span className="text-sm">حریم خصوصی</span>
-              </div>
-              <div className="flex items-center gap-2 hover:text-pink-400 transition-colors cursor-pointer">
-                <Users className="w-4 h-4" />
-                <span className="text-sm">پشتیبانی</span>
-              </div>
+              <span>تمامی حقوق محفوظ است</span>
             </div>
           </div>
         </div>
