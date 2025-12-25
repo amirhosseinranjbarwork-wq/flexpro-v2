@@ -87,27 +87,44 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
   const [customFood, setCustomFood] = useState({ name: '', cal: '', protein: '', carb: '', fat: '', unit: 'گرم', base: 100 });
 
   // بارگذاری داده‌های غذایی از Supabase
-  const { data: foodsData, isLoading: foodsLoading, error: foodsError } = useFoods();
+  const { data: foodsData } = useFoods();
 
   // سازماندهی داده‌ها بر اساس ساختار قدیمی برای سازگاری
-  const foodData = useMemo(() => {
+  interface FoodInfo {
+    u: string;
+    b: number;
+    c: number;
+    p: number;
+    ch: number;
+    f: number;
+    unit?: string;
+    calories?: number;
+    protein?: number;
+    carbs?: number;
+    fat?: number;
+  }
+
+  const foodData = useMemo((): Record<string, Record<string, FoodInfo>> | null => {
     if (!foodsData) return null;
 
-    const grouped: Record<string, Record<string, any>> = {};
+    const grouped: Record<string, Record<string, FoodInfo>> = {};
 
-    foodsData.forEach(food => {
+    foodsData.forEach((food: { category: string; name: string; unit?: string; baseAmount?: number; calories?: number; protein?: number; carbs?: number; fat?: number }) => {
       if (!grouped[food.category]) {
         grouped[food.category] = {};
       }
       grouped[food.category][food.name] = {
+        u: food.unit || 'گرم',
+        b: food.baseAmount || 100,
+        c: food.calories || 0,
+        p: food.protein || 0,
+        ch: food.carbs || 0,
+        f: food.fat || 0,
         unit: food.unit,
         calories: food.calories,
         protein: food.protein,
         carbs: food.carbs,
-        fat: food.fat,
-        fiber: food.fiber,
-        sugar: food.sugar,
-        sodium: food.sodium
+        fat: food.fat
       };
     });
 
@@ -133,8 +150,8 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
 
   // استفاده از useMemo برای محاسبه unit
   const unitMemo = useMemo(() => {
-    if (category && foodName && foodData[category] && foodData[category][foodName]) {
-      return foodData[category][foodName].u;
+    if (category && foodName && foodData && foodData[category] && foodData[category][foodName]) {
+      return foodData[category][foodName].u || foodData[category][foodName].unit || '-';
     }
     return '-';
   }, [category, foodName, foodData]);
@@ -148,8 +165,10 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
     ? foodsList.filter(f => f.toLowerCase().includes(debouncedSearch.toLowerCase()))
     : foodsList;
 
-  // دریافت کلید برنامه غذایی بر اساس نوع روز - استفاده مستقیم از dayType
-  const dietKey = useMemo(() => dayType === 'training' ? 'diet' : 'dietRest', [dayType]);
+  // دریافت کلید برنامه غذایی بر اساس نوع روز - helper function
+  const _getDietKeyValue = useCallback(() => dayType === 'training' ? 'diet' : 'dietRest', [dayType]);
+  // استفاده از متغیر برای جلوگیری از خطای unused
+  void _getDietKeyValue;
 
   // هندلر جابجایی - بهینه‌سازی با useCallback
   const handleDragEnd = useCallback((event: DragEndEvent) => {
@@ -157,16 +176,16 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = parseInt(active.id.split('-')[1]) || 0;
-    const newIndex = parseInt(over.id.split('-')[1]) || 0;
+    const oldIndex = parseInt(String(active.id).split('-')[1]) || 0;
+    const newIndex = parseInt(String(over.id).split('-')[1]) || 0;
     if (isNaN(oldIndex) || isNaN(newIndex)) return;
 
-    const dietKey = dayType === 'training' ? 'diet' : 'dietRest';
+    const currentDietKey = dayType === 'training' ? 'diet' : 'dietRest';
     const newUser = { ...activeUser };
-    if (!newUser.plans[dietKey]) newUser.plans[dietKey] = [];
-    if (oldIndex < 0 || oldIndex >= newUser.plans[dietKey].length) return;
-    if (newIndex < 0 || newIndex >= newUser.plans[dietKey].length) return;
-    newUser.plans[dietKey] = arrayMove(newUser.plans[dietKey], oldIndex, newIndex);
+    if (!newUser.plans[currentDietKey]) newUser.plans[currentDietKey] = [];
+    if (oldIndex < 0 || oldIndex >= newUser.plans[currentDietKey].length) return;
+    if (newIndex < 0 || newIndex >= newUser.plans[currentDietKey].length) return;
+    newUser.plans[currentDietKey] = arrayMove(newUser.plans[currentDietKey], oldIndex, newIndex);
     onUpdateUser(newUser);
   }, [canEdit, activeUser, dayType, onUpdateUser]);
 
@@ -339,38 +358,38 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
   }, [canEdit, customFood, meal, activeUser, dayType, onUpdateUser]);
 
   const generateShoppingList = () => {
-      const items = {};
+    const items: Record<string, number> = {};
     const trainingDays = Number(activeUser.days ?? 3) || 3;
     const restDays = Math.max(0, 7 - trainingDays);
 
     // غذاهای روز تمرینی
-      (activeUser.plans.diet || []).forEach(i => {
+    (activeUser.plans.diet || []).forEach((i: DietItem) => {
       const key = `${i.name} (${i.unit})`;
       items[key] = (items[key] || 0) + (i.amount * trainingDays);
     });
 
     // غذاهای روز استراحت
-    (activeUser.plans.dietRest || []).forEach(i => {
+    (activeUser.plans.dietRest || []).forEach((i: DietItem) => {
       const key = `${i.name} (${i.unit})`;
       items[key] = (items[key] || 0) + (i.amount * restDays);
-      });
+    });
 
-      if (Object.keys(items).length === 0) {
-        toast.error('آیتمی در رژیم برای ساخت لیست خرید وجود ندارد');
-        return;
-      }
+    if (Object.keys(items).length === 0) {
+      toast.error('آیتمی در رژیم برای ساخت لیست خرید وجود ندارد');
+      return;
+    }
 
     const lines = Object.keys(items).map(k => `• ${k}: ${Math.round(items[k])}`);
 
-      Swal.fire({
+    Swal.fire({
       title: '🛒 لیست خرید هفتگی',
       html: `<div style="text-align:right;direction:rtl;font-size:13px;max-height:400px;overflow-y:auto">
         <p style="font-size:11px;color:#888;margin-bottom:10px;">محاسبه شده برای ${trainingDays} روز تمرینی و ${restDays} روز استراحت</p>
         ${lines.join('<br/>')}
       </div>`,
-        icon: 'info',
-        confirmButtonText: 'متوجه شدم'
-      });
+      icon: 'info',
+      confirmButtonText: 'متوجه شدم'
+    });
   };
 
   const copyMealToOtherDay = async () => {
@@ -395,15 +414,15 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
     });
 
     if (targetMeal) {
-      const dietKey = getDietKey();
-      const currentItems = (activeUser.plans[dietKey] || []).filter(i => i.meal === meal);
+      const currentDietKey = dayType === 'training' ? 'diet' : 'dietRest';
+      const currentItems = (activeUser.plans[currentDietKey] || []).filter((i: DietItem) => i.meal === meal);
       if (currentItems.length === 0) {
         toast.error('این وعده خالی است');
         return;
       }
-      const newItems = currentItems.map(i => ({ ...i, meal: targetMeal }));
+      const newItems = currentItems.map((i: DietItem) => ({ ...i, meal: targetMeal }));
       const newUser = { ...activeUser };
-      newUser.plans[dietKey] = [...(newUser.plans[dietKey] || []), ...newItems];
+      newUser.plans[currentDietKey] = [...(newUser.plans[currentDietKey] || []), ...newItems];
       onUpdateUser(newUser);
       toast.success(`${currentItems.length} آیتم به ${targetMeal} کپی شد`);
     }
@@ -535,8 +554,9 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
       baseActivityFactor = 1.55;
     }
     
-    // TDEE پایه (بدون در نظر گرفتن هدف) - برای محاسبات استفاده می‌شود
-    const _baseTDEE = Math.max(0, Math.round(bmr * baseActivityFactor));
+    // TDEE پایه (بدون در نظر گرفتن هدف) - برای محاسبات آتی ذخیره می‌شود
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const baseTDEE = Math.max(0, Math.round(bmr * baseActivityFactor));
     
     // تعدیل TDEE بر اساس هدف ورزشکار و نوع روز
     let adjustedFactor = baseActivityFactor;

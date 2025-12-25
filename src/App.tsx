@@ -1,4 +1,3 @@
-import React from 'react';
 import { useAuth } from './context/AuthContext';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';

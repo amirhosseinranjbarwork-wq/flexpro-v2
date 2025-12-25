@@ -1,17 +1,33 @@
 import React from 'react';
-import type { User } from '../../types';
+import type { User, NutritionGoals } from '../../types';
 
 interface PrintProgressProps {
   user: User;
   onPrint: () => void;
 }
 
+// Helper to get nutrition goals as object
+const getNutritionGoals = (user: User): NutritionGoals | null => {
+  if (!user.nutritionGoals) return null;
+  if (typeof user.nutritionGoals === 'string') {
+    try {
+      return JSON.parse(user.nutritionGoals) as NutritionGoals;
+    } catch {
+      return null;
+    }
+  }
+  return user.nutritionGoals;
+};
+
 const PrintProgress: React.FC<PrintProgressProps> = ({ user, onPrint }) => {
   // محاسبه BMI
   const calculateBMI = () => {
     if (!user.height || !user.weight) return null;
-    const heightInMeters = user.height / 100;
-    return (user.weight / (heightInMeters * heightInMeters)).toFixed(1);
+    const height = typeof user.height === 'string' ? parseFloat(user.height) : user.height;
+    const weight = typeof user.weight === 'string' ? parseFloat(user.weight) : user.weight;
+    if (isNaN(height) || isNaN(weight) || height === 0) return null;
+    const heightInMeters = height / 100;
+    return (weight / (heightInMeters * heightInMeters)).toFixed(1);
   };
 
   // دسته‌بندی BMI
@@ -141,8 +157,8 @@ const PrintProgress: React.FC<PrintProgressProps> = ({ user, onPrint }) => {
             <div>
               <div className="font-semibold text-[var(--text-primary)]">هدف اصلی</div>
               <div className="text-sm text-[var(--text-secondary)]">
-                {user.nutritionGoals?.calories
-                  ? `رسیدن به ${user.nutritionGoals.calories} کالری روزانه`
+                {getNutritionGoals(user)?.calories
+                  ? `رسیدن به ${getNutritionGoals(user)?.calories} کالری روزانه`
                   : 'هدف تغذیه‌ای مشخص نشده'}
               </div>
             </div>

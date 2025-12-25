@@ -39,8 +39,10 @@ export function sanitizeHtml(html: string | null | undefined): string {
   if (!html) return '';
 
   // Only allow safe tags and attributes
-  const allowedTags = ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
-  const allowedAttributes = ['style', 'class'];
+  // These are defined for documentation purposes; the actual filtering uses regex patterns
+  const _allowedTags = ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+  const _allowedAttributes = ['style', 'class'];
+  void _allowedTags; void _allowedAttributes; // Suppress unused warnings
 
   // Remove dangerous tags and attributes
   let sanitized = html
@@ -70,7 +72,7 @@ export function createSafeElement(html: string): HTMLElement {
  */
 export function sanitizeFileName(fileName: string): string {
   return fileName
-    .replace(/[^a-zA-Z0-9\-_\.\s]/g, '') // Remove special characters except safe ones
+    .replace(/[^a-zA-Z0-9\-_.]/g, '') // Remove special characters except safe ones
     .replace(/\s+/g, '_') // Replace spaces with underscores
     .substring(0, 255); // Limit length
 }
@@ -83,6 +85,7 @@ export function sanitizeForDatabase(input: any): any {
     // Remove null bytes and other dangerous characters
     return input
       .replace(/\0/g, '') // Remove null bytes
+      // eslint-disable-next-line no-control-regex
       .replace(/[\x00-\x1F\x7F-\x9F]/g, '') // Remove control characters
       .trim();
   }

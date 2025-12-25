@@ -1,12 +1,28 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
-import { Save, AlertTriangle, Plus, Search, Dumbbell, Download, Filter, Target, Clock, Zap } from 'lucide-react';
+import { Save, AlertTriangle, Plus, Search, Dumbbell, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import type { User, WorkoutItem, WorkoutMode } from '../types/index';
-import type { Exercise, ExerciseCategory, EquipmentType, DifficultyLevel } from '../types/database';
+import type { ExerciseCategory, EquipmentType, DifficultyLevel } from '../types/database';
+
+// Local type for exercise data that matches both Supabase and fallback data
+interface ExerciseData {
+  id: string;
+  name: string;
+  muscle_group: string;
+  sub_muscle_group?: string | null;
+  equipment?: string;
+  type: string;
+  mechanics?: string;
+  description?: string;
+  category?: ExerciseCategory;
+  primary_muscle?: string;
+  equipment_standardized?: EquipmentType;
+  difficulty_level?: DifficultyLevel;
+}
 import EmptyState from './ui/EmptyState';
 import { riskyExercises } from '../data/resistanceExercises';
 import { useDebounce } from '../hooks/useDebounce';
@@ -55,10 +71,10 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
   const { data: exercisesData, isLoading: exercisesLoading, error: exercisesError } = useExercises();
 
   // فیلترینگ علمی exercises
-  const filteredExercises = useMemo(() => {
+  const filteredExercises = useMemo((): ExerciseData[] => {
     if (!exercisesData) return [];
 
-    return exercisesData.filter((exercise: Exercise) => {
+    return (exercisesData as ExerciseData[]).filter((exercise) => {
       // فیلتر جستجو
       const matchesSearch = !debouncedSearch ||
         exercise.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
@@ -79,18 +95,23 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
   }, [exercisesData, debouncedSearch, categoryFilter, equipmentFilter, difficultyFilter]);
 
   // سازگاری با ساختار قدیمی برای dropdownها
-  const resistanceExercises = useMemo(() => {
+  const resistanceExercises = useMemo((): Record<string, Record<string, string[]>> | null => {
     if (!exercisesData) return null;
 
-    const resistance = exercisesData.filter((ex: Exercise) => ex.category === 'bodybuilding');
-    const grouped: Record<string, string[]> = {};
+    const exercises = exercisesData as ExerciseData[];
+    const resistance = exercises.filter((ex) => ex.category === 'bodybuilding' || ex.type === 'resistance');
+    const grouped: Record<string, Record<string, string[]>> = {};
 
-    resistance.forEach((ex: Exercise) => {
+    resistance.forEach((ex) => {
       const muscle = ex.primary_muscle || ex.muscle_group;
+      const subMuscle = ex.sub_muscle_group || 'عمومی';
       if (!grouped[muscle]) {
-        grouped[muscle] = [];
+        grouped[muscle] = {};
       }
-      grouped[muscle].push(ex.name);
+      if (!grouped[muscle][subMuscle]) {
+        grouped[muscle][subMuscle] = [];
+      }
+      grouped[muscle][subMuscle].push(ex.name);
     });
 
     return grouped;
@@ -101,13 +122,14 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
     return filteredExercises.map(ex => ex.name);
   }, [filteredExercises]);
 
-  const correctiveExercises = useMemo(() => {
+  const correctiveExercises = useMemo((): Record<string, string[]> | null => {
     if (!exercisesData) return null;
 
-    const corrective = exercisesData.filter((ex: Exercise) => ex.category === 'corrective');
+    const exercises = exercisesData as ExerciseData[];
+    const corrective = exercises.filter((ex) => ex.category === 'corrective' || ex.type === 'corrective');
     const grouped: Record<string, string[]> = {};
 
-    corrective.forEach((ex: Exercise) => {
+    corrective.forEach((ex) => {
       const muscle = ex.primary_muscle || ex.muscle_group;
       if (!grouped[muscle]) {
         grouped[muscle] = [];
@@ -118,14 +140,15 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
     return grouped;
   }, [exercisesData]);
 
-  const cardioExercises = useMemo(() => {
+  const cardioExercises = useMemo((): Record<string, string[]> | null => {
     if (!exercisesData) return null;
 
-    const cardio = exercisesData.filter((ex: Exercise) => ex.category === 'cardio');
+    const exercises = exercisesData as ExerciseData[];
+    const cardio = exercises.filter((ex) => ex.category === 'cardio' || ex.type === 'cardio');
     const grouped: Record<string, string[]> = {};
 
-    cardio.forEach((ex: Exercise) => {
-      const category = ex.equipment_standardized || 'general';
+    cardio.forEach((ex) => {
+      const category = ex.equipment_standardized || ex.equipment || 'general';
       if (!grouped[category]) {
         grouped[category] = [];
       }
@@ -135,18 +158,20 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
     return grouped;
   }, [exercisesData]);
 
-  const warmupExercises = useMemo(() => {
+  const warmupExercises = useMemo((): string[] | null => {
     if (!exercisesData) return null;
-    return exercisesData
-      .filter((ex: Exercise) => ex.category === 'warmup' || ex.type === 'warmup')
-      .map((ex: Exercise) => ex.name);
+    const exercises = exercisesData as ExerciseData[];
+    return exercises
+      .filter((ex) => ex.category === 'warmup' || ex.type === 'warmup')
+      .map((ex) => ex.name);
   }, [exercisesData]);
 
-  const cooldownExercises = useMemo(() => {
+  const cooldownExercises = useMemo((): string[] | null => {
     if (!exercisesData) return null;
-    return exercisesData
-      .filter((ex: Exercise) => ex.category === 'cooldown' || ex.type === 'cooldown')
-      .map((ex: Exercise) => ex.name);
+    const exercises = exercisesData as ExerciseData[];
+    return exercises
+      .filter((ex) => ex.category === 'cooldown' || ex.type === 'cooldown')
+      .map((ex) => ex.name);
   }, [exercisesData]);
 
   const dataLoaded = !exercisesLoading;
@@ -607,11 +632,11 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
                     <>
                       <select className="input-glass border-r-4 border-r-yellow-400 font-bold text-yellow-600 dark:text-yellow-400" value={formData.ex2} onChange={e => setFormData({ ...formData, ex2: e.target.value })}>
                         <option value="">+ انتخاب حرکت دوم (الزامی)</option>
-                        {filteredExercises.map(e => <option key={e} value={e}>{e}</option>)}
+                        {filteredExerciseNames.map(name => <option key={name} value={name}>{name}</option>)}
                       </select>
                       <select className="input-glass border-r-4 border-r-purple-400 font-bold text-purple-600 dark:text-purple-400" value={formData.name3} onChange={e => setFormData({ ...formData, name3: e.target.value })}>
                         <option value="">+ انتخاب حرکت سوم (الزامی)</option>
-                        {filteredExercises.map(e => <option key={e} value={e}>{e}</option>)}
+                        {filteredExerciseNames.map(name => <option key={name} value={name}>{name}</option>)}
                       </select>
                     </>
                   )}
@@ -621,15 +646,15 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
                     <>
                       <select className="input-glass border-r-4 border-r-yellow-400 font-bold text-yellow-600 dark:text-yellow-400" value={formData.ex2} onChange={e => setFormData({ ...formData, ex2: e.target.value })}>
                         <option value="">+ انتخاب حرکت دوم (الزامی)</option>
-                        {filteredExercises.map(e => <option key={e} value={e}>{e}</option>)}
+                        {filteredExerciseNames.map(name => <option key={name} value={name}>{name}</option>)}
                       </select>
                       <select className="input-glass border-r-4 border-r-purple-400 font-bold text-purple-600 dark:text-purple-400" value={formData.name3} onChange={e => setFormData({ ...formData, name3: e.target.value })}>
                         <option value="">+ انتخاب حرکت سوم (الزامی)</option>
-                        {filteredExercises.map(e => <option key={e} value={e}>{e}</option>)}
+                        {filteredExerciseNames.map(name => <option key={name} value={name}>{name}</option>)}
                       </select>
                       <select className="input-glass border-r-4 border-r-red-400 font-bold text-red-600 dark:text-red-400" value={formData.name4} onChange={e => setFormData({ ...formData, name4: e.target.value })}>
                         <option value="">+ انتخاب حرکت چهارم (اختیاری)</option>
-                        {filteredExercises.map(e => <option key={e} value={e}>{e}</option>)}
+                        {filteredExerciseNames.map(name => <option key={name} value={name}>{name}</option>)}
                       </select>
                     </>
                   )}

@@ -22,12 +22,12 @@ const mock = (data: any) => Promise.resolve({ data, error: null });
 // --- API REPLACEMENTS ---
 
 // Users API
-export const fetchUsers = async () => mock([]);
-export const upsertUser = async () => mock({});
-export const removeUser = async () => mock(true);
+export const fetchUsers = async (_coachId?: string) => mock([]);
+export const upsertUser = async (_data?: unknown) => mock({});
+export const removeUser = async (_id?: string) => mock(true);
 
 // Templates API
-export const fetchTemplates = async () => mock([]);
+export const fetchTemplates = async (_coachId?: string) => mock([]);
 export const upsertTemplate = async () => mock({});
 export const removeTemplate = async () => mock(true);
 
@@ -36,29 +36,29 @@ export const ensureSupabaseReady = async () => true;
 export const isSupabaseReady = true;
 
 // Clients API
-export const fetchClientsByCoach = async () => mock(MOCK_CLIENTS);
+export const fetchClientsByCoach = async (_coachId?: string) => mock(MOCK_CLIENTS);
 export const fetchClients = async () => mock(MOCK_CLIENTS);
-export const fetchClientById = async () => mock(MOCK_CLIENTS[0]);
-export const upsertClient = async () => mock({});
-export const updateClient = async () => mock({});
-export const deleteClient = async () => mock(true);
+export const fetchClientById = async (_clientId?: string) => mock(MOCK_CLIENTS[0]);
+export const upsertClient = async (_data?: unknown) => mock({});
+export const updateClient = async (_id?: string, _data?: unknown) => mock({});
+export const deleteClient = async (_id?: string) => mock(true);
 
 // Workout Plans API
-export const fetchWorkoutPlansByCoach = async () => mock([]);
-export const fetchWorkoutPlansByClient = async () => mock([]);
-export const upsertWorkoutPlan = async () => mock({});
-export const deleteWorkoutPlan = async () => mock(true);
+export const fetchWorkoutPlansByCoach = async (_coachId?: string) => mock([]);
+export const fetchWorkoutPlansByClient = async (_clientId?: string) => mock([]);
+export const upsertWorkoutPlan = async (_data?: unknown) => mock({});
+export const deleteWorkoutPlan = async (_id?: string) => mock(true);
 
 // Coach Code API
-export const getOrCreateCoachCode = async () => 'DEV-MODE';
-export const findCoachByCode = async () => mock({ id: 'coach-1', full_name: 'مربی آزمایشی' });
+export const getOrCreateCoachCode = async (_userId?: string) => 'DEV-MODE';
+export const findCoachByCode = async (_code?: string) => mock({ id: 'coach-1', full_name: 'مربی آزمایشی' });
 
 // Program Requests API
-export const fetchRequestsByCoach = async () => mock([]);
-export const fetchRequestsByClient = async () => mock([]);
-export const createProgramRequest = async () => mock({ id: 'request-1' });
-export const updateRequestStatus = async () => mock(true);
-export const deleteProgramRequest = async () => mock(true);
+export const fetchRequestsByCoach = async (_coachId?: string) => mock([]);
+export const fetchRequestsByClient = async (_clientId?: string) => mock([]);
+export const createProgramRequest = async (_data?: unknown) => mock({ id: 'request-1' });
+export const updateRequestStatus = async (_id?: string, _status?: string) => mock(true);
+export const deleteProgramRequest = async (_id?: string) => mock(true);
 export const deleteProgramRequestLocally = async () => mock(true);
 
 // Profile API

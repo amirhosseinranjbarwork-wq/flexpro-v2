@@ -12,6 +12,7 @@ interface Profile {
   role?: string;
   email?: string;
   username?: string;
+  is_super_admin?: boolean;
 }
 
 interface AuthContextValue {
@@ -71,12 +72,16 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   }, []);
 
   useEffect(() => {
-    // Always use mock mode for demo
-    if (true) {
+    // Use mock mode only when explicitly enabled via environment variable or Supabase is disabled
+    const useMockMode = import.meta.env.VITE_USE_MOCK === 'true' || !isSupabaseEnabled || !supabase;
+    
+    if (useMockMode) {
       // Check URL parameters for role
       const urlParams = new URLSearchParams(window.location.search);
       const roleFromUrl = urlParams.get('role') || 'coach'; // Default to coach
-      console.log('⚡ Mock Mode: Setting up mock authentication');
+      if (import.meta.env.DEV) {
+        console.log('⚡ Mock Mode: Setting up mock authentication');
+      }
       // Create mock user object
       const mockUser: User = {
         id: 'mock-user-id',
@@ -112,13 +117,15 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
 
       // Set mock data immediately
       setUser(mockUser);
-      setSession(mockSession as any);
+      setSession(mockSession as Session);
       setRole('coach');
       setProfile(mockProfile);
       setReady(true);
       setLoading(false);
 
-      console.log('✅ Mock authentication setup complete');
+      if (import.meta.env.DEV) {
+        console.log('✅ Mock authentication setup complete');
+      }
       return;
     }
 
@@ -348,14 +355,14 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       }
       
       // ثبت پروفایل
-      if (data.user) {
+      if (data.user && supabase) {
         const { error: profileError } = await supabase.from('profiles').upsert({
           id: data.user.id,
           full_name: fullName,
           role: r,
           email: finalEmail,
           username
-        });
+        } as unknown as Record<string, unknown>);
         
         if (profileError) {
           if (import.meta.env.DEV) console.error('Profile upsert error:', profileError);

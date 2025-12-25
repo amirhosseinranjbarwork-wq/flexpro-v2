@@ -19,12 +19,24 @@ import {
   FileText,
   Scale,
   Dumbbell,
-  ChefHat,
   Plus,
   ArrowRight
 } from 'lucide-react';
 import type { Client, User as UserType } from '../types/index';
 import { LoadingSpinner } from './index';
+
+interface InfoItem {
+  label: string;
+  value: string | number | undefined;
+  suffix?: string;
+  icon?: React.ReactNode;
+}
+
+interface InfoSection {
+  title: string;
+  icon: React.ReactNode;
+  items: InfoItem[];
+}
 
 interface ClientInfoPanelProps {
   client: Client | null;
@@ -38,10 +50,11 @@ const ClientInfoPanel: React.FC<ClientInfoPanelProps> = ({ client, loading, onNa
     return client.profile_data as UserType;
   }, [client]);
 
-  const infoSections = useMemo(() => {
+  const infoSections = useMemo((): Record<string, InfoSection> | null => {
     if (!client && !profileData) return null;
 
-    const pd = profileData || {};
+    // Use profileData with proper typing, defaulting to empty partial
+    const pd: Partial<UserType> = profileData || {};
     
     return {
       personal: {
@@ -53,7 +66,7 @@ const ClientInfoPanel: React.FC<ClientInfoPanelProps> = ({ client, loading, onNa
           { label: 'سن', value: client?.age || pd.age || '—', suffix: 'سال' },
           { label: 'قد', value: client?.height || pd.height || '—', suffix: 'سانتی‌متر' },
           { label: 'وزن', value: client?.weight || pd.weight || '—', suffix: 'کیلوگرم' },
-          { label: 'هدف', value: client?.goal || pd.goal || pd.nutritionGoals || '—' },
+          { label: 'هدف', value: client?.goal || pd.goal || (typeof pd.nutritionGoals === 'string' ? pd.nutritionGoals : undefined) || '—' },
           { label: 'سطح', value: pd.level || '—' },
           { label: 'روزهای تمرین', value: pd.days || '—', suffix: 'روز در هفته' },
           { label: 'فعالیت روزانه', value: pd.activity || '—' },
@@ -101,7 +114,7 @@ const ClientInfoPanel: React.FC<ClientInfoPanelProps> = ({ client, loading, onNa
         icon: <UtensilsCrossed size={20} />,
         items: [
           { label: 'نوع رژیم', value: pd.dietType || '—' },
-          { label: 'اهداف تغذیه', value: pd.nutritionGoals || '—' },
+          { label: 'اهداف تغذیه', value: typeof pd.nutritionGoals === 'string' ? pd.nutritionGoals : (pd.nutritionGoals?.calories ? String(pd.nutritionGoals.calories) + ' کالری' : '—') },
           { label: 'مصرف آب', value: pd.waterIntake || '—', suffix: 'لیتر در روز', icon: <Droplet size={16} /> },
           { label: 'تعداد وعده', value: pd.mealFrequency || '—', suffix: 'وعده در روز' },
           { label: 'ترجیحات غذایی', value: pd.foodPreferences?.length ? pd.foodPreferences.join(', ') : '—' },

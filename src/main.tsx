@@ -38,13 +38,17 @@ if (!rootElement) {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
-      .then(() => console.log('Service Worker registered'))
-      .catch(error => console.log('Service Worker registration failed:', error));
+      .then(() => {
+        if (import.meta.env.DEV) console.log('Service Worker registered');
+      })
+      .catch(error => {
+        if (import.meta.env.DEV) console.log('Service Worker registration failed:', error);
+      });
   });
 }
 
-// Add comprehensive performance monitoring
-if ('PerformanceObserver' in window) {
+// Performance monitoring (Core Web Vitals)
+if ('PerformanceObserver' in window && import.meta.env.DEV) {
   try {
     // Largest Contentful Paint
     new PerformanceObserver((list) => {
@@ -58,7 +62,8 @@ if ('PerformanceObserver' in window) {
     // First Input Delay
     new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        console.log('📊 FID:', entry.processingStart - entry.startTime, 'ms');
+        const fidEntry = entry as PerformanceEventTiming;
+        console.log('📊 FID:', fidEntry.processingStart - fidEntry.startTime, 'ms');
       }
     }).observe({ entryTypes: ['first-input'] });
 
@@ -66,8 +71,9 @@ if ('PerformanceObserver' in window) {
     new PerformanceObserver((list) => {
       let clsValue = 0;
       for (const entry of list.getEntries()) {
-        if (!(entry as any).hadRecentInput) {
-          clsValue += (entry as any).value;
+        const layoutShiftEntry = entry as PerformanceEntry & { hadRecentInput: boolean; value: number };
+        if (!layoutShiftEntry.hadRecentInput) {
+          clsValue += layoutShiftEntry.value;
         }
       }
       console.log('📊 CLS:', clsValue.toFixed(4));
@@ -75,30 +81,6 @@ if ('PerformanceObserver' in window) {
 
   } catch (e) {
     console.warn('Performance monitoring not fully supported');
-  }
-}
-
-// Performance monitoring (built-in)
-if ('PerformanceObserver' in window) {
-  try {
-    // Largest Contentful Paint
-    new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) {
-        if (entry.entryType === 'largest-contentful-paint') {
-          console.log('📊 LCP:', entry.startTime.toFixed(2) + 'ms');
-        }
-      }
-    }).observe({ entryTypes: ['largest-contentful-paint'] });
-
-    // First Input Delay
-    new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) {
-        console.log('📊 FID:', entry.processingStart - entry.startTime, 'ms');
-      }
-    }).observe({ entryTypes: ['first-input'] });
-
-  } catch (e) {
-    console.warn('Performance monitoring not supported');
   }
 }
 
@@ -124,8 +106,12 @@ root.render(
 if (pushNotificationManager.isSupported()) {
   // Wait for service worker to be ready, then initialize push notifications
   navigator.serviceWorker.ready.then(() => {
-    pushNotificationManager.initialize().catch(console.error);
+    pushNotificationManager.initialize().catch((error) => {
+      if (import.meta.env.DEV) console.error('Push notification init failed:', error);
+    });
   });
 } else {
-  console.log('Push notifications not supported in this browser');
+  if (import.meta.env.DEV) {
+    console.log('Push notifications not supported in this browser');
+  }
 }

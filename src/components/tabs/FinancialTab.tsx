@@ -11,7 +11,8 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({ form }) => {
 
   const calculateTotalAmount = () => {
     const { amount = 0, duration = 1 } = formData.financial || {};
-    return amount * duration;
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    return (numAmount || 0) * duration;
   };
 
   const formatCurrency = (amount: number | string) => {
@@ -70,7 +71,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({ form }) => {
         </div>
 
         {/* Total Amount Display */}
-        {(formData.financial?.amount || 0) > 0 && (
+        {(Number(formData.financial?.amount) || 0) > 0 && (
           <div className="mt-6 p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/20">
             <div className="flex items-center justify-between">
               <div>
@@ -205,7 +206,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({ form }) => {
       </div>
 
       {/* Payment Schedule */}
-      {(formData.financial?.amount || 0) > 0 && (formData.financial?.duration || 1) > 1 && (
+      {(Number(formData.financial?.amount) || 0) > 0 && (formData.financial?.duration || 1) > 1 && (
         <div className="glass-card p-4 rounded-xl border border-[var(--glass-border)]">
           <h4 className="text-md font-bold mb-3 text-[var(--text-primary)] flex items-center gap-2">
             <Clock className="w-4 h-4" />

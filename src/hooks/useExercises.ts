@@ -19,7 +19,9 @@ export function useExercises() {
     queryKey: ['exercises'],
     queryFn: async () => {
       if (!supabase || !isSupabaseEnabled) {
-        console.warn('Supabase not available, using fallback data');
+        if (import.meta.env.DEV) {
+          console.warn('Supabase not available, using fallback data');
+        }
         return fallbackExercises;
       }
 
@@ -30,18 +32,25 @@ export function useExercises() {
           .order('name');
 
         if (error) {
-          console.warn('Supabase error, using fallback data:', error.message);
+          if (import.meta.env.DEV) {
+            console.warn('Supabase error, using fallback data:', error.message);
+          }
           return fallbackExercises;
         }
 
         if (!data || data.length === 0) {
-          console.warn('No exercises data from Supabase, using fallback data');
+          if (import.meta.env.DEV) {
+            console.warn('No exercises data from Supabase, using fallback data');
+          }
           return fallbackExercises;
         }
 
         return data;
-      } catch (err) {
-        console.warn('useExercises error, using fallback data:', err.message);
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        if (import.meta.env.DEV) {
+          console.warn('useExercises error, using fallback data:', errorMessage);
+        }
         return fallbackExercises;
       }
     },
@@ -428,7 +437,9 @@ export function useFoods() {
     queryKey: ['foods'],
     queryFn: async () => {
       if (!supabase || !isSupabaseEnabled) {
-        console.warn('Supabase not available, using fallback data');
+        if (import.meta.env.DEV) {
+          console.warn('Supabase not available, using fallback data');
+        }
         return fallbackFoods;
       }
 
@@ -439,18 +450,25 @@ export function useFoods() {
           .order('name');
 
         if (error) {
-          console.warn('Supabase error, using fallback data:', error.message);
+          if (import.meta.env.DEV) {
+            console.warn('Supabase error, using fallback data:', error.message);
+          }
           return fallbackFoods;
         }
 
         if (!data || data.length === 0) {
-          console.warn('No foods data from Supabase, using fallback data');
+          if (import.meta.env.DEV) {
+            console.warn('No foods data from Supabase, using fallback data');
+          }
           return fallbackFoods;
         }
 
         return data;
-      } catch (err) {
-        console.warn('useFoods error, using fallback data:', err.message);
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        if (import.meta.env.DEV) {
+          console.warn('useFoods error, using fallback data:', errorMessage);
+        }
         return fallbackFoods;
       }
     },
@@ -541,7 +559,9 @@ export function useSupplements() {
     queryKey: ['supplements'],
     queryFn: async () => {
       if (!supabase || !isSupabaseEnabled) {
-        console.warn('Supabase not available, using fallback data');
+        if (import.meta.env.DEV) {
+          console.warn('Supabase not available, using fallback data');
+        }
         return fallbackSupplements;
       }
 
@@ -552,18 +572,25 @@ export function useSupplements() {
           .order('name');
 
         if (error) {
-          console.warn('Supabase error, using fallback data:', error.message);
+          if (import.meta.env.DEV) {
+            console.warn('Supabase error, using fallback data:', error.message);
+          }
           return fallbackSupplements;
         }
 
         if (!data || data.length === 0) {
-          console.warn('No supplements data from Supabase, using fallback data');
+          if (import.meta.env.DEV) {
+            console.warn('No supplements data from Supabase, using fallback data');
+          }
           return fallbackSupplements;
         }
 
         return data;
-      } catch (err) {
-        console.warn('useSupplements error, using fallback data:', err.message);
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        if (import.meta.env.DEV) {
+          console.warn('useSupplements error, using fallback data:', errorMessage);
+        }
         return fallbackSupplements;
       }
     },

@@ -240,11 +240,12 @@ export function calculateTargetCalories(tdee: number, goal?: string): { calories
   let adjustment = 0;
 
   switch (goal) {
-    case 'weight-loss':
+    case 'weight-loss': {
       adjustment = -500; // 500 calorie deficit for 0.5kg/week loss
       const minCalories = Math.max(1200, tdee * 0.8); // Minimum 1200 or 80% of TDEE
       targetCalories = Math.max(minCalories, tdee + adjustment);
       break;
+    }
     case 'weight-gain':
       adjustment = 400; // 400 calorie surplus
       targetCalories = Math.min(10000, tdee + adjustment);
@@ -339,7 +340,7 @@ export function calculateBodyFat(data: MeasurementData): number {
 /**
  * Calculates ideal weight range based on BMI 18.5-24.9
  */
-export function calculateIdealWeight(height: number, gender: 'male' | 'female'): { min: number; max: number; ideal: number } {
+export function calculateIdealWeight(height: number, _gender: 'male' | 'female'): { min: number; max: number; ideal: number } {
   if (!height || height <= 0 || height > 300) {
     return { min: 0, max: 0, ideal: 0 };
   }
@@ -427,7 +428,7 @@ export function calculateWaterIntake(weight: number, activity: number): number {
  * Main calculation function that combines all metrics
  */
 export function calculateFitnessMetrics(data: MeasurementData): CalculationResult {
-  const { weight, height, age, gender, activity, waist, hip, neck, bodyFat, trainingDays, goal } = data;
+  const { weight, height, age: _age, gender, activity, waist, hip, neck: _neck, bodyFat: _bodyFat, trainingDays, goal } = data;
 
   // BMI calculation
   const bmiResult = calculateBMI(weight, height);

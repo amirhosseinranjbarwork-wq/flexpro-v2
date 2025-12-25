@@ -26,10 +26,8 @@ import {
   getExerciseTypes
 } from '../lib/database';
 import {
-  fetchUsers as fetchUsersRemote,
   fetchTemplates as fetchTemplatesRemote,
   upsertUser as upsertUserRemote,
-  removeUser as removeUserRemote,
   upsertTemplate as upsertTemplateRemote,
   removeTemplate as removeTemplateRemote,
   isSupabaseReady,
@@ -43,7 +41,6 @@ import {
   updateRequestStatus,
   deleteProgramRequest
 } from '../lib/supabaseApi';
-import { Food, Exercise } from '../types/database';
 import { useAuth } from './AuthContext';
 import { useUI } from './UIContext';
 
@@ -212,13 +209,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const setSelectedClientId = useCallback((id: UserId | null) => {
     setSelectedClientIdState(id);
     if (id) {
-      localStorage.setItem(SELECTED_CLIENT_KEY, id);
+      localStorage.setItem(SELECTED_CLIENT_KEY, String(id));
     } else {
       localStorage.removeItem(SELECTED_CLIENT_KEY);
     }
   }, []);
 
-  const isFirstRender = useRef<boolean>(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _isFirstRender = useRef<boolean>(true);
 
   // Fetch data from Supabase (single source of truth)
   const refreshData = useCallback(async () => {
@@ -267,12 +265,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const remoteRequests = requestsResponse.data || [];
 
       // Map clients to users with their plans
-      const planMap = new Map(remotePlans.map(p => [p.client_id, p]));
-      const mappedUsers = remoteClients.map(c => mapClientToUser(c, planMap.get(c.id)));
+      const planMap = new Map(remotePlans.map((p: WorkoutPlanFromDB) => [p.client_id, p]));
+      const mappedUsers = remoteClients.map((c: Client) => mapClientToUser(c, planMap.get(c.id) as WorkoutPlanFromDB | undefined));
 
       // Update state - merge with existing local users to preserve newly added ones
       setUsers(prevUsers => {
-        const remoteUserIds = new Set(mappedUsers.map(u => u.id));
+        const remoteUserIds = new Set(mappedUsers.map((u: User) => u.id));
         const existingUsers = prevUsers.filter(u => !remoteUserIds.has(u.id));
         const mergedUsers = [...mappedUsers, ...existingUsers];
 
@@ -301,7 +299,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Keep existing local data - don't overwrite with cache
       // The users state already contains the most recent data including newly added users
-      toast.warning('داده‌های محلی حفظ شد - اتصال به سرور برقرار نیست');
+      toast('داده‌های محلی حفظ شد - اتصال به سرور برقرار نیست', { icon: '⚠️' });
     }
   }, [auth?.user?.id]);
 
@@ -478,7 +476,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           const results = await Promise.allSettled([
             // First ensure profile exists
-            supabase.from('profiles').upsert(profilePayload),
+            supabase?.from('profiles').upsert(profilePayload as unknown as Record<string, unknown>) ?? Promise.resolve({ error: null }),
             // Then save client data
             upsertClient(clientPayload as Client),
             // Save workout plan

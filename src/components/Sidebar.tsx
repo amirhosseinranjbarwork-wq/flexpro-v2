@@ -12,7 +12,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ currentTab, setTab, onBackup, onRestore, onReset, canAdminData }) => {
   
-  const renderButton = (id, label, icon) => (
+  const renderButton = (id: TabKey, label: string, icon: React.ReactNode) => (
     <button 
       onClick={() => setTab(id)} 
       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative overflow-hidden ${

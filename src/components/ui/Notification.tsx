@@ -44,6 +44,7 @@ const Notification: React.FC<NotificationProps> = ({
 
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [duration, id, onClose]);
 
   const getTypeStyles = () => {
