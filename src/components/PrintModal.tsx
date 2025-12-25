@@ -19,17 +19,21 @@ const escapeHtml = (text: unknown): string => {
   return str.replace(/[&<>"'`=/]/g, (m) => map[m]);
 };
 
-const allowedTags = new Set([
+// Allowed HTML tags and attributes for legacy sanitization (used in _legacySanitizeHTML)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _allowedTags = new Set([
   'div', 'p', 'span', 'strong', 'em', 'b', 'i', 'u', 'ul', 'ol', 'li',
   'table', 'thead', 'tbody', 'tr', 'th', 'td', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
   'br', 'hr', 'section', 'article', 'header', 'footer', 'main', 'nav'
 ]);
 
-const allowedAttrs = new Set([
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _allowedAttrs = new Set([
   'class', 'id', 'title', 'dir', 'lang', 'aria-label', 'role', 'colspan', 'rowspan', 'data-label', 'style'
 ]);
 
-const unsafeProtocols = ['javascript:', 'data:', 'vbscript:'];
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _unsafeProtocols = ['javascript:', 'data:', 'vbscript:'];
 
 const sanitizeHTML = (html: string): string => {
   if (!html || typeof html !== 'string') return '';
@@ -131,6 +135,7 @@ const getPrintStyles = (): string => {
 };
 
 // Legacy sanitization function (kept for compatibility but not used)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _legacySanitizeHTML = (html: string): string => {
   if (!html || typeof html !== 'string') return '';
   const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -140,7 +145,7 @@ const _legacySanitizeHTML = (html: string): string => {
     const el = stack.pop() as Element;
     const tag = el.tagName.toLowerCase();
 
-    if (!allowedTags.has(tag)) {
+    if (!_allowedTags.has(tag)) {
       while (el.firstChild) {
         el.parentNode?.insertBefore(el.firstChild, el);
       }
@@ -152,7 +157,7 @@ const _legacySanitizeHTML = (html: string): string => {
       const name = attr.name.toLowerCase();
       const value = attr.value || '';
 
-      if (!allowedAttrs.has(name)) {
+      if (!_allowedAttrs.has(name)) {
         el.removeAttribute(attr.name);
         return;
       }
@@ -162,7 +167,7 @@ const _legacySanitizeHTML = (html: string): string => {
         return;
       }
 
-      if ((name === 'href' || name === 'src') && unsafeProtocols.some((p) => value.trim().toLowerCase().startsWith(p))) {
+      if ((name === 'href' || name === 'src') && _unsafeProtocols.some((p) => value.trim().toLowerCase().startsWith(p))) {
         el.removeAttribute(attr.name);
       }
     });

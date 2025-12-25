@@ -307,7 +307,7 @@ const PrintLayout: React.FC<PrintLayoutProps> = ({
   title,
   date = new Date().toLocaleDateString('fa-IR'),
   children,
-  type
+  type: _type
 }) => {
   return (
     <div className="print-content">

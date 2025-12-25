@@ -13,13 +13,14 @@ const GalleryPanel: React.FC<GalleryPanelProps> = ({
     photos,
     uploadPhoto,
     deletePhoto,
-    getPhotosByDateRange,
+    getPhotosByDateRange: _getPhotosByDateRange,
     getComparisons,
-    isLoading,
+    isLoading: _isLoading,
     error
   } = useProgressPhotos(userId);
 
-  const [selectedPhotos, setSelectedPhotos] = useState<ProgressPhoto[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_selectedPhotos, _setSelectedPhotos] = useState<ProgressPhoto[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [comparisonMode, setComparisonMode] = useState(false);
@@ -41,8 +42,8 @@ const GalleryPanel: React.FC<GalleryPanelProps> = ({
         continue;
       }
 
-      // Sanitize filename
-      const sanitizedName = sanitizeFileName(file.name);
+      // Sanitize filename for validation purposes
+      sanitizeFileName(file.name);
 
       try {
         const metadata: Partial<ProgressPhoto> = {

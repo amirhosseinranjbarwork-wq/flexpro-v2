@@ -13,7 +13,7 @@ import {
   getOrCreateCoachCode
 } from '../lib/supabaseApi';
 
-interface TestResult {
+export interface TestResult {
   name: string;
   status: 'success' | 'warning' | 'error';
   message: string;

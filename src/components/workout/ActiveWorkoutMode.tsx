@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Check, Clock, Target, Zap } from 'lucide-react';
+import { Check, Clock, Target } from 'lucide-react';
 import { ActiveWorkoutModeProps, ActiveWorkoutSet, WorkoutLog, WorkoutSession } from '../../types/interactive';
 import { useWorkoutLog } from '../../hooks/useWorkoutLog';
 
@@ -11,13 +11,14 @@ const ActiveWorkoutMode: React.FC<ActiveWorkoutModeProps> = ({
   const { saveLog, isLoading } = useWorkoutLog();
   const [workoutSets, setWorkoutSets] = useState<Record<string, ActiveWorkoutSet[]>>({});
   const [startTime] = useState(new Date());
-  const [completedExercises, setCompletedExercises] = useState<Set<string>>(new Set());
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_completedExercises, _setCompletedExercises] = useState<Set<string>>(new Set());
 
   // Initialize workout sets from plan
   React.useEffect(() => {
     const initialSets: Record<string, ActiveWorkoutSet[]> = {};
 
-    Object.entries(workoutPlan || {}).forEach(([day, exercises]) => {
+    Object.entries(workoutPlan || {}).forEach(([_day, exercises]) => {
       exercises?.forEach((exercise: any) => {
         const sets: ActiveWorkoutSet[] = [];
         for (let i = 1; i <= (exercise.sets || 1); i++) {

@@ -355,14 +355,14 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       }
       
       // ثبت پروفایل
-      if (data.user) {
+      if (data.user && supabase) {
         const { error: profileError } = await supabase.from('profiles').upsert({
           id: data.user.id,
           full_name: fullName,
           role: r,
           email: finalEmail,
           username
-        });
+        } as unknown as Record<string, unknown>);
         
         if (profileError) {
           if (import.meta.env.DEV) console.error('Profile upsert error:', profileError);

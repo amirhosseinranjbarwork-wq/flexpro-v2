@@ -53,7 +53,11 @@ export type WorkoutSystemType =
   | 'isometric'
   | 'negatives'
   | '21s'
-  | 'nasm-corrective';
+  | 'nasm-corrective'
+  | 'cardio'
+  | 'corrective'
+  | 'warmup'
+  | 'cooldown';
 
 export interface WorkoutItem {
   type?: WorkoutSystemType;
@@ -132,6 +136,13 @@ export interface Measurements {
   shoulder?: string;
 }
 
+export interface NutritionGoals {
+  calories?: number | string;
+  protein?: number | string;
+  carbs?: number | string;
+  fat?: number | string;
+}
+
 export interface User {
   id: UserId;
   coach_id?: string;
@@ -162,12 +173,13 @@ export interface User {
   medicalConditions?: string[];
   medications?: string;
   dietType?: string;
-  nutritionGoals?: string;
+  nutritionGoals?: string | NutritionGoals;
   waterIntake?: string;
   mealFrequency?: string;
   foodPreferences?: string[];
   targetWeight?: string | number;
   bodyFat?: string | number;
+  goal?: string;
   plans: UserPlans;
 }
 

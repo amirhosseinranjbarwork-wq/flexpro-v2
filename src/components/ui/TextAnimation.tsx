@@ -377,7 +377,7 @@ export const ScrambleText: React.FC<ScrambleTextProps> = ({
     const interval = setInterval(() => {
       setDisplayText(originalText
         .split('')
-        .map((char, index) => {
+        .map((_char, index) => {
           if (index < iterations) return originalText[index];
           return characters[Math.floor(Math.random() * characters.length)];
         })

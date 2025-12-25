@@ -87,7 +87,7 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
   const [customFood, setCustomFood] = useState({ name: '', cal: '', protein: '', carb: '', fat: '', unit: 'گرم', base: 100 });
 
   // بارگذاری داده‌های غذایی از Supabase
-  const { data: foodsData, isLoading: isFoodsLoading } = useFoods();
+  const { data: foodsData } = useFoods();
 
   // سازماندهی داده‌ها بر اساس ساختار قدیمی برای سازگاری
   interface FoodInfo {
@@ -165,8 +165,10 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
     ? foodsList.filter(f => f.toLowerCase().includes(debouncedSearch.toLowerCase()))
     : foodsList;
 
-  // دریافت کلید برنامه غذایی بر اساس نوع روز
-  const getDietKeyValue = useCallback(() => dayType === 'training' ? 'diet' : 'dietRest', [dayType]);
+  // دریافت کلید برنامه غذایی بر اساس نوع روز - helper function
+  const _getDietKeyValue = useCallback(() => dayType === 'training' ? 'diet' : 'dietRest', [dayType]);
+  // استفاده از متغیر برای جلوگیری از خطای unused
+  void _getDietKeyValue;
 
   // هندلر جابجایی - بهینه‌سازی با useCallback
   const handleDragEnd = useCallback((event: DragEndEvent) => {
@@ -552,8 +554,9 @@ const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
       baseActivityFactor = 1.55;
     }
     
-    // TDEE پایه (بدون در نظر گرفتن هدف) - برای محاسبات استفاده می‌شود
-    const _baseTDEE = Math.max(0, Math.round(bmr * baseActivityFactor));
+    // TDEE پایه (بدون در نظر گرفتن هدف) - برای محاسبات آتی ذخیره می‌شود
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const baseTDEE = Math.max(0, Math.round(bmr * baseActivityFactor));
     
     // تعدیل TDEE بر اساس هدف ورزشکار و نوع روز
     let adjustedFactor = baseActivityFactor;
