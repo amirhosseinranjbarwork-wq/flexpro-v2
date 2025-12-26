@@ -43,14 +43,17 @@ export const Hero = () => {
             
             <div className="flex flex-col sm:flex-row gap-4">
               <Link
-                to="/register"
+                to="/dashboard"
                 className="inline-flex items-center justify-center px-8 py-4 text-base font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 transition-all duration-200"
               >
-                شروع دوره آزمایشی <ArrowLeft className="mr-2 w-5 h-5" />
+                ورود به پنل مربی <ArrowLeft className="mr-2 w-5 h-5" />
               </Link>
-              <button className="inline-flex items-center justify-center px-8 py-4 text-base font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-750 transition-all duration-200">
+              <Link
+                to="/dashboard"
+                className="inline-flex items-center justify-center px-8 py-4 text-base font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-750 transition-all duration-200"
+              >
                 <Play className="ml-2 w-5 h-5 fill-current" /> مشاهده دمو
-              </button>
+              </Link>
             </div>
             
             <div className="mt-10 flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">

@@ -36,7 +36,7 @@ export const Footer = () => {
               <li><a href="#" className="hover:text-blue-600 dark:hover:text-blue-400">درباره ما</a></li>
               <li><a href="#" className="hover:text-blue-600 dark:hover:text-blue-400">بلاگ</a></li>
               <li><a href="#" className="hover:text-blue-600 dark:hover:text-blue-400">فرصت‌های شغلی</a></li>
-              <li><Link to="/login" className="hover:text-blue-600 dark:hover:text-blue-400">ورود</Link></li>
+              <li><Link to="/dashboard" className="hover:text-blue-600 dark:hover:text-blue-400">ورود</Link></li>
             </ul>
           </div>
         </div>

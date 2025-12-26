@@ -13,7 +13,7 @@ import {
 } from '../utils/localAuth';
 
 type AuthFn = (identifier: string, password: string) => Promise<void>;
-type RegisterFn = (params: { email?: string; password: string; fullName: string; role: string; username: string }) => Promise<void>;
+type RegisterFn = (params: { email?: string; password: string; fullName: string; role: string; username: string }, forceLocal?: boolean) => Promise<void>;
 
 interface Profile {
   id?: string;
@@ -81,8 +81,8 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   }, []);
 
   useEffect(() => {
-    // Use mock mode only when explicitly enabled via environment variable
-    const useMockMode = import.meta.env.VITE_USE_MOCK === 'true';
+    // Use mock mode when explicitly enabled OR when Supabase is not available (for development)
+    const useMockMode = import.meta.env.VITE_USE_MOCK === 'true' || (!isSupabaseEnabled || !supabase);
     
     if (useMockMode) {
       // Check URL parameters for role
@@ -568,7 +568,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     setProfile(null);
   }, []);
 
-  const register: RegisterFn = useCallback(async ({ email, password, fullName, role: r, username }) => {
+  const register: RegisterFn = useCallback(async ({ email, password, fullName, role: r, username }, forceLocal = false) => {
     // Check if mock mode is enabled
     if (import.meta.env.VITE_USE_MOCK === 'true') {
       console.log('⚡ Mock Mode: Simulating successful registration');
@@ -576,8 +576,8 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       return;
     }
 
-    // Use local registration if Supabase is not available
-    if (!isSupabaseEnabled || !supabase) {
+    // Use local registration if Supabase is not available or forceLocal is true
+    if (!isSupabaseEnabled || !supabase || forceLocal) {
       if (import.meta.env.DEV) {
         console.log('🔒 Local Mode: Attempting local registration');
       }
@@ -871,7 +871,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
           role: r,
           email: finalEmail,
           username
-        } as unknown as Record<string, unknown>);
+        } as Record<string, unknown>).select().single();
         
         if (profileError) {
           // اگر خطای API است، به حالت محلی برگرد

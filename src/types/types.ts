@@ -33,8 +33,8 @@ export type PermissionAction =
   | 'restoreBackup'
   | 'resetSystem';
 
-// ========== Workout Types ==========
-export type WorkoutMode = 'resist' | 'cardio' | 'corrective' | 'warmup' | 'cooldown';
+// ========== Legacy Workout Types (for backward compatibility) ==========
+export type WorkoutMode = 'resist' | 'cardio' | 'corrective' | 'warmup' | 'cooldown' | 'plyometric';
 
 export type WorkoutSystemType =
   | 'normal'
@@ -57,9 +57,20 @@ export type WorkoutSystemType =
   | 'cardio'
   | 'corrective'
   | 'warmup'
-  | 'cooldown';
+  | 'cooldown'
+  // New scientific systems
+  | 'reverse_pyramid'
+  | 'rest_pause'
+  | 'eccentric'
+  | 'pause_rep'
+  | 'blood_flow_restriction'
+  | 'mechanical_drop'
+  | 'pre_exhaust'
+  | 'post_exhaust';
 
+// Legacy WorkoutItem (maintained for backward compatibility)
 export interface WorkoutItem {
+  id?: string;
   type?: WorkoutSystemType;
   mode?: WorkoutMode;
   name: string;
@@ -78,6 +89,32 @@ export interface WorkoutItem {
   holdTime?: string | number;
   note?: string;
   nasmPhase?: string;
+  // New scientific parameters
+  rpe?: number;                   // Rate of Perceived Exertion (1-10)
+  rir?: number;                   // Reps In Reserve (0-5)
+  weight?: number;                // Weight in kg
+  weightUnit?: 'kg' | 'lb';
+  targetMuscle?: string;
+  equipment?: string;
+  // Cardio specific
+  heartRateZone?: 1 | 2 | 3 | 4 | 5;
+  cardioMethod?: string;
+  workDuration?: number;          // seconds
+  restDuration?: number;          // seconds
+  intervals?: number;
+  targetHeartRate?: number;
+  // Plyometric specific
+  contacts?: number;              // Ground contacts
+  boxHeight?: number;             // cm
+  plyoIntensity?: 'low' | 'moderate' | 'high' | 'very_high' | 'shock';
+  landingType?: 'step_down' | 'jump_down' | 'rebound';
+  // Corrective specific
+  correctiveType?: string;
+  contractionType?: string;
+  stretchSide?: 'left' | 'right' | 'both';
+  pressure?: 'light' | 'moderate' | 'deep';
+  passes?: number;
+  breathCount?: number;
 }
 
 // ========== Nutrition Types ==========
@@ -195,12 +232,19 @@ export interface Template {
 }
 
 // ========== Print Types ==========
-export type PrintType = 'training' | 'nutrition' | 'supplements' | 'profile';
+export type PrintType =
+  | 'training'
+  | 'nutrition'
+  | 'supplements'
+  | 'profile'
+  | 'client-report'
+  | 'progress'
+  | 'all';
 
 export interface PrintData {
   html: string;
   title: string;
-  type: 'program' | 'client-report' | 'progress';
+  type: PrintType;
 }
 
 // ========== Supabase Database Types ==========
@@ -273,7 +317,7 @@ export interface AppContextType {
   restoreData: (file: File) => void;
   resetSystem: () => void;
   printData: PrintData | null;
-  handlePrintPreview: (type: PrintType, user?: User, html?: string) => void;
+  handlePrintPreview: (type: PrintType, html: string, title?: string) => void;
   closePrintModal: () => void;
   downloadPDF: () => Promise<void> | void;
 }
@@ -294,6 +338,8 @@ export interface DataContextType {
   setActiveUserId: (id: UserId | null) => void;
   hasPermission: (action: PermissionAction, targetUserId?: UserId | null) => boolean;
   saveUser: (user: UserInput) => Promise<void>;
+  addUser: (user: UserInput) => Promise<void>;
+  updateUser: (userId: UserId, user: UserInput) => Promise<void>;
   deleteUser: (id: UserId) => Promise<void>;
   acceptRequest: (request: ProgramRequest) => Promise<void>;
   rejectRequest: (request: ProgramRequest) => Promise<void>;

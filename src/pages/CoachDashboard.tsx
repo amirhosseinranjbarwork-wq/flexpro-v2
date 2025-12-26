@@ -9,7 +9,7 @@ import {
   UtensilsCrossed, Pill, Printer, Activity, Award, BarChart3,
   Settings, TrendingUp, Bell, Calendar, Search, Plus, Edit,
   ChevronRight, Target, Zap, Heart, Star, Clock, CheckCircle2,
-  AlertCircle, FileText, Copy, Shield, Sparkles
+  AlertCircle, FileText, Copy, Shield, Sparkles, Trash2
 } from 'lucide-react';
 
 // Lazy load panels
@@ -21,9 +21,10 @@ const ClientInfoPanel = lazy(() => import('../components/ClientInfoPanel'));
 const PrintPanel = lazy(() => import('../components/print/PrintPanel'));
 
 import UserModal from '../components/UserModal';
-import type { UserId, UserInput } from '../types/index';
-import { fetchClientById, getOrCreateCoachCode, upsertClient } from '../lib/supabaseApi';
-import { mapClientToUser } from '../context/DataContext';
+import type { User, UserId, UserInput } from '../types/index';
+import { getOrCreateCoachCode } from '../lib/supabaseApi';
+import PrintModal from '../components/PrintModal';
+import { generateNutritionProgramHTML, generateSupplementProgramHTML, generateTrainingProgramHTML } from '../utils/printGenerators';
 
 // Loading Component
 const PanelLoadingFallback = () => (
@@ -87,52 +88,80 @@ const QuickAction = ({ icon: Icon, label, onClick, color }: any) => (
 );
 
 // Student Card Component
-const StudentCard = ({ student, onClick, onSelect }: any) => (
+const StudentCard = ({ student, onClick, onSelect, onEdit, onDelete, isSelected }: any) => (
   <motion.div
     whileHover={{ scale: 1.02, y: -4 }}
-    onClick={() => onSelect(student.id)}
-    className="group relative cursor-pointer"
+    className={`group relative cursor-pointer ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
   >
     <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-    <div className="relative bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 hover:border-slate-600 transition-all duration-300">
-      <div className="flex items-center gap-4 mb-4">
-        <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center text-white text-xl font-bold">
-          {student.name?.charAt(0) || 'S'}
-        </div>
-        <div className="flex-1">
-          <h3 className="text-white font-bold text-lg">{student.name || 'شاگرد جدید'}</h3>
-          <p className="text-slate-400 text-sm">{student.goal || 'هدف تعیین نشده'}</p>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-3 gap-3">
-        <div className="text-center p-3 bg-slate-800/50 rounded-xl">
-          <div className="text-blue-400 text-sm mb-1">وزن</div>
-          <div className="text-white font-bold">{student.weight || '-'}</div>
-        </div>
-        <div className="text-center p-3 bg-slate-800/50 rounded-xl">
-          <div className="text-purple-400 text-sm mb-1">قد</div>
-          <div className="text-white font-bold">{student.height || '-'}</div>
-        </div>
-        <div className="text-center p-3 bg-slate-800/50 rounded-xl">
-          <div className="text-pink-400 text-sm mb-1">سطح</div>
-          <div className="text-white font-bold text-xs">{student.level || '-'}</div>
-        </div>
-      </div>
-      
-      <div className="mt-4 flex items-center gap-2">
+    <div className={`relative bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl border ${isSelected ? 'border-blue-500' : 'border-slate-700/50'} rounded-2xl p-6 hover:border-slate-600 transition-all duration-300`}>
+      {/* Action Buttons */}
+      <div className="absolute top-3 left-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
-          onClick={(e) => { e.stopPropagation(); onClick('training'); }}
-          className="flex-1 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg text-blue-400 text-sm font-medium transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit?.(student);
+          }}
+          className="p-2 bg-blue-500/20 hover:bg-blue-500/30 rounded-lg transition-colors"
+          title="ویرایش"
         >
-          برنامه تمرین
+          <Edit size={16} className="text-blue-400" />
         </button>
         <button
-          onClick={(e) => { e.stopPropagation(); onClick('nutrition'); }}
-          className="flex-1 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 rounded-lg text-purple-400 text-sm font-medium transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete?.(student.id);
+          }}
+          className="p-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg transition-colors"
+          title="حذف"
         >
-          برنامه تغذیه
+          <Trash2 size={16} className="text-red-400" />
         </button>
+      </div>
+
+      <div 
+        onClick={() => onSelect(student.id)}
+        className="cursor-pointer"
+      >
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center text-white text-xl font-bold">
+            {student.name?.charAt(0) || 'S'}
+          </div>
+          <div className="flex-1">
+            <h3 className="text-white font-bold text-lg">{student.name || 'شاگرد جدید'}</h3>
+            <p className="text-slate-400 text-sm">{student.goal || 'هدف تعیین نشده'}</p>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-3">
+          <div className="text-center p-3 bg-slate-800/50 rounded-xl">
+            <div className="text-blue-400 text-sm mb-1">وزن</div>
+            <div className="text-white font-bold">{student.weight || '-'}</div>
+          </div>
+          <div className="text-center p-3 bg-slate-800/50 rounded-xl">
+            <div className="text-purple-400 text-sm mb-1">قد</div>
+            <div className="text-white font-bold">{student.height || '-'}</div>
+          </div>
+          <div className="text-center p-3 bg-slate-800/50 rounded-xl">
+            <div className="text-pink-400 text-sm mb-1">سطح</div>
+            <div className="text-white font-bold text-xs">{student.level || '-'}</div>
+          </div>
+        </div>
+        
+        <div className="mt-4 flex items-center gap-2">
+          <button
+            onClick={(e) => { e.stopPropagation(); onClick('training'); }}
+            className="flex-1 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg text-blue-400 text-sm font-medium transition-colors"
+          >
+            برنامه تمرین
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onClick('nutrition'); }}
+            className="flex-1 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 rounded-lg text-purple-400 text-sm font-medium transition-colors"
+          >
+            برنامه تغذیه
+          </button>
+        </div>
       </div>
     </div>
   </motion.div>
@@ -142,8 +171,8 @@ type TabType = 'dashboard' | 'students' | 'training' | 'nutrition' | 'supplement
 
 export default function CoachDashboard() {
   const { user, signOut, profile } = useAuth();
-  const { theme, toggleTheme } = useUI();
-  const { users, setUsers, selectedUser, setSelectedUser, addUser, updateUser } = useData();
+  const { theme, toggleTheme, printData, handlePrintPreview, closePrintModal, downloadPDF } = useUI();
+  const { users, activeUser, addUser, updateUser, deleteUser, setActiveUserId, updateActiveUser } = useData();
   
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -175,13 +204,27 @@ export default function CoachDashboard() {
     );
   }, [users, searchQuery]);
 
-  // Stats
-  const stats = useMemo(() => ({
-    totalStudents: users.length,
-    activePrograms: users.filter(u => u.plans?.training?.length > 0).length,
-    completedWorkouts: users.reduce((sum, u) => sum + (u.workoutLogs?.length || 0), 0),
-    avgProgress: users.length > 0 ? Math.round(users.reduce((sum, u) => sum + (u.progress || 0), 0) / users.length) : 0
-  }), [users]);
+  // Stats (computed from actual local data structure)
+  const stats = useMemo(() => {
+    const totalStudents = users.length;
+    const activePrograms = users.filter((u) => {
+      const hasWorkout = !!u.plans?.workouts && Object.values(u.plans.workouts).some((day) => (day?.length ?? 0) > 0);
+      const hasDiet = (u.plans?.diet?.length ?? 0) > 0 || (u.plans?.dietRest?.length ?? 0) > 0;
+      const hasSupps = (u.plans?.supps?.length ?? 0) > 0;
+      return hasWorkout || hasDiet || hasSupps;
+    }).length;
+
+    const plannedExercises = users.reduce((sum, u) => {
+      const dayMap = u.plans?.workouts ?? {};
+      const count = Object.values(dayMap).reduce((daySum, day) => daySum + (day?.length ?? 0), 0);
+      return sum + count;
+    }, 0);
+
+    const progressEntries = users.reduce((sum, u) => sum + (u.plans?.prog?.length ?? 0), 0);
+    const avgProgressEntries = totalStudents > 0 ? Math.round(progressEntries / totalStudents) : 0;
+
+    return { totalStudents, activePrograms, plannedExercises, avgProgressEntries };
+  }, [users]);
 
   // Handlers
   const handleAddStudent = useCallback(() => {
@@ -198,10 +241,8 @@ export default function CoachDashboard() {
     try {
       if (editingUser) {
         await updateUser(editingUser.id, userData);
-        toast.success('اطلاعات شاگرد به‌روزرسانی شد');
       } else {
         await addUser(userData);
-        toast.success('شاگرد جدید اضافه شد');
       }
       setShowUserModal(false);
       setEditingUser(null);
@@ -211,9 +252,119 @@ export default function CoachDashboard() {
   }, [editingUser, addUser, updateUser]);
 
   const handleSelectStudent = useCallback((studentId: UserId) => {
-    setSelectedUser(studentId);
+    setActiveUserId(studentId);
     setActiveTab('training');
-  }, [setSelectedUser]);
+  }, [setActiveUserId]);
+
+  const handleDeleteStudent = useCallback(async (studentId: UserId) => {
+    // DataContext.deleteUser handles confirm + state updates + success UI itself
+    // (don't show success toast here; otherwise we'd show it even when user cancels)
+    try {
+      await deleteUser(studentId);
+    } catch {
+      toast.error('خطا در حذف شاگرد');
+    }
+  }, [deleteUser]);
+  const handleGeneratePrint = useCallback(
+    (type: string, data?: any) => {
+      if (!activeUser) {
+        toast.error('لطفاً ابتدا یک شاگرد را انتخاب کنید');
+        return;
+      }
+
+      const programType = data?.programType as 'workout' | 'diet' | 'supplements' | 'all' | undefined;
+
+      // Programs
+      if (type === 'program') {
+        if (programType === 'workout') {
+          handlePrintPreview('training', generateTrainingProgramHTML(activeUser), 'پرینت برنامه تمرینی');
+          return;
+        }
+        if (programType === 'diet') {
+          handlePrintPreview('nutrition', generateNutritionProgramHTML(activeUser), 'پرینت برنامه غذایی');
+          return;
+        }
+        if (programType === 'supplements') {
+          handlePrintPreview('supplements', generateSupplementProgramHTML(activeUser), 'پرینت برنامه مکمل');
+          return;
+        }
+        if (programType === 'all') {
+          const html = [
+            generateTrainingProgramHTML(activeUser),
+            '<div class="page-break"></div>',
+            generateNutritionProgramHTML(activeUser),
+            '<div class="page-break"></div>',
+            generateSupplementProgramHTML(activeUser)
+          ].join('\n');
+          handlePrintPreview('all', html, 'پرینت همه برنامه‌ها');
+          return;
+        }
+      }
+
+      // Client report (basic)
+      if (type === 'client-report') {
+        const html = `
+          <div style="font-family: 'Vazirmatn', Tahoma, Arial, sans-serif; direction: rtl; padding: 20px;">
+            <h1 style="margin: 0 0 10px;">گزارش شاگرد</h1>
+            <p style="margin: 0 0 20px; color: #666;">${activeUser.name || 'بدون نام'} — ${new Date().toLocaleDateString('fa-IR')}</p>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tbody>
+                <tr><td style="border:1px solid #ddd; padding:8px; font-weight:700;">نام</td><td style="border:1px solid #ddd; padding:8px;">${activeUser.name || '-'}</td></tr>
+                <tr><td style="border:1px solid #ddd; padding:8px; font-weight:700;">سن</td><td style="border:1px solid #ddd; padding:8px;">${activeUser.age ?? '-'}</td></tr>
+                <tr><td style="border:1px solid #ddd; padding:8px; font-weight:700;">قد</td><td style="border:1px solid #ddd; padding:8px;">${activeUser.height ?? '-'}</td></tr>
+                <tr><td style="border:1px solid #ddd; padding:8px; font-weight:700;">وزن</td><td style="border:1px solid #ddd; padding:8px;">${activeUser.weight ?? '-'}</td></tr>
+                <tr><td style="border:1px solid #ddd; padding:8px; font-weight:700;">هدف</td><td style="border:1px solid #ddd; padding:8px;">${activeUser.goal ?? '-'}</td></tr>
+              </tbody>
+            </table>
+            <div style="margin-top: 16px;">
+              <h2 style="margin: 0 0 10px;">یادداشت‌ها</h2>
+              <div style="border:1px solid #ddd; padding:12px; min-height:48px;">${activeUser.notes ? String(activeUser.notes) : '-'}</div>
+            </div>
+          </div>
+        `;
+        handlePrintPreview('client-report', html, 'گزارش شاگرد');
+        return;
+      }
+
+      // Progress (basic)
+      if (type === 'progress') {
+        const prog = activeUser.plans?.prog ?? [];
+        const rows = prog
+          .map(
+            (p) => `
+              <tr>
+                <td style="border:1px solid #ddd; padding:8px;">${p.date || '-'}</td>
+                <td style="border:1px solid #ddd; padding:8px; text-align:center;">${p.weight ?? '-'}</td>
+                <td style="border:1px solid #ddd; padding:8px; text-align:center;">${p.bf ?? '-'}</td>
+                <td style="border:1px solid #ddd; padding:8px;">${p.note ?? '-'}</td>
+              </tr>
+            `
+          )
+          .join('');
+        const html = `
+          <div style="font-family: 'Vazirmatn', Tahoma, Arial, sans-serif; direction: rtl; padding: 20px;">
+            <h1 style="margin: 0 0 10px;">گزارش پیشرفت</h1>
+            <p style="margin: 0 0 20px; color: #666;">${activeUser.name || 'بدون نام'} — ${new Date().toLocaleDateString('fa-IR')}</p>
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background:#f5f5f5;">
+                  <th style="border:1px solid #ddd; padding:8px; text-align:right;">تاریخ</th>
+                  <th style="border:1px solid #ddd; padding:8px; text-align:center;">وزن</th>
+                  <th style="border:1px solid #ddd; padding:8px; text-align:center;">% چربی</th>
+                  <th style="border:1px solid #ddd; padding:8px; text-align:right;">یادداشت</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows || `<tr><td colspan="4" style="border:1px solid #ddd; padding:14px; text-align:center; color:#666;">رکوردی ثبت نشده است</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        `;
+        handlePrintPreview('progress', html, 'گزارش پیشرفت');
+      }
+    },
+    [activeUser, handlePrintPreview]
+  );
 
   const copyCoachCode = useCallback(() => {
     if (coachCode) {
@@ -230,7 +381,7 @@ export default function CoachDashboard() {
     { id: 'nutrition' as TabType, icon: UtensilsCrossed, label: 'برنامه تغذیه', color: 'from-green-500 to-emerald-500' },
     { id: 'supplements' as TabType, icon: Pill, label: 'مکمل‌ها', color: 'from-pink-500 to-rose-500' },
     { id: 'print' as TabType, icon: Printer, label: 'چاپ', color: 'from-indigo-500 to-blue-500' },
-    { id: 'profile' as TabType, icon: Settings, label: 'تنظیمات', color: 'from-slate-500 to-slate-600' }
+    { id: 'profile' as TabType, icon: BarChart3, label: 'پیشرفت', color: 'from-slate-500 to-slate-600' }
   ];
 
   return (
@@ -238,7 +389,7 @@ export default function CoachDashboard() {
       <AnimatedBackground />
 
       {/* Top Header */}
-      <header className="fixed top-0 right-0 left-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/50">
+      <header className="fixed top-0 right-0 left-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/50 relative">
         <div className="flex items-center justify-between h-16 px-4">
           {/* Logo & Menu */}
           <div className="flex items-center gap-4">
@@ -311,6 +462,44 @@ export default function CoachDashboard() {
             </button>
           </div>
         </div>
+
+        {/* Notifications Dropdown (basic placeholder) */}
+        <AnimatePresence>
+          {showNotifications && (
+            <motion.div
+              initial={{ opacity: 0, y: -8, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.98 }}
+              transition={{ duration: 0.15 }}
+              className="absolute top-full left-4 mt-2 w-[320px] max-w-[calc(100vw-2rem)] bg-slate-900/95 backdrop-blur-xl border border-slate-700/60 rounded-2xl shadow-2xl overflow-hidden"
+            >
+              <div className="p-4 border-b border-slate-800/60">
+                <div className="font-bold text-white">اعلان‌ها</div>
+                <div className="text-xs text-slate-400">آخرین وضعیت</div>
+              </div>
+              <div className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center">
+                    <Bell size={18} className="text-slate-300" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm text-slate-200 font-semibold">اعلانی برای نمایش وجود ندارد</div>
+                    <div className="text-xs text-slate-500 mt-1">
+                      بعداً این بخش می‌تواند درخواست‌های برنامه و پیام‌ها را نشان دهد.
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowNotifications(false)}
+                className="w-full text-sm py-3 bg-slate-800/40 hover:bg-slate-800/60 transition-colors text-slate-200"
+              >
+                بستن
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Mobile Search */}
         <div className="md:hidden px-4 pb-3">
@@ -427,16 +616,16 @@ export default function CoachDashboard() {
                   />
                   <StatCard
                     icon={CheckCircle2}
-                    label="تمرین‌های انجام شده"
-                    value={stats.completedWorkouts}
+                    label="حرکات ثبت شده"
+                    value={stats.plannedExercises}
                     trend={15}
                     color="from-green-500 to-emerald-500"
                     delay={0.2}
                   />
                   <StatCard
                     icon={TrendingUp}
-                    label="میانگین پیشرفت"
-                    value={`${stats.avgProgress}%`}
+                    label="میانگین رکوردهای پیشرفت"
+                    value={stats.avgProgressEntries}
                     trend={5}
                     color="from-orange-500 to-red-500"
                     delay={0.3}
@@ -482,11 +671,14 @@ export default function CoachDashboard() {
                       <StudentCard
                         key={student.id}
                         student={student}
+                        isSelected={String(activeUser?.id) === String(student.id)}
                         onClick={(tab: TabType) => {
-                          setSelectedUser(student.id);
+                          setActiveUserId(student.id);
                           setActiveTab(tab);
                         }}
                         onSelect={handleSelectStudent}
+                        onEdit={handleEditStudent}
+                        onDelete={handleDeleteStudent}
                       />
                     ))}
                   </div>
@@ -529,11 +721,14 @@ export default function CoachDashboard() {
                     <StudentCard
                       key={student.id}
                       student={student}
+                      isSelected={String(activeUser?.id) === String(student.id)}
                       onClick={(tab: TabType) => {
-                        setSelectedUser(student.id);
+                        setActiveUserId(student.id);
                         setActiveTab(tab);
                       }}
                       onSelect={handleSelectStudent}
+                      onEdit={handleEditStudent}
+                      onDelete={handleDeleteStudent}
                     />
                   ))}
                 </div>
@@ -543,40 +738,76 @@ export default function CoachDashboard() {
             {/* Training Tab */}
             {activeTab === 'training' && (
               <Suspense fallback={<PanelLoadingFallback />}>
-                <TrainingPanel />
+                <TrainingPanel activeUser={activeUser ?? undefined} onUpdateUser={updateActiveUser} />
               </Suspense>
             )}
 
             {/* Nutrition Tab */}
             {activeTab === 'nutrition' && (
               <Suspense fallback={<PanelLoadingFallback />}>
-                <DietPanel />
+                <DietPanel activeUser={activeUser ?? undefined} onUpdateUser={updateActiveUser} />
               </Suspense>
             )}
 
             {/* Supplements Tab */}
             {activeTab === 'supplements' && (
-              <Suspense fallback={<PanelLoadingFallback />}>
-                <SupplementsPanel />
-              </Suspense>
+              activeUser ? (
+                <Suspense fallback={<PanelLoadingFallback />}>
+                  <SupplementsPanel activeUser={activeUser as User} onUpdateUser={updateActiveUser} />
+                </Suspense>
+              ) : (
+                <div className="flex items-center justify-center min-h-[400px]">
+                  <div className="text-center">
+                    <Pill className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+                    <p className="text-slate-400">لطفا ابتدا یک کاربر را انتخاب کنید</p>
+                  </div>
+                </div>
+              )
             )}
 
             {/* Print Tab */}
             {activeTab === 'print' && (
-              <Suspense fallback={<PanelLoadingFallback />}>
-                <PrintPanel />
-              </Suspense>
+              activeUser ? (
+                <Suspense fallback={<PanelLoadingFallback />}>
+                  <PrintPanel user={activeUser as User} onGeneratePrint={handleGeneratePrint} />
+                </Suspense>
+              ) : (
+                <div className="flex items-center justify-center min-h-[400px]">
+                  <div className="text-center">
+                    <Printer className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+                    <p className="text-slate-400">لطفا ابتدا یک کاربر را انتخاب کنید</p>
+                  </div>
+                </div>
+              )
             )}
 
             {/* Profile Tab */}
             {activeTab === 'profile' && (
-              <Suspense fallback={<PanelLoadingFallback />}>
-                <ProfilePanel />
-              </Suspense>
+              activeUser ? (
+                <Suspense fallback={<PanelLoadingFallback />}>
+                  <ProfilePanel activeUser={activeUser as User} onUpdateUser={updateActiveUser} />
+                </Suspense>
+              ) : (
+                <div className="flex items-center justify-center min-h-[400px]">
+                  <div className="text-center">
+                    <BarChart3 className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+                    <p className="text-slate-400">لطفا ابتدا یک کاربر را انتخاب کنید</p>
+                  </div>
+                </div>
+              )
             )}
           </AnimatePresence>
         </div>
       </main>
+
+      {/* Print Modal (global for coach dashboard) */}
+      {printData && (
+        <PrintModal
+          data={printData}
+          onClose={closePrintModal}
+          onDownload={downloadPDF}
+        />
+      )}
 
       {/* User Modal */}
       {showUserModal && (

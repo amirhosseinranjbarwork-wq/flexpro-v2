@@ -82,11 +82,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route
           path="/dashboard"
-          element={
-            <PrivateRoute signedIn={!!user} fallback="/login">
-              <Dashboard />
-            </PrivateRoute>
-          }
+          element={<Dashboard />}
         />
         <Route
           path="/admin"

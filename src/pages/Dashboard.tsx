@@ -48,8 +48,15 @@ const Dashboard: React.FC = () => {
     return <LoadingFallback />;
   }
 
+  // Temporarily disabled: Auto-login as coach if no user
+  // This allows direct access to dashboard without login
   if (!user) {
-    return <Navigate to="/login" replace />;
+    // Redirect to coach dashboard anyway (mock mode will handle it)
+    return (
+      <Suspense fallback={<LoadingFallback />}>
+        <CoachDashboard />
+      </Suspense>
+    );
   }
 
   if (role === 'coach' || profile?.role === 'coach') {

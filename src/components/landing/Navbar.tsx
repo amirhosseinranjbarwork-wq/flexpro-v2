@@ -71,29 +71,13 @@ export const Navbar = () => {
               {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
             </button>
 
-            {user ? (
-              <Link
-                to="/dashboard"
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2"
-              >
-                داشبورد <ArrowLeft size={16} />
-              </Link>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-white transition-colors"
-                >
-                  ورود
-                </Link>
-                <Link
-                  to="/register"
-                  className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg shadow-lg shadow-blue-500/20 transition-all hover:scale-105"
-                >
-                  شروع رایگان
-                </Link>
-              </>
-            )}
+            {/* Temporarily disabled login - direct to dashboard */}
+            <Link
+              to="/dashboard"
+              className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg shadow-lg shadow-blue-500/20 transition-all hover:scale-105"
+            >
+              ورود به پنل مربی
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -135,32 +119,14 @@ export const Navbar = () => {
                 </a>
               ))}
               <div className="pt-4 flex flex-col gap-3">
-                 {user ? (
-                    <Link
-                      to="/dashboard"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="w-full px-4 py-3 text-center text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-                    >
-                      ورود به داشبورد
-                    </Link>
-                 ) : (
-                  <>
-                    <Link
-                      to="/login"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="w-full px-4 py-3 text-center text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                    >
-                      ورود
-                    </Link>
-                    <Link
-                      to="/register"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="w-full px-4 py-3 text-center text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg shadow-lg shadow-blue-500/20 transition-colors"
-                    >
-                      شروع رایگان
-                    </Link>
-                  </>
-                 )}
+                 {/* Temporarily disabled login - direct to dashboard */}
+                 <Link
+                   to="/dashboard"
+                   onClick={() => setMobileMenuOpen(false)}
+                   className="w-full px-4 py-3 text-center text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg shadow-lg shadow-blue-500/20 transition-colors"
+                 >
+                   ورود به پنل مربی
+                 </Link>
               </div>
             </div>
           </motion.div>

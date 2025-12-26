@@ -7,8 +7,11 @@ interface PrintProgramsProps {
 }
 
 const PrintPrograms: React.FC<PrintProgramsProps> = ({ user, onPrint }) => {
-  const hasWorkoutProgram = user.plans?.workouts && Object.keys(user.plans.workouts).length > 0;
-  const hasDietProgram = user.plans?.diet && user.plans.diet.length > 0;
+  const hasWorkoutProgram =
+    !!user.plans?.workouts &&
+    Object.values(user.plans.workouts).some((day) => (day?.length ?? 0) > 0);
+  const hasDietProgram =
+    (user.plans?.diet?.length ?? 0) > 0 || (user.plans?.dietRest?.length ?? 0) > 0;
   const hasSupplementProgram = user.plans?.supps && user.plans.supps.length > 0;
 
   return (
@@ -32,7 +35,7 @@ const PrintPrograms: React.FC<PrintProgramsProps> = ({ user, onPrint }) => {
             <div>
               <h3 className="text-lg font-bold text-[var(--text-primary)]">برنامه تمرینی</h3>
               <p className="text-sm text-[var(--text-secondary)]">
-                {hasWorkoutProgram ? `${Object.keys(user.plans.workouts).length} برنامه` : 'برنامه‌ای موجود نیست'}
+                {hasWorkoutProgram ? `${Object.values(user.plans.workouts).filter(d => (d?.length ?? 0) > 0).length} جلسه` : 'برنامه‌ای موجود نیست'}
               </p>
             </div>
           </div>
@@ -61,7 +64,7 @@ const PrintPrograms: React.FC<PrintProgramsProps> = ({ user, onPrint }) => {
             <div>
               <h3 className="text-lg font-bold text-[var(--text-primary)]">برنامه غذایی</h3>
               <p className="text-sm text-[var(--text-secondary)]">
-                {hasDietProgram ? `${user.plans.diet.length} وعده غذایی` : 'برنامه‌ای موجود نیست'}
+                {hasDietProgram ? `${(user.plans.diet?.length ?? 0) + (user.plans.dietRest?.length ?? 0)} آیتم` : 'برنامه‌ای موجود نیست'}
               </p>
             </div>
           </div>

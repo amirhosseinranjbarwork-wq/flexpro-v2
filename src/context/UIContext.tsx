@@ -3,6 +3,14 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 import { toast } from 'react-hot-toast';
 import type { TabKey, PrintType, PrintData } from '../types/index';
 
+// Type declarations for dynamically loaded PDF libraries
+declare global {
+  interface Window {
+    html2canvas?: typeof import('html2canvas').default;
+    jsPDF?: typeof import('jspdf').default;
+  }
+}
+
 interface UIContextType {
   theme: 'light' | 'dark';
   currentTab: TabKey;
@@ -10,7 +18,7 @@ interface UIContextType {
   sidebarOpen: boolean;
   toggleTheme: () => void;
   setCurrentTab: (tab: TabKey) => void;
-  handlePrintPreview: (type: PrintType, user?: import('../types/index').User, html?: string) => void;
+  handlePrintPreview: (type: PrintType, html: string, title?: string) => void;
   closePrintModal: () => void;
   downloadPDF: () => Promise<void>;
   setSidebarOpen: (open: boolean) => void;
@@ -39,12 +47,29 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     document.documentElement.classList.toggle('dark', t === 'dark');
   }, [theme]);
 
-  const handlePrintPreview = useCallback((type: PrintType, user?: import('../types/index').User, html?: string) => {
-    if (html) {
-      setPrintData({ html });
-    } else {
-      setPrintData({ html: '<div style="padding: 20px;">محتوایی برای چاپ یافت نشد</div>' });
-    }
+  const handlePrintPreview = useCallback((type: PrintType, html: string, title?: string) => {
+    const fallbackHtml = '<div style="padding: 20px;">محتوایی برای چاپ یافت نشد</div>';
+    const computedTitle =
+      title ||
+      (type === 'training'
+        ? 'پرینت برنامه تمرینی'
+        : type === 'nutrition'
+          ? 'پرینت برنامه غذایی'
+          : type === 'supplements'
+            ? 'پرینت برنامه مکمل'
+            : type === 'client-report'
+              ? 'گزارش شاگرد'
+              : type === 'progress'
+                ? 'گزارش پیشرفت'
+                : type === 'all'
+                  ? 'پرینت همه برنامه‌ها'
+                  : 'چاپ');
+
+    setPrintData({
+      html: html || fallbackHtml,
+      title: computedTitle,
+      type
+    } satisfies PrintData);
   }, []);
 
   const closePrintModal = useCallback(() => {

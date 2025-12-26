@@ -28,22 +28,27 @@ const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     
     let html = '';
+    let title = 'چاپ';
     switch(type) {
       case 'training':
         html = generateTrainingProgramHTML(data.activeUser);
+        title = 'پرینت برنامه تمرینی';
         break;
       case 'nutrition':
         html = generateNutritionProgramHTML(data.activeUser);
+        title = 'پرینت برنامه غذایی';
         break;
       case 'supplements':
         html = generateSupplementProgramHTML(data.activeUser);
+        title = 'پرینت برنامه مکمل';
         break;
       default:
         html = '<div>نوع برنامه نامشخص است</div>';
+        title = 'چاپ';
     }
     
     // Update UI with generated HTML
-    ui.handlePrintPreview(type, data.activeUser, html);
+    ui.handlePrintPreview(type, html, title);
   };
 
   const value: AppContextType = {

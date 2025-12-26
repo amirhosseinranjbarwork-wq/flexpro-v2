@@ -11,6 +11,7 @@ interface FloatingActionButtonProps {
   disabled?: boolean;
   tooltip?: string;
   animate?: boolean;
+  children?: React.ReactNode;
 }
 
 // Single FAB

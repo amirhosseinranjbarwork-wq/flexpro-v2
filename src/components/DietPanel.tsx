@@ -9,6 +9,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from '@dnd-kit/utilities';
 import type { User } from '../types/index';
 import { useApp } from '../context/AppContext';
+import { useData } from '../context/DataContext';
 import EmptyState from './ui/EmptyState';
 import { useDebounce } from '../hooks/useDebounce';
 import { DragEndEvent } from '@dnd-kit/core';
@@ -69,12 +70,30 @@ const SortableFoodRow: React.FC<SortableFoodRowProps> = memo(({ item, idx: _idx,
 });
 
 interface DietPanelProps {
-  activeUser: User;
-  onUpdateUser: (_user: User) => void;
+  activeUser?: User | null;
+  onUpdateUser?: (_user: User) => void;
 }
 
-const DietPanel: React.FC<DietPanelProps> = ({ activeUser, onUpdateUser }) => {
+const DietPanel: React.FC<DietPanelProps> = (props) => {
   const { hasPermission } = useApp();
+  const { activeUser: contextActiveUser, updateActiveUser } = useData();
+  
+  // Use props if provided, otherwise use context
+  const activeUser = props.activeUser ?? contextActiveUser;
+  const onUpdateUser = props.onUpdateUser ?? updateActiveUser;
+  
+  // Early return if activeUser is not available
+  if (!activeUser) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <UtensilsCrossed className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+          <p className="text-slate-400">لطفا ابتدا یک کاربر را انتخاب کنید</p>
+        </div>
+      </div>
+    );
+  }
+  
   const canEdit = hasPermission('editProgram', activeUser.id);
   const [dayType, setDayType] = useState('training'); // 'training' یا 'rest'
   const [meal, setMeal] = useState('صبحانه');

@@ -89,7 +89,10 @@ export function generateTrainingProgramHTML(user: User): string {
 export function generateNutritionProgramHTML(user: User): string {
   const today = new Date().toLocaleDateString('fa-IR');
   
-  if (!user.plans?.diet || user.plans.diet.length === 0) {
+  const hasTrainingDiet = (user.plans?.diet?.length ?? 0) > 0;
+  const hasRestDiet = (user.plans?.dietRest?.length ?? 0) > 0;
+
+  if (!hasTrainingDiet && !hasRestDiet) {
     return `<div style="padding: 20px; text-align: center;">هیچ برنامه غذایی ثبت نشده است</div>`;
   }
 
@@ -100,39 +103,61 @@ export function generateNutritionProgramHTML(user: User): string {
         <p style="margin: 5px 0; color: #6B7280;">${user.name || 'بدون نام'}</p>
         <p style="margin: 5px 0; color: #6B7280; font-size: 14px;">تاریخ: ${today}</p>
       </div>
-
-      <table style="width: 100%; border-collapse: collapse;">
-        <thead>
-          <tr style="background-color: #F3F4F6;">
-            <th style="border: 1px solid #D1D5DB; padding: 10px; text-align: right;">غذا</th>
-            <th style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">مقدار</th>
-            <th style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">کالری</th>
-            <th style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">پروتئین</th>
-            <th style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">کربوهیدرات</th>
-            <th style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">چربی</th>
-          </tr>
-        </thead>
-        <tbody>
   `;
 
-  user.plans.diet.forEach((item: any, index: number) => {
-    const bgColor = index % 2 === 0 ? '#FFFFFF' : '#F9FAFB';
-    html += `
-      <tr style="background-color: ${bgColor};">
-        <td style="border: 1px solid #D1D5DB; padding: 10px; text-align: right;">${item.name || '-'}</td>
-        <td style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">${item.amount || '-'}</td>
-        <td style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">${item.calories || '-'}</td>
-        <td style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">${item.protein || '-'}</td>
-        <td style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">${item.carbs || '-'}</td>
-        <td style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">${item.fat || '-'}</td>
-      </tr>
+  const renderDietTable = (title: string, items: any[]) => {
+    if (!items || items.length === 0) return '';
+
+    let section = `
+      <div style="margin-bottom: 25px; page-break-inside: avoid;">
+        <h2 style="color: #10B981; border-right: 4px solid #10B981; padding-right: 10px; margin-bottom: 15px;">${title}</h2>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+          <thead>
+            <tr style="background-color: #F3F4F6;">
+              <th style="border: 1px solid #D1D5DB; padding: 10px; text-align: right;">وعده</th>
+              <th style="border: 1px solid #D1D5DB; padding: 10px; text-align: right;">غذا</th>
+              <th style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">مقدار</th>
+              <th style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">کالری</th>
+              <th style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">پروتئین</th>
+              <th style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">کربوهیدرات</th>
+              <th style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">چربی</th>
+            </tr>
+          </thead>
+          <tbody>
     `;
-  });
+
+    items.forEach((item: any, index: number) => {
+      const bgColor = index % 2 === 0 ? '#FFFFFF' : '#F9FAFB';
+      section += `
+        <tr style="background-color: ${bgColor};">
+          <td style="border: 1px solid #D1D5DB; padding: 10px; text-align: right;">${item.meal || '-'}</td>
+          <td style="border: 1px solid #D1D5DB; padding: 10px; text-align: right; font-weight: bold;">${item.name || '-'}</td>
+          <td style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">${item.amount ?? '-'} ${item.unit ?? ''}</td>
+          <td style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">${item.c ?? '-'}</td>
+          <td style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">${item.p ?? '-'}</td>
+          <td style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">${item.ch ?? '-'}</td>
+          <td style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">${item.f ?? '-'}</td>
+        </tr>
+      `;
+    });
+
+    section += `
+          </tbody>
+        </table>
+      </div>
+    `;
+    return section;
+  };
+
+  if (hasTrainingDiet) {
+    html += renderDietTable('روز تمرینی', user.plans.diet as any[]);
+  }
+
+  if (hasRestDiet) {
+    html += renderDietTable('روز استراحت', user.plans.dietRest as any[]);
+  }
 
   html += `
-        </tbody>
-      </table>
-
       <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #D1D5DB; text-align: center; color: #6B7280; font-size: 12px;">
         <p>تاریخ تولید: ${new Date().toLocaleString('fa-IR')}</p>
       </div>
@@ -161,8 +186,8 @@ export function generateSupplementProgramHTML(user: User): string {
         <thead>
           <tr style="background-color: #F3F4F6;">
             <th style="border: 1px solid #D1D5DB; padding: 10px; text-align: right;">مکمل</th>
-            <th style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">مقدار</th>
-            <th style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">فرکانس</th>
+            <th style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">دوز</th>
+            <th style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">زمان مصرف</th>
             <th style="border: 1px solid #D1D5DB; padding: 10px; text-align: right;">توضیحات</th>
           </tr>
         </thead>
@@ -175,8 +200,8 @@ export function generateSupplementProgramHTML(user: User): string {
       <tr style="background-color: ${bgColor};">
         <td style="border: 1px solid #D1D5DB; padding: 10px; text-align: right;">${item.name || '-'}</td>
         <td style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">${item.dose || '-'}</td>
-        <td style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">${item.frequency || '-'}</td>
-        <td style="border: 1px solid #D1D5DB; padding: 10px; text-align: right;">${item.notes || '-'}</td>
+        <td style="border: 1px solid #D1D5DB; padding: 10px; text-align: center;">${item.time || '-'}</td>
+        <td style="border: 1px solid #D1D5DB; padding: 10px; text-align: right;">${item.note || '-'}</td>
       </tr>
     `;
   });

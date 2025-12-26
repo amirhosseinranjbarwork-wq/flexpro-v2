@@ -476,7 +476,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           const results = await Promise.allSettled([
             // First ensure profile exists
-            supabase?.from('profiles').upsert(profilePayload as unknown as Record<string, unknown>) ?? Promise.resolve({ error: null }),
+            supabase ? supabase.from('profiles').upsert(profilePayload as Record<string, unknown>).select() : Promise.resolve({ data: null, error: null }),
             // Then save client data
             upsertClient(clientPayload as Client),
             // Save workout plan
@@ -664,16 +664,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (import.meta.env.DEV) console.warn('upsertClient error', err);
           });
 
-          await supabase
-            .from('profiles')
-            .upsert({
-              id: req.client_id,
-              coach_id: auth.user.id,
-              updated_at: new Date().toISOString()
-            }, { onConflict: 'id' })
-            .catch(err => {
-              if (import.meta.env.DEV) console.warn('update client profile coach_id error', err);
-            });
+          if (supabase) {
+            await supabase
+              .from('profiles')
+              .upsert({
+                id: req.client_id,
+                coach_id: auth.user.id,
+                updated_at: new Date().toISOString()
+              } as Record<string, unknown>, { onConflict: 'id' })
+              .then(result => {
+                if (result.error && import.meta.env.DEV) {
+                  console.warn('update client profile coach_id error', result.error);
+                }
+              });
+          }
         }
       }
 
