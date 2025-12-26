@@ -8,6 +8,7 @@ import { pushNotificationManager } from './utils/pushNotifications';
 import { ReactQueryProvider } from './lib/queryClient';
 import { AuthProvider } from './context/AuthContext';
 import { AppProvider } from './context/AppContext';
+import { ThemeProvider } from './context/ThemeContext';
 import App from './App';
 
 // Loading component for lazy-loaded components
@@ -110,9 +111,11 @@ root.render(
       <ReactQueryProvider>
         <BrowserRouter>
           <AuthProvider>
-            <AppProvider>
-              <App />
-            </AppProvider>
+            <ThemeProvider>
+              <AppProvider>
+                <App />
+              </AppProvider>
+            </ThemeProvider>
           </AuthProvider>
         </BrowserRouter>
       </ReactQueryProvider>
