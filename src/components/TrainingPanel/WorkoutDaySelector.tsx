@@ -6,7 +6,7 @@
 import React from 'react';
 import { useWorkoutStore } from '../../store/workoutStore';
 import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
+import Badge from '../ui/Badge';
 import { Calendar, Plus } from 'lucide-react';
 
 export const WorkoutDaySelector: React.FC = () => {

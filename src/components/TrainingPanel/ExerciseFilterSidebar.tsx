@@ -9,13 +9,12 @@ import {
   ExerciseCategory,
   MuscleGroup,
   Equipment,
-  MovementPattern,
   DifficultyLevel
 } from '../../types/ultimate-training';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Badge } from '../ui/badge';
+import Badge from '../ui/Badge';
 import { ScrollArea } from '../ui/scroll-area';
 import { VisualBodyMap } from './VisualBodyMap';
 import { 
@@ -121,7 +120,7 @@ export const ExerciseFilterSidebar: React.FC = () => {
               className="text-red-600 hover:text-red-700"
             >
               <X className="w-4 h-4 mr-1" />
-              Clear ({activeFilterCount})
+              Clear
             </Button>
           )}
         </div>
@@ -269,7 +268,7 @@ export const ExerciseFilterSidebar: React.FC = () => {
               {Object.values(DifficultyLevel).map(level => (
                 <Badge
                   key={level}
-                  variant={filters.difficulty?.includes(level) ? 'default' : 'outline'}
+                  variant={filters.difficulty?.includes(level) ? 'primary' : 'default'}
                   className="cursor-pointer"
                   onClick={() => {
                     const current = filters.difficulty || [];

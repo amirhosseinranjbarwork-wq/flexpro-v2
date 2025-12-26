@@ -3,23 +3,20 @@
  * Column 3: The Canvas
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useWorkoutStore } from '../../store/workoutStore';
 import { WorkoutExerciseCard } from './WorkoutExerciseCard';
-import { WorkoutDaySelector } from './WorkoutDaySelector';
 import { Button } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 import {
   Plus,
   Copy,
   Trash2,
   Calendar,
-  Target,
-  Timer,
-  TrendingUp
+  Target
 } from 'lucide-react';
 
 export const WorkoutCanvas: React.FC = () => {
@@ -34,7 +31,6 @@ export const WorkoutCanvas: React.FC = () => {
   } = useWorkoutStore();
 
   const currentDay = getCurrentDay();
-  const [showAddDay, setShowAddDay] = useState(false);
 
   const { setNodeRef, isOver } = useDroppable({
     id: 'workout-canvas',
@@ -50,7 +46,6 @@ export const WorkoutCanvas: React.FC = () => {
   const handleAddDay = () => {
     const dayNumber = currentProgram.weeklySchedule.length + 1;
     addDay(`Day ${dayNumber}`, `Training Day ${dayNumber}`);
-    setShowAddDay(false);
   };
 
   return (

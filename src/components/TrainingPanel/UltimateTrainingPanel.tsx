@@ -5,7 +5,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useWorkoutStore } from '../../store/workoutStore';
 import { Exercise } from '../../types/ultimate-training';
 import { ExerciseLibrary } from './ExerciseLibrary';
@@ -30,15 +29,12 @@ export const UltimateTrainingPanel: React.FC = () => {
     activeDayId,
     isLibraryOpen,
     isSidebarCollapsed,
-    toggleLibrary,
     toggleSidebar,
     createProgram,
-    addDay,
-    getCurrentDay
+    addDay
   } = useWorkoutStore();
 
   const [activeExercise, setActiveExercise] = useState<Exercise | null>(null);
-  const currentDay = getCurrentDay();
 
   // Initialize program if none exists
   useEffect(() => {

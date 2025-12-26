@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { Exercise, ExerciseCategory, Equipment } from '../../types/ultimate-training';
-import { Badge } from '../ui/badge';
+import Badge from '../ui/Badge';
 import {
   Dumbbell,
   Heart,
@@ -148,10 +148,10 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
               {exercise.name}
             </h3>
             <div className="flex flex-wrap gap-1">
-              <Badge variant="outline" className="text-xs px-1.5 py-0">
+              <Badge variant="default" className="text-xs px-1.5 py-0">
                 {exercise.category}
               </Badge>
-              <Badge variant="outline" className="text-xs px-1.5 py-0 capitalize">
+              <Badge variant="default" className="text-xs px-1.5 py-0 capitalize">
                 {exercise.difficulty}
               </Badge>
             </div>
