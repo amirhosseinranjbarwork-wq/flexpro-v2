@@ -13,7 +13,7 @@ const features = [
   },
   {
     icon: <HeartPulse size={32} />,
-    title: 'سیستم‌های انرژی و کاردیو',
+    title: 'تمرین کاردیو',
     description: 'تمرینات بر اساس ضربان قلب و زون‌های انرژی برای بهبود کارایی متابولیک.',
     color: 'text-blue-500',
     bg: 'bg-blue-500/10',
@@ -21,7 +21,7 @@ const features = [
   },
   {
     icon: <Activity size={32} />,
-    title: 'حرکات اصلاحی و موبیلیتی',
+    title: 'حرکات اصلاحی',
     description: 'پروتکل‌های پیشگیری از آسیب و بهبود دامنه حرکتی ادغام شده در برنامه روزانه.',
     color: 'text-green-500',
     bg: 'bg-green-500/10',
@@ -29,7 +29,7 @@ const features = [
   },
   {
     icon: <Zap size={32} />,
-    title: 'توان انفجاری و پلایومتریک',
+    title: 'تمرین پلایومتریک',
     description: 'توسعه توان خروجی با تمرکز بر زمان تماس با زمین و تولید نیروی عمودی.',
     color: 'text-yellow-500',
     bg: 'bg-yellow-500/10',

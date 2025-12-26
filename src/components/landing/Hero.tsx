@@ -31,7 +31,7 @@ export const Hero = () => {
             </motion.div>
             
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-slate-900 dark:text-white mb-6 leading-[1.2]">
-              طراحی تمرین؛ <br />
+              طراحی برنامه تمرینی؛ <br />
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
                 با دقت جراحی و پشتوانه علمی.
               </span>
