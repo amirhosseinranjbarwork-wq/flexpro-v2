@@ -8,7 +8,7 @@ export default {
   theme: {
     extend: {
       fontFamily: { 
-        sans: ['Inter', 'Vazirmatn', 'sans-serif'],
+        sans: ['Vazirmatn', 'Inter', 'sans-serif'],
         persian: ['Vazirmatn', 'sans-serif']
       },
       colors: {

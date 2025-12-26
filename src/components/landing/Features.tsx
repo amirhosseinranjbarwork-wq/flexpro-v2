@@ -5,32 +5,32 @@ import { Dumbbell, Activity, HeartPulse, Zap } from 'lucide-react';
 const features = [
   {
     icon: <Dumbbell size={32} />,
-    title: 'Resistance',
-    description: 'Hypertrophy focused programming with RPE, RIR, and Tempo logic built-in.',
+    title: 'تمرین مقاومتی',
+    description: 'برنامه‌ریزی تخصصی هایپرتروفی و قدرت با منطق‌های RPE، RIR و تمپو.',
     color: 'text-red-500',
     bg: 'bg-red-500/10',
     border: 'border-red-500/20',
   },
   {
     icon: <HeartPulse size={32} />,
-    title: 'Cardio',
-    description: 'Zone-based training targeting specific energy systems for metabolic efficiency.',
+    title: 'سیستم‌های انرژی و کاردیو',
+    description: 'تمرینات بر اساس ضربان قلب و زون‌های انرژی برای بهبود کارایی متابولیک.',
     color: 'text-blue-500',
     bg: 'bg-blue-500/10',
     border: 'border-blue-500/20',
   },
   {
     icon: <Activity size={32} />,
-    title: 'Corrective',
-    description: 'Mobility protocols and injury prevention integrated into daily routines.',
+    title: 'حرکات اصلاحی و موبیلیتی',
+    description: 'پروتکل‌های پیشگیری از آسیب و بهبود دامنه حرکتی ادغام شده در برنامه روزانه.',
     color: 'text-green-500',
     bg: 'bg-green-500/10',
     border: 'border-green-500/20',
   },
   {
     icon: <Zap size={32} />,
-    title: 'Plyometric',
-    description: 'Power development with ground contact time and vertical force production focus.',
+    title: 'توان انفجاری و پلایومتریک',
+    description: 'توسعه توان خروجی با تمرکز بر زمان تماس با زمین و تولید نیروی عمودی.',
     color: 'text-yellow-500',
     bg: 'bg-yellow-500/10',
     border: 'border-yellow-500/20',
@@ -43,10 +43,10 @@ export const Features = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4">
-            The 4 Pillars of <span className="text-blue-600 dark:text-blue-400">Total Performance</span>
+            ۴ ستون اصلی <span className="text-blue-600 dark:text-blue-400">عملکرد کامل</span>
           </h2>
           <p className="text-slate-600 dark:text-slate-400 text-lg">
-            Most apps only track reps. We engineer complete athletes by integrating every aspect of physical development.
+            اکثر اپلیکیشن‌ها فقط تکرارها را می‌شمارند. ما با ادغام تمام جنبه‌های توسعه فیزیکی، ورزشکاران کامل می‌سازیم.
           </p>
         </div>
 

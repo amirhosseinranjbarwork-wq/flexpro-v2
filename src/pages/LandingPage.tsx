@@ -11,16 +11,7 @@ export default function LandingPage() {
   const { theme } = useTheme();
 
   useEffect(() => {
-    // Force LTR for the landing page
-    document.documentElement.dir = 'ltr';
-    document.documentElement.lang = 'en';
     window.scrollTo(0, 0);
-
-    return () => {
-      // Revert to RTL if navigating away (assuming dashboard is RTL)
-      document.documentElement.dir = 'rtl';
-      document.documentElement.lang = 'fa';
-    };
   }, []);
 
   return (

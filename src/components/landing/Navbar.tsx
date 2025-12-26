@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Sun, Moon, ArrowRight } from 'lucide-react';
+import { Menu, X, Sun, Moon, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -21,9 +21,9 @@ export const Navbar = () => {
   }, []);
 
   const navLinks = [
-    { name: 'Features', href: '#features' },
-    { name: 'Methodology', href: '#methodology' },
-    { name: 'Pricing', href: '#pricing' },
+    { name: 'امکانات', href: '#features' },
+    { name: 'متدولوژی علمی', href: '#methodology' },
+    { name: 'تعرفه‌ها', href: '#pricing' },
   ];
 
   return (
@@ -76,7 +76,7 @@ export const Navbar = () => {
                 to="/dashboard"
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2"
               >
-                Dashboard <ArrowRight size={16} />
+                داشبورد <ArrowLeft size={16} />
               </Link>
             ) : (
               <>
@@ -84,13 +84,13 @@ export const Navbar = () => {
                   to="/login"
                   className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-white transition-colors"
                 >
-                  Login
+                  ورود
                 </Link>
                 <Link
                   to="/register"
                   className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg shadow-lg shadow-blue-500/20 transition-all hover:scale-105"
                 >
-                  Get Started
+                  شروع رایگان
                 </Link>
               </>
             )}
@@ -141,7 +141,7 @@ export const Navbar = () => {
                       onClick={() => setMobileMenuOpen(false)}
                       className="w-full px-4 py-3 text-center text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
                     >
-                      Go to Dashboard
+                      ورود به داشبورد
                     </Link>
                  ) : (
                   <>
@@ -150,14 +150,14 @@ export const Navbar = () => {
                       onClick={() => setMobileMenuOpen(false)}
                       className="w-full px-4 py-3 text-center text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                     >
-                      Login
+                      ورود
                     </Link>
                     <Link
                       to="/register"
                       onClick={() => setMobileMenuOpen(false)}
                       className="w-full px-4 py-3 text-center text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg shadow-lg shadow-blue-500/20 transition-colors"
                     >
-                      Get Started
+                      شروع رایگان
                     </Link>
                   </>
                  )}

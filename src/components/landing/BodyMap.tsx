@@ -13,17 +13,17 @@ export const BodyMap = () => {
             className="flex-1"
           >
             <div className="inline-block px-4 py-1.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-sm font-semibold mb-6">
-              Interactive Programming
+              طراحی برنامه تعاملی
             </div>
             <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6">
-              Select the muscle. <br />
-              <span className="text-indigo-600 dark:text-indigo-400">Build the workout.</span>
+              عضله را انتخاب کنید. <br />
+              <span className="text-indigo-600 dark:text-indigo-400">تمرین را بسازید.</span>
             </h2>
             <p className="text-lg text-slate-600 dark:text-slate-400 mb-8">
-              Forget complex spreadsheets. Our visual interface allows you to target specific muscle groups and automatically generates scientifically backed exercises.
+              اکسل‌های پیچیده را فراموش کنید. رابط بصری ما به شما امکان می‌دهد عضلات هدف را انتخاب کرده و به‌طور خودکار تمرینات علمی مناسب را دریافت کنید.
             </p>
             <ul className="space-y-4">
-              {['Visual Muscle Selection', 'Instant Volume Calculation', 'Injury-aware Substitutions'].map((item) => (
+              {['انتخاب بصری عضلات', 'محاسبه فوری حجم تمرین', 'جایگزینی هوشمند با توجه به آسیب‌دیدگی'].map((item) => (
                 <li key={item} className="flex items-center gap-3 text-slate-700 dark:text-slate-300">
                   <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center text-green-600 dark:text-green-400">
                     ✓
@@ -67,8 +67,8 @@ export const BodyMap = () => {
                     transition={{ repeat: Infinity, duration: 3 }}
                     className="absolute top-[25%] left-[40%] bg-white dark:bg-slate-800 p-3 rounded-lg shadow-xl border border-slate-100 dark:border-slate-700 text-xs"
                  >
-                    <div className="font-bold text-slate-900 dark:text-white">Pectoralis Major</div>
-                    <div className="text-slate-500">Target: Hypertrophy</div>
+                    <div className="font-bold text-slate-900 dark:text-white">عضله سینه ای بزرگ</div>
+                    <div className="text-slate-500">هدف: هایپرتروفی</div>
                  </motion.div>
               </div>
             </div>
