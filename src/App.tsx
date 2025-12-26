@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from './context/AuthContext';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import LandingPage from './pages/LandingPage';
 import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
@@ -9,7 +10,6 @@ import AdminDashboard from './pages/AdminDashboard';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ErrorBoundary from './components/ErrorBoundary';
-import { Toaster } from 'react-hot-toast';
 
 // Loading component for auth initialization
 const AuthLoadingSpinner = () => (
