@@ -2,9 +2,11 @@
  * TrainingLayout Component
  * Main 3-column layout for the Scientific Workout Builder
  * Orchestrates drag-and-drop between ExerciseLibrary and WorkoutCanvas
+ * 
+ * OFFLINE MODE: Uses mock data from store instead of Supabase
  */
 
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { 
   DndContext, 
   DragOverlay,
@@ -31,8 +33,10 @@ import { useWorkoutStore } from '../../store';
 import type { ExerciseFromDB } from '../../store/workoutStore';
 import ExerciseLibrary from './ExerciseLibrary';
 import WorkoutCanvas from './WorkoutCanvas';
-import { useExercises } from '../../hooks/useExercises';
 import toast from 'react-hot-toast';
+
+// NOTE: useExercises hook is commented out for offline mode
+// import { useExercises } from '../../hooks/useExercises';
 
 // ========== Drag Overlay Item ==========
 
@@ -174,32 +178,24 @@ const TrainingLayout: React.FC<TrainingLayoutProps> = ({ onSaveWorkout }) => {
   const [draggedExercise, setDraggedExercise] = useState<ExerciseFromDB | null>(null);
 
   const { 
-    setAvailableExercises, 
-    setLoadingExercises,
     addExerciseToWorkout,
     reorderExercises,
     setDragging,
     availableExercises,
   } = useWorkoutStore();
 
-  // Fetch exercises from hook
-  const { data: exercisesData, isLoading, error } = useExercises();
-
-  // Load exercises into store
-  useEffect(() => {
-    setLoadingExercises(isLoading);
-    
-    if (exercisesData && Array.isArray(exercisesData)) {
-      setAvailableExercises(exercisesData as ExerciseFromDB[]);
-    }
-  }, [exercisesData, isLoading, setAvailableExercises, setLoadingExercises]);
-
-  // Show error toast
-  useEffect(() => {
-    if (error) {
-      toast.error('خطا در بارگذاری تمرینات');
-    }
-  }, [error]);
+  // OFFLINE MODE: Exercises are loaded from mock data in store initial state
+  // The store is initialized with MOCK_EXERCISES, so no fetch needed
+  // 
+  // To restore Supabase fetch, uncomment and add back:
+  // const { data: exercisesData, isLoading, error } = useExercises();
+  // useEffect(() => {
+  //   setLoadingExercises(isLoading);
+  //   if (exercisesData && Array.isArray(exercisesData)) {
+  //     setAvailableExercises(exercisesData as ExerciseFromDB[]);
+  //   }
+  // }, [exercisesData, isLoading, setAvailableExercises, setLoadingExercises]);
+  // useEffect(() => { if (error) toast.error('خطا در بارگذاری تمرینات'); }, [error]);
 
   // DnD Sensors
   const sensors = useSensors(

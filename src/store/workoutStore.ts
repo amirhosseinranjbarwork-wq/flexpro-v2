@@ -19,6 +19,9 @@ import type {
 } from '../types/training';
 import type { DifficultyLevel, EquipmentType, ExerciseCategory } from '../types/database';
 
+// Import mock data for offline mode
+import { MOCK_EXERCISES } from '../data/mockScientificExercises';
+
 // ========== Types ==========
 
 export interface ExerciseFromDB {
@@ -261,7 +264,12 @@ const determineExerciseType = (exercise: ExerciseFromDB): ExerciseType => {
   const type = exercise.type?.toLowerCase() || '';
   
   if (category === 'cardio' || type === 'cardio') return 'cardio';
-  if (category === 'corrective' || type === 'corrective') return 'corrective';
+  // Treat warmup, cooldown, and corrective as corrective (similar config structure)
+  if (category === 'corrective' || type === 'corrective' || 
+      type === 'warmup' || type === 'cooldown' ||
+      category === 'warmup' || category === 'cooldown') {
+    return 'corrective';
+  }
   if (type === 'plyometric' || exercise.name?.toLowerCase().includes('جامپ') || exercise.name?.toLowerCase().includes('پرش')) {
     return 'plyometric';
   }
@@ -329,8 +337,8 @@ export const useWorkoutStore = create<WorkoutState & WorkoutActions>()(
   devtools(
     persist(
       immer((set, get) => ({
-        // Initial State
-        availableExercises: [],
+        // Initial State - Using mock data for offline mode
+        availableExercises: MOCK_EXERCISES,
         isLoadingExercises: false,
         currentDay: 1,
         workoutDays: {
@@ -345,7 +353,7 @@ export const useWorkoutStore = create<WorkoutState & WorkoutActions>()(
         filters: DEFAULT_FILTERS,
         selectedInstanceId: null,
         isDragging: false,
-        filteredExercises: [],
+        filteredExercises: MOCK_EXERCISES, // Initialize with mock data
 
         // ========== Exercise Loading ==========
         setAvailableExercises: (exercises) => set((state) => {
