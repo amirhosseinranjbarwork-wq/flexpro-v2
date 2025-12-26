@@ -35,7 +35,7 @@ const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       case 'nutrition':
         html = generateNutritionProgramHTML(data.activeUser);
         break;
-      case 'supplement':
+      case 'supplements':
         html = generateSupplementProgramHTML(data.activeUser);
         break;
       default:

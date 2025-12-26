@@ -3,7 +3,6 @@ import { useSaveTemplate } from '../hooks/useTemplates';
 import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
 import SuccessMessage from './ui/SuccessMessage';
 import ErrorMessage from './ui/ErrorMessage';
-import { toast } from 'react-hot-toast';
 
 interface SavePlanModalProps {
   isOpen: boolean;

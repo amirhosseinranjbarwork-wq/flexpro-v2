@@ -7,7 +7,14 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
-      fontFamily: { sans: ['Vazirmatn', 'sans-serif'] },
+      fontFamily: { 
+<<<<<<< Current (Your changes)
+        sans: ['Inter', 'Vazirmatn', 'sans-serif'],
+=======
+        sans: ['Vazirmatn', 'Inter', 'sans-serif'],
+>>>>>>> Incoming (Background Agent changes)
+        persian: ['Vazirmatn', 'sans-serif']
+      },
       colors: {
         navy: {
           50: '#f0f9ff',

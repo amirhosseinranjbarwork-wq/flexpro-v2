@@ -197,7 +197,7 @@ const SupplementsPanel: React.FC<SupplementsPanelProps> = ({ activeUser, onUpdat
     setFormData({ name: '', dose: '', time: '', note: '' });
   };
 
-  const handleDelete = (index) => {
+  const handleDelete = (index: number) => {
     if (!canEdit) {
       toast.error('دسترسی مربی لازم است');
       return;
@@ -242,10 +242,11 @@ const SupplementsPanel: React.FC<SupplementsPanelProps> = ({ activeUser, onUpdat
                           cancelButtonText: 'لغو',
                           background: theme === 'dark' ? '#1e293b' : '#fff',
                           color: theme === 'dark' ? '#fff' : '#000',
-                          inputValidator: (value) => {
+                          inputValidator: (value): string | null => {
                             if (!value) {
                               return 'نام مکمل الزامی است';
                             }
+                            return null;
                           }
                         });
                         if (custom) setFormData({ ...formData, name: custom });

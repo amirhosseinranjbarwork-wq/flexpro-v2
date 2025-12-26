@@ -2,6 +2,15 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
+import {
+  findLocalUser,
+  createLocalUser,
+  verifyLocalPassword,
+  createLocalSession,
+  getLocalSession,
+  clearLocalSession,
+  getLocalUserById,
+} from '../utils/localAuth';
 
 type AuthFn = (identifier: string, password: string) => Promise<void>;
 type RegisterFn = (params: { email?: string; password: string; fullName: string; role: string; username: string }) => Promise<void>;
@@ -12,6 +21,7 @@ interface Profile {
   role?: string;
   email?: string;
   username?: string;
+  is_super_admin?: boolean;
 }
 
 interface AuthContextValue {
@@ -71,12 +81,16 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   }, []);
 
   useEffect(() => {
-    // Always use mock mode for demo
-    if (true) {
+    // Use mock mode only when explicitly enabled via environment variable
+    const useMockMode = import.meta.env.VITE_USE_MOCK === 'true';
+    
+    if (useMockMode) {
       // Check URL parameters for role
       const urlParams = new URLSearchParams(window.location.search);
       const roleFromUrl = urlParams.get('role') || 'coach'; // Default to coach
-      console.log('⚡ Mock Mode: Setting up mock authentication');
+      if (import.meta.env.DEV) {
+        console.log('⚡ Mock Mode: Setting up mock authentication');
+      }
       // Create mock user object
       const mockUser: User = {
         id: 'mock-user-id',
@@ -112,18 +126,68 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
 
       // Set mock data immediately
       setUser(mockUser);
-      setSession(mockSession as any);
+      setSession(mockSession as Session);
       setRole('coach');
       setProfile(mockProfile);
       setReady(true);
       setLoading(false);
 
-      console.log('✅ Mock authentication setup complete');
+      if (import.meta.env.DEV) {
+        console.log('✅ Mock authentication setup complete');
+      }
       return;
     }
 
+    // Check for local session if Supabase is not available
     if (!isSupabaseEnabled || !supabase) {
-      console.log('Supabase disabled, running in demo mode');
+      if (import.meta.env.DEV) {
+        console.log('🔒 Local Mode: Checking for local session');
+      }
+      
+      const localSession = getLocalSession();
+      if (localSession) {
+        const localUser = getLocalUserById(localSession.userId);
+        if (localUser) {
+          // Convert local user to Supabase User format
+          const userObj: User = {
+            id: localUser.id,
+            email: localUser.email,
+            user_metadata: { role: localUser.role, full_name: localUser.fullName, username: localUser.username },
+            app_metadata: {},
+            aud: 'authenticated',
+            created_at: localUser.createdAt,
+            updated_at: localUser.updatedAt,
+            role: 'authenticated',
+            email_confirmed_at: localUser.createdAt,
+          };
+
+          const sessionObj: Session = {
+            access_token: localSession.token,
+            refresh_token: '',
+            expires_at: localSession.expiresAt / 1000,
+            expires_in: Math.floor((localSession.expiresAt - Date.now()) / 1000),
+            token_type: 'bearer',
+            user: userObj,
+          };
+
+          setUser(userObj);
+          setSession(sessionObj);
+          setRole(localUser.role);
+          setProfile({
+            id: localUser.id,
+            full_name: localUser.fullName,
+            role: localUser.role,
+            email: localUser.email,
+            username: localUser.username,
+            is_super_admin: localUser.role === 'coach',
+          });
+          
+          if (import.meta.env.DEV) {
+            console.log('✅ Local session restored');
+          }
+        }
+      }
+      
       setReady(true);
       return;
     }
@@ -176,9 +240,99 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       return;
     }
 
+    // Use local authentication if Supabase is not available
     if (!isSupabaseEnabled || !supabase) {
-      const error = new Error('Supabase auth غیرفعال است');
-      if (import.meta.env.DEV) console.error('Sign in error:', error);
+      if (import.meta.env.DEV) {
+        console.log('🔒 Local Mode: Attempting local login');
+      }
+      
+      setLoading(true);
+      try {
+        // Validation
+        if (!identifier || !identifier.trim()) {
+          throw new Error('ایمیل یا نام کاربری الزامی است');
+        }
+        
+        if (!password || password.length < 6) {
+          throw new Error('رمز عبور باید حداقل 6 کاراکتر باشد');
+        }
+        
+        // Find user
+        const localUser = findLocalUser(identifier.trim());
+        if (!localUser) {
+          throw new Error('ایمیل/نام کاربری یا رمز عبور اشتباه است');
+        }
+        
+        // Verify password
+        if (!verifyLocalPassword(localUser, password)) {
+          throw new Error('ایمیل/نام کاربری یا رمز عبور اشتباه است');
+        }
+        
+        // Create session
+        const session = createLocalSession(localUser.id);
+        
+        // Convert to Supabase format
+        const userObj: User = {
+          id: localUser.id,
+          email: localUser.email,
+          user_metadata: { role: localUser.role, full_name: localUser.fullName, username: localUser.username },
+          app_metadata: {},
+          aud: 'authenticated',
+          created_at: localUser.createdAt,
+          updated_at: localUser.updatedAt,
+          role: 'authenticated',
+          email_confirmed_at: localUser.createdAt,
+        };
+
+        const sessionObj: Session = {
+          access_token: session.token,
+          refresh_token: '',
+          expires_at: session.expiresAt / 1000,
+          expires_in: Math.floor((session.expiresAt - Date.now()) / 1000),
+          token_type: 'bearer',
+          user: userObj,
+        };
+        
+        setUser(userObj);
+        setSession(sessionObj);
+        setRole(localUser.role);
+        setProfile({
+          id: localUser.id,
+          full_name: localUser.fullName,
+          role: localUser.role,
+          email: localUser.email,
+          username: localUser.username,
+          is_super_admin: localUser.role === 'coach',
+        });
+        
+        if (import.meta.env.DEV) {
+          console.log('✅ Local login successful');
+        }
+      } catch (err: unknown) {
+        if (import.meta.env.DEV) {
+          console.error('Local sign in error:', err);
+        }
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+    
+    // بررسی تنظیمات Supabase
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      const error = new Error('تنظیمات Supabase یافت نشد. لطفا فایل .env را بررسی کنید.');
+      if (import.meta.env.DEV) console.error('Supabase config missing:', { supabaseUrl: !!supabaseUrl, supabaseKey: !!supabaseKey });
+      throw error;
+    }
+    
+    // بررسی اعتبار URL
+    if (!supabaseUrl.startsWith('http://') && !supabaseUrl.startsWith('https://')) {
+      const error = new Error('آدرس Supabase نامعتبر است. لطفا URL را بررسی کنید.');
+      if (import.meta.env.DEV) console.error('Invalid Supabase URL:', supabaseUrl);
       throw error;
     }
     
@@ -194,27 +348,175 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     setLoading(true);
     try {
       const emailToUse = await resolveEmail(identifier);
-      const { error } = await supabase.auth.signInWithPassword({ email: emailToUse, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email: emailToUse, password });
+      
       if (error) {
+        // اگر خطای API یا اتصال است، به حالت محلی برگرد
+        const isApiError = error.message.includes('Invalid API key') || 
+                          error.message.includes('invalid api') || 
+                          error.message.includes('API key') ||
+                          error.message.includes('Invalid URL') ||
+                          error.message.includes('invalid url') ||
+                          error.message.includes('Network') ||
+                          error.message.includes('network') ||
+                          error.message.includes('fetch');
+        
+        if (isApiError) {
+          if (import.meta.env.DEV) {
+            console.warn('🔒 Supabase API error detected, falling back to local auth');
+          }
+          // Fallback to local auth - execute local auth code directly
+          setLoading(false);
+          // Execute local auth directly
+          const localUser = findLocalUser(identifier.trim());
+          if (!localUser) {
+            throw new Error('ایمیل/نام کاربری یا رمز عبور اشتباه است');
+          }
+          if (!verifyLocalPassword(localUser, password)) {
+            throw new Error('ایمیل/نام کاربری یا رمز عبور اشتباه است');
+          }
+          const session = createLocalSession(localUser.id);
+          const userObj: User = {
+            id: localUser.id,
+            email: localUser.email,
+            user_metadata: { role: localUser.role, full_name: localUser.fullName, username: localUser.username },
+            app_metadata: {},
+            aud: 'authenticated',
+            created_at: localUser.createdAt,
+            updated_at: localUser.updatedAt,
+            role: 'authenticated',
+            email_confirmed_at: localUser.createdAt,
+          };
+          const sessionObj: Session = {
+            access_token: session.token,
+            refresh_token: '',
+            expires_at: session.expiresAt / 1000,
+            expires_in: Math.floor((session.expiresAt - Date.now()) / 1000),
+            token_type: 'bearer',
+            user: userObj,
+          };
+          setUser(userObj);
+          setSession(sessionObj);
+          setRole(localUser.role);
+          setProfile({
+            id: localUser.id,
+            full_name: localUser.fullName,
+            role: localUser.role,
+            email: localUser.email,
+            username: localUser.username,
+            is_super_admin: localUser.role === 'coach',
+          });
+          return;
+        }
+        
         // تبدیل خطاهای Supabase به پیام‌های قابل فهم
         let errorMessage = 'خطا در ورود';
-        if (error.message.includes('Invalid login credentials')) {
+        
+        // بررسی انواع خطاها
+        if (error.message.includes('Invalid login credentials') || error.message.includes('invalid login')) {
           errorMessage = 'ایمیل/نام کاربری یا رمز عبور اشتباه است';
-        } else if (error.message.includes('Email not confirmed')) {
+        } else if (error.message.includes('Email not confirmed') || error.message.includes('email not confirmed')) {
           errorMessage = 'لطفا ابتدا ایمیل خود را تایید کنید';
-        } else if (error.message.includes('Too many requests')) {
+        } else if (error.message.includes('Too many requests') || error.message.includes('rate limit')) {
           errorMessage = 'تعداد درخواست‌ها زیاد است. لطفا کمی صبر کنید';
         } else {
+          // نمایش پیام خطای اصلی اگر قابل فهم باشد
           errorMessage = error.message || 'خطا در ورود';
         }
-        if (import.meta.env.DEV) console.error('Sign in error:', error);
+        
+        if (import.meta.env.DEV) {
+          console.error('Sign in error details:', {
+            message: error.message,
+            status: error.status,
+            name: error.name
+          });
+        }
         throw new Error(errorMessage);
       }
+      
+      // بررسی موفقیت
+      if (!data || !data.session) {
+        throw new Error('ورود ناموفق بود. لطفا دوباره تلاش کنید.');
+      }
+      
       // موفقیت
       if (import.meta.env.DEV) console.log('Sign in successful');
     } catch (err: unknown) {
-      if (import.meta.env.DEV) console.error('Sign in error:', err);
-      throw err;
+      // اگر خطای اتصال یا API است، به حالت محلی برگرد
+      if (err instanceof Error) {
+        const isApiError = err.message.includes('Invalid API key') || 
+                          err.message.includes('invalid api') || 
+                          err.message.includes('API key') ||
+                          err.message.includes('Invalid URL') ||
+                          err.message.includes('invalid url') ||
+                          err.message.includes('Network') ||
+                          err.message.includes('network') ||
+                          err.message.includes('fetch') ||
+                          err.message.includes('Supabase auth غیرفعال');
+        
+        if (isApiError) {
+          if (import.meta.env.DEV) {
+            console.warn('🔒 Supabase error detected, falling back to local auth');
+          }
+          // Fallback to local auth - execute local auth code directly
+          setLoading(false);
+          // Execute local auth directly
+          const localUser = findLocalUser(identifier.trim());
+          if (!localUser) {
+            throw new Error('ایمیل/نام کاربری یا رمز عبور اشتباه است');
+          }
+          if (!verifyLocalPassword(localUser, password)) {
+            throw new Error('ایمیل/نام کاربری یا رمز عبور اشتباه است');
+          }
+          const session = createLocalSession(localUser.id);
+          const userObj: User = {
+            id: localUser.id,
+            email: localUser.email,
+            user_metadata: { role: localUser.role, full_name: localUser.fullName, username: localUser.username },
+            app_metadata: {},
+            aud: 'authenticated',
+            created_at: localUser.createdAt,
+            updated_at: localUser.updatedAt,
+            role: 'authenticated',
+            email_confirmed_at: localUser.createdAt,
+          };
+          const sessionObj: Session = {
+            access_token: session.token,
+            refresh_token: '',
+            expires_at: session.expiresAt / 1000,
+            expires_in: Math.floor((session.expiresAt - Date.now()) / 1000),
+            token_type: 'bearer',
+            user: userObj,
+          };
+          setUser(userObj);
+          setSession(sessionObj);
+          setRole(localUser.role);
+          setProfile({
+            id: localUser.id,
+            full_name: localUser.fullName,
+            role: localUser.role,
+            email: localUser.email,
+            username: localUser.username,
+            is_super_admin: localUser.role === 'coach',
+          });
+          return;
+        }
+      }
+      
+      if (import.meta.env.DEV) {
+        console.error('Sign in error:', err);
+        if (err instanceof Error) {
+          console.error('Error stack:', err.stack);
+        }
+      }
+      
+      // اگر خطا از قبل یک Error است، آن را پرتاب کن
+      if (err instanceof Error) {
+        throw err;
+      }
+      
+      // در غیر این صورت، یک خطای جدید ایجاد کن
+      throw new Error('خطای غیرمنتظره در ورود. لطفا دوباره تلاش کنید.');
     } finally {
       setLoading(false);
     }
@@ -249,14 +551,21 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       return;
     }
 
+    // Clear local session if using local auth
     if (!isSupabaseEnabled || !supabase) {
+      clearLocalSession();
       setUser(null);
       setSession(null);
+      setRole(null);
+      setProfile(null);
       return;
     }
+    
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
+    setRole(null);
+    setProfile(null);
   }, []);
 
   const register: RegisterFn = useCallback(async ({ email, password, fullName, role: r, username }) => {
@@ -267,10 +576,101 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       return;
     }
 
+    // Use local registration if Supabase is not available
     if (!isSupabaseEnabled || !supabase) {
-      const error = new Error('Supabase auth غیرفعال است');
-      if (import.meta.env.DEV) console.error('Register error:', error);
-      throw error;
+      if (import.meta.env.DEV) {
+        console.log('🔒 Local Mode: Attempting local registration');
+      }
+      
+      setLoading(true);
+      try {
+        // Validation (same as before)
+        if (!fullName || !fullName.trim() || fullName.trim().length < 2) {
+          throw new Error('نام کامل باید حداقل 2 کاراکتر باشد');
+        }
+        
+        if (!username || !username.trim() || username.trim().length < 3) {
+          throw new Error('نام کاربری باید حداقل 3 کاراکتر باشد');
+        }
+        
+        const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+        if (!usernameRegex.test(username)) {
+          throw new Error('نام کاربری باید 3 تا 20 کاراکتر و فقط شامل حروف انگلیسی، اعداد و خط زیر باشد');
+        }
+        
+        if (email && email.trim().length > 0) {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(email)) {
+            throw new Error('ایمیل وارد شده معتبر نیست');
+          }
+        }
+        
+        if (!password || password.length < 8) {
+          throw new Error('رمز عبور باید حداقل 8 کاراکتر باشد');
+        }
+        
+        if (!r || (r !== 'coach' && r !== 'client')) {
+          throw new Error('نقش نامعتبر است');
+        }
+        
+        // Create local user
+        const localUser = createLocalUser({
+          email: email?.trim() || undefined,
+          username: username.trim(),
+          password,
+          fullName: fullName.trim(),
+          role: r as 'coach' | 'client',
+        });
+        
+        // Create session
+        const session = createLocalSession(localUser.id);
+        
+        // Convert to Supabase format
+        const userObj: User = {
+          id: localUser.id,
+          email: localUser.email,
+          user_metadata: { role: localUser.role, full_name: localUser.fullName, username: localUser.username },
+          app_metadata: {},
+          aud: 'authenticated',
+          created_at: localUser.createdAt,
+          updated_at: localUser.updatedAt,
+          role: 'authenticated',
+          email_confirmed_at: localUser.createdAt,
+        };
+
+        const sessionObj: Session = {
+          access_token: session.token,
+          refresh_token: '',
+          expires_at: session.expiresAt / 1000,
+          expires_in: Math.floor((session.expiresAt - Date.now()) / 1000),
+          token_type: 'bearer',
+          user: userObj,
+        };
+        
+        setUser(userObj);
+        setSession(sessionObj);
+        setRole(localUser.role);
+        setProfile({
+          id: localUser.id,
+          full_name: localUser.fullName,
+          role: localUser.role,
+          email: localUser.email,
+          username: localUser.username,
+          is_super_admin: localUser.role === 'coach',
+        });
+        
+        if (import.meta.env.DEV) {
+          console.log('✅ Local registration successful');
+        }
+      } catch (err: unknown) {
+        if (import.meta.env.DEV) {
+          console.error('Local register error:', err);
+        }
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+      return;
     }
     
     // Validation ورودی‌ها
@@ -312,9 +712,68 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         .limit(1)
         .maybeSingle();
       
-      if (usernameErr && usernameErr.code !== 'PGRST116') {
-        if (import.meta.env.DEV) console.error('Username check error:', usernameErr);
-        throw new Error('خطا در بررسی نام کاربری');
+      // اگر خطای API یا اتصال است، به حالت محلی برگرد
+      if (usernameErr) {
+        const isApiError = usernameErr.message.includes('Invalid API key') || 
+                          usernameErr.message.includes('invalid api') || 
+                          usernameErr.message.includes('API key') ||
+                          usernameErr.message.includes('Invalid URL') ||
+                          usernameErr.message.includes('invalid url') ||
+                          usernameErr.message.includes('Network') ||
+                          usernameErr.message.includes('network') ||
+                          usernameErr.message.includes('fetch');
+        
+        if (isApiError && usernameErr.code !== 'PGRST116') {
+          if (import.meta.env.DEV) {
+            console.warn('🔒 Supabase API error detected, falling back to local auth');
+          }
+          // Fallback to local auth - execute local registration code directly
+          // Validation already done above, so proceed with local registration
+          const localUser = createLocalUser({
+            email: email?.trim() || undefined,
+            username: username.trim(),
+            password,
+            fullName: fullName.trim(),
+            role: r as 'coach' | 'client',
+          });
+          const session = createLocalSession(localUser.id);
+          const userObj: User = {
+            id: localUser.id,
+            email: localUser.email,
+            user_metadata: { role: localUser.role, full_name: localUser.fullName, username: localUser.username },
+            app_metadata: {},
+            aud: 'authenticated',
+            created_at: localUser.createdAt,
+            updated_at: localUser.updatedAt,
+            role: 'authenticated',
+            email_confirmed_at: localUser.createdAt,
+          };
+          const sessionObj: Session = {
+            access_token: session.token,
+            refresh_token: '',
+            expires_at: session.expiresAt / 1000,
+            expires_in: Math.floor((session.expiresAt - Date.now()) / 1000),
+            token_type: 'bearer',
+            user: userObj,
+          };
+          setUser(userObj);
+          setSession(sessionObj);
+          setRole(localUser.role);
+          setProfile({
+            id: localUser.id,
+            full_name: localUser.fullName,
+            role: localUser.role,
+            email: localUser.email,
+            username: localUser.username,
+            is_super_admin: localUser.role === 'coach',
+          });
+          return;
+        }
+        
+        if (usernameErr.code !== 'PGRST116') {
+          if (import.meta.env.DEV) console.error('Username check error:', usernameErr);
+          throw new Error('خطا در بررسی نام کاربری');
+        }
       }
       
       if (existing) {
@@ -332,6 +791,63 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       });
       
       if (error) {
+        // اگر خطای API یا اتصال است، به حالت محلی برگرد
+        const isApiError = error.message.includes('Invalid API key') || 
+                          error.message.includes('invalid api') || 
+                          error.message.includes('API key') ||
+                          error.message.includes('Invalid URL') ||
+                          error.message.includes('invalid url') ||
+                          error.message.includes('Network') ||
+                          error.message.includes('network') ||
+                          error.message.includes('fetch');
+        
+        if (isApiError) {
+          if (import.meta.env.DEV) {
+            console.warn('🔒 Supabase API error detected, falling back to local auth');
+          }
+          // Fallback to local auth - execute local registration code directly
+          // Validation already done above, so proceed with local registration
+          const localUser = createLocalUser({
+            email: email?.trim() || undefined,
+            username: username.trim(),
+            password,
+            fullName: fullName.trim(),
+            role: r as 'coach' | 'client',
+          });
+          const session = createLocalSession(localUser.id);
+          const userObj: User = {
+            id: localUser.id,
+            email: localUser.email,
+            user_metadata: { role: localUser.role, full_name: localUser.fullName, username: localUser.username },
+            app_metadata: {},
+            aud: 'authenticated',
+            created_at: localUser.createdAt,
+            updated_at: localUser.updatedAt,
+            role: 'authenticated',
+            email_confirmed_at: localUser.createdAt,
+          };
+          const sessionObj: Session = {
+            access_token: session.token,
+            refresh_token: '',
+            expires_at: session.expiresAt / 1000,
+            expires_in: Math.floor((session.expiresAt - Date.now()) / 1000),
+            token_type: 'bearer',
+            user: userObj,
+          };
+          setUser(userObj);
+          setSession(sessionObj);
+          setRole(localUser.role);
+          setProfile({
+            id: localUser.id,
+            full_name: localUser.fullName,
+            role: localUser.role,
+            email: localUser.email,
+            username: localUser.username,
+            is_super_admin: localUser.role === 'coach',
+          });
+          return;
+        }
+        
         // تبدیل خطاهای Supabase به پیام‌های قابل فهم
         let errorMessage = 'خطا در ثبت‌نام';
         if (error.message.includes('User already registered')) {
@@ -348,16 +864,35 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       }
       
       // ثبت پروفایل
-      if (data.user) {
+      if (data.user && supabase) {
         const { error: profileError } = await supabase.from('profiles').upsert({
           id: data.user.id,
           full_name: fullName,
           role: r,
           email: finalEmail,
           username
-        });
+        } as unknown as Record<string, unknown>);
         
         if (profileError) {
+          // اگر خطای API است، به حالت محلی برگرد
+          const isApiError = profileError.message.includes('Invalid API key') || 
+                            profileError.message.includes('invalid api') || 
+                            profileError.message.includes('API key') ||
+                            profileError.message.includes('Invalid URL') ||
+                            profileError.message.includes('invalid url') ||
+                            profileError.message.includes('Network') ||
+                            profileError.message.includes('network') ||
+                            profileError.message.includes('fetch');
+          
+          if (isApiError) {
+            if (import.meta.env.DEV) {
+              console.warn('🔒 Supabase API error detected, falling back to local auth');
+            }
+            // Fallback to local auth
+            setLoading(false);
+            return register({ email, password, fullName, role: r, username }); // Recursive call will use local auth
+          }
+          
           if (import.meta.env.DEV) console.error('Profile upsert error:', profileError);
           throw new Error('خطا در ثبت پروفایل');
         }
@@ -369,6 +904,28 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         throw new Error('خطا در ایجاد کاربر');
       }
     } catch (err: unknown) {
+      // اگر خطای اتصال یا API است، به حالت محلی برگرد
+      if (err instanceof Error) {
+        const isApiError = err.message.includes('Invalid API key') || 
+                          err.message.includes('invalid api') || 
+                          err.message.includes('API key') ||
+                          err.message.includes('Invalid URL') ||
+                          err.message.includes('invalid url') ||
+                          err.message.includes('Network') ||
+                          err.message.includes('network') ||
+                          err.message.includes('fetch') ||
+                          err.message.includes('Supabase auth غیرفعال');
+        
+        if (isApiError) {
+          if (import.meta.env.DEV) {
+            console.warn('🔒 Supabase error detected, falling back to local auth');
+          }
+          // Fallback to local auth
+          setLoading(false);
+          return register({ email, password, fullName, role: r, username }, true); // Recursive call will use local auth
+        }
+      }
+      
       if (import.meta.env.DEV) console.error('Register error:', err);
       throw err;
     } finally {

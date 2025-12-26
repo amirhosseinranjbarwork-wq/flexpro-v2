@@ -194,7 +194,7 @@ export const FloatingCounter: React.FC<{
   max?: number;
   size?: 'sm' | 'md' | 'lg';
   variant?: 'primary' | 'success' | 'warning' | 'error';
-}> = ({ value, max = 99, size = 'md', variant = 'primary' }) => {
+}> = ({ value, max: _max = 99, size = 'md', variant = 'primary' }) => {
   const sizeClasses = {
     sm: 'text-xs px-1.5 py-0.5',
     md: 'text-sm px-2 py-1',

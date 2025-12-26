@@ -1,5 +1,5 @@
 import React from 'react';
-import type { User } from '../../types';
+import type { User, NutritionGoals } from '../../types';
 
 interface PrintClientReportProps {
   user: User;
@@ -7,6 +7,20 @@ interface PrintClientReportProps {
 }
 
 const PrintClientReport: React.FC<PrintClientReportProps> = ({ user, onPrint }) => {
+  // Helper to get nutrition goals as object
+  const getNutritionGoals = (): NutritionGoals | null => {
+    if (!user.nutritionGoals) return null;
+    if (typeof user.nutritionGoals === 'string') {
+      try {
+        return JSON.parse(user.nutritionGoals) as NutritionGoals;
+      } catch {
+        return null;
+      }
+    }
+    return user.nutritionGoals;
+  };
+
+  const nutritionGoals = getNutritionGoals();
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">
@@ -99,35 +113,35 @@ const PrintClientReport: React.FC<PrintClientReportProps> = ({ user, onPrint }) 
       </div>
 
       {/* اطلاعات تغذیه */}
-      {user.nutritionGoals && (
+      {nutritionGoals && (
         <div className="glass-card p-6 rounded-2xl border border-[var(--glass-border)]">
           <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
             <span>🥗</span> اهداف تغذیه‌ای
           </h3>
 
           <div className="space-y-3">
-            {user.nutritionGoals.calories && (
+            {nutritionGoals.calories && (
               <div className="flex justify-between">
                 <span className="text-[var(--text-secondary)]">کالری روزانه:</span>
-                <span className="font-semibold text-[var(--text-primary)]">{user.nutritionGoals.calories} kcal</span>
+                <span className="font-semibold text-[var(--text-primary)]">{nutritionGoals.calories} kcal</span>
               </div>
             )}
-            {user.nutritionGoals.protein && (
+            {nutritionGoals.protein && (
               <div className="flex justify-between">
                 <span className="text-[var(--text-secondary)]">پروتئین:</span>
-                <span className="font-semibold text-[var(--text-primary)]">{user.nutritionGoals.protein}g</span>
+                <span className="font-semibold text-[var(--text-primary)]">{nutritionGoals.protein}g</span>
               </div>
             )}
-            {user.nutritionGoals.carbs && (
+            {nutritionGoals.carbs && (
               <div className="flex justify-between">
                 <span className="text-[var(--text-secondary)]">کربوهیدرات:</span>
-                <span className="font-semibold text-[var(--text-primary)]">{user.nutritionGoals.carbs}g</span>
+                <span className="font-semibold text-[var(--text-primary)]">{nutritionGoals.carbs}g</span>
               </div>
             )}
-            {user.nutritionGoals.fat && (
+            {nutritionGoals.fat && (
               <div className="flex justify-between">
                 <span className="text-[var(--text-secondary)]">چربی:</span>
-                <span className="font-semibold text-[var(--text-primary)]">{user.nutritionGoals.fat}g</span>
+                <span className="font-semibold text-[var(--text-primary)]">{nutritionGoals.fat}g</span>
               </div>
             )}
           </div>

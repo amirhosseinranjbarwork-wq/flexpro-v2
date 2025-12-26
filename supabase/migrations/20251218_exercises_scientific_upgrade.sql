@@ -162,3 +162,6 @@ GRANT EXECUTE ON FUNCTION search_exercises TO anon, authenticated;
 
 
 
+
+
+

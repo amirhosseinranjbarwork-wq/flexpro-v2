@@ -190,7 +190,7 @@ const ClientSwitcher: React.FC<ClientSwitcherProps> = ({
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.15, delay: index * 0.02 }}
-                      onClick={() => handleSelect(client.id)}
+                      onClick={() => handleSelect(String(client.id))}
                       className={`
                         w-full p-4 text-right transition-colors hover:bg-slate-100/50 dark:hover:bg-slate-700/50
                         ${selectedClientId === client.id ? 'bg-blue-500/10' : ''}

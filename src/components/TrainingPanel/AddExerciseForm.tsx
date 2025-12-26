@@ -50,7 +50,7 @@ const AddExerciseForm: React.FC<AddExerciseFormProps> = memo(({
   resistanceExercises,
   correctiveExercises,
   cardioExercises,
-  warmupCooldown,
+  warmupCooldown: _warmupCooldown,
   onAddExercise,
   warning
 }) => {
@@ -85,7 +85,8 @@ const AddExerciseForm: React.FC<AddExerciseFormProps> = memo(({
 
   const [subMuscles, setSubMuscles] = useState<string[]>([]);
   const [exercises, setExercises] = useState<string[]>([]);
-  const [corrExercisesList, setCorrExercisesList] = useState<string[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_corrExercisesList, setCorrExercisesList] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 300);
 

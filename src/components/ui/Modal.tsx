@@ -48,6 +48,7 @@ const Modal: React.FC<ModalProps> = ({
       document.addEventListener('keydown', handleEscape);
       return () => document.removeEventListener('keydown', handleEscape);
     }
+    return undefined;
   }, [isOpen, onClose, closeOnEscape]);
 
   // Focus management
@@ -88,7 +89,7 @@ const Modal: React.FC<ModalProps> = ({
       scale: 1,
       y: 0,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 300,
         damping: 30,
         duration: 0.3

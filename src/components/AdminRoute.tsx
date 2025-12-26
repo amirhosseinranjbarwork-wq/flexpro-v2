@@ -46,7 +46,8 @@ export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
       if (error || !data) {
         setIsAdmin(false);
       } else {
-        setIsAdmin(data.is_super_admin === true);
+        const profileData = data as { is_super_admin?: boolean };
+        setIsAdmin(profileData.is_super_admin === true);
       }
     } catch (error) {
       console.error('Error checking admin status:', error);

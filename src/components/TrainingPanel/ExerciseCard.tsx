@@ -1,6 +1,7 @@
 import React from 'react';
-import { Target, Clock, Zap, Dumbbell, Users, TrendingUp } from 'lucide-react';
-import type { Exercise } from '../types/database';
+import { motion } from 'framer-motion';
+import { Target, Clock, Zap, Dumbbell, TrendingUp, Users } from 'lucide-react';
+import type { Exercise } from '../../types/database';
 
 interface ExerciseCardProps {
   exercise: Exercise;

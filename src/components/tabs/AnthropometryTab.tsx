@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ruler, Scale, Calculator, TrendingUp, Target } from 'lucide-react';
+import { Ruler, Scale, Calculator, Target } from 'lucide-react';
 import type { UseUserFormReturn } from '../../hooks/useUserForm';
 
 interface AnthropometryTabProps {
@@ -148,7 +148,7 @@ export const AnthropometryTab: React.FC<AnthropometryTabProps> = ({ form }) => {
             هدف تغذیه‌ای
           </label>
           <select
-            value={formData.nutritionGoals || 'maintenance'}
+            value={typeof formData.nutritionGoals === 'string' ? formData.nutritionGoals : 'maintenance'}
             onChange={(e) => updateField('nutritionGoals', e.target.value)}
             className="input-glass"
           >
