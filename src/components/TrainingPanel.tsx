@@ -8,8 +8,8 @@ import { arrayMove, SortableContext, verticalListSortingStrategy, sortableKeyboa
 import type { User, WorkoutItem, WorkoutMode } from '../types/index';
 import type { ExerciseCategory, EquipmentType, DifficultyLevel } from '../types/database';
 
-// New Scientific Workout Builder
-import { TrainingLayout } from './training';
+// New Scientific Workout Builder (from TrainingPanel folder)
+import TrainingLayout from './TrainingPanel/TrainingLayout';
 
 // Local type for exercise data that matches both Supabase and fallback data
 interface ExerciseData {
