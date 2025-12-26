@@ -1,23 +1,13 @@
 /**
- * TrainingPanel Sub-components
- * Scientific Workout Builder System
+ * TRAINING PANEL - Module Exports
  */
 
-// Legacy components
-export { default as WorkoutDayTabs } from './WorkoutDayTabs';
-export { default as ExerciseRow } from './ExerciseRow';
-export { default as AddExerciseForm } from './AddExerciseForm';
-export { default as MobileExerciseCard } from './MobileExerciseCard';
-export { default as WorkoutBuilder } from './WorkoutBuilder';
-
-// New Scientific Workout Builder Components (3-Column DnD Interface)
-export { default as TrainingLayout } from './TrainingLayout';
-export { default as ExerciseLibrary } from './ExerciseLibrary';
-export { default as WorkoutCanvas } from './WorkoutCanvas';
-export { default as ExerciseConfigCard } from './ExerciseConfigCard';
-
-// Form components
-export * from './forms';
-
-// Import types
-export type { ReactNode } from 'react';
+export { UltimateTrainingPanel } from './UltimateTrainingPanel';
+export { ExerciseFilterSidebar } from './ExerciseFilterSidebar';
+export { ExerciseLibrary } from './ExerciseLibrary';
+export { ExerciseCard } from './ExerciseCard';
+export { WorkoutCanvas } from './WorkoutCanvas';
+export { WorkoutExerciseCard } from './WorkoutExerciseCard';
+export { WorkoutAnalyticsFooter } from './WorkoutAnalyticsFooter';
+export { WorkoutDaySelector } from './WorkoutDaySelector';
+export { VisualBodyMap } from './VisualBodyMap';

@@ -1,133 +1,215 @@
+/**
+ * EXERCISE CARD - Visual Exercise Display
+ * Shows exercise info with category-specific icons
+ */
+
 import React from 'react';
-import { motion } from 'framer-motion';
-import { Target, Clock, Zap, Dumbbell, TrendingUp, Users } from 'lucide-react';
-import type { Exercise } from '../../types/database';
+import { Exercise, ExerciseCategory, Equipment } from '../../types/ultimate-training';
+import Badge from '../ui/Badge';
+import {
+  Dumbbell,
+  Heart,
+  Zap,
+  Wind,
+  Shield,
+  Target,
+  TrendingUp,
+  Activity
+} from 'lucide-react';
 
 interface ExerciseCardProps {
   exercise: Exercise;
-  isSelected?: boolean;
-  onClick?: () => void;
-  showScientificData?: boolean;
+  isDragging?: boolean;
+  compact?: boolean;
 }
 
-const ExerciseCard: React.FC<ExerciseCardProps> = ({
+export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   exercise,
-  isSelected = false,
-  onClick,
-  showScientificData = true
+  isDragging = false,
+  compact = false
 }) => {
-  // تعیین رنگ بر اساس دسته‌بندی - استفاده از CSS Variables
-  const getCategoryColor = (category: string) => {
+  const getCategoryIcon = (category: ExerciseCategory) => {
+    const iconClass = 'w-4 h-4';
     switch (category) {
-      case 'bodybuilding': return 'border-[var(--color-error)] bg-[var(--color-error)]/10 dark:bg-[var(--color-error)]/20';
-      case 'cardio': return 'border-[var(--color-info)] bg-[var(--color-info)]/10 dark:bg-[var(--color-info)]/20';
-      case 'corrective': return 'border-[var(--color-success)] bg-[var(--color-success)]/10 dark:bg-[var(--color-success)]/20';
-      case 'warmup': return 'border-[var(--color-warning)] bg-[var(--color-warning)]/10 dark:bg-[var(--color-warning)]/20';
-      case 'cooldown': return 'border-[var(--accent-secondary)] bg-[var(--accent-secondary)]/10 dark:bg-[var(--accent-secondary)]/20';
-      default: return 'border-[var(--glass-border)] bg-[var(--glass-bg)]';
+      case ExerciseCategory.RESISTANCE:
+        return <Dumbbell className={iconClass} />;
+      case ExerciseCategory.CARDIO:
+        return <Heart className={iconClass} />;
+      case ExerciseCategory.PLYOMETRIC:
+        return <Zap className={iconClass} />;
+      case ExerciseCategory.POWERLIFTING:
+        return <TrendingUp className={iconClass} />;
+      case ExerciseCategory.STRONGMAN:
+        return <Target className={iconClass} />;
+      case ExerciseCategory.STRETCHING:
+        return <Wind className={iconClass} />;
+      case ExerciseCategory.CORRECTIVE:
+        return <Shield className={iconClass} />;
+      default:
+        return <Activity className={iconClass} />;
     }
   };
 
-  const getCategoryIcon = (category: string) => {
+  const getCategoryColor = (category: ExerciseCategory) => {
     switch (category) {
-      case 'bodybuilding': return <Dumbbell size={16} />;
-      case 'cardio': return <TrendingUp size={16} />;
-      case 'corrective': return <Target size={16} />;
-      case 'warmup': return <Zap size={16} />;
-      case 'cooldown': return <Clock size={16} />;
-      default: return <Dumbbell size={16} />;
+      case ExerciseCategory.RESISTANCE:
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case ExerciseCategory.CARDIO:
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      case ExerciseCategory.PLYOMETRIC:
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case ExerciseCategory.POWERLIFTING:
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      case ExerciseCategory.STRONGMAN:
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+      case ExerciseCategory.STRETCHING:
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case ExerciseCategory.CORRECTIVE:
+        return 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200';
+      default:
+        return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200';
     }
   };
 
-  const getDifficultyColor = (level: string) => {
-    switch (level) {
-      case 'beginner': return 'text-[var(--color-success)] bg-[var(--color-success)]/20 dark:bg-[var(--color-success)]/30';
-      case 'intermediate': return 'text-[var(--color-warning)] bg-[var(--color-warning)]/20 dark:bg-[var(--color-warning)]/30';
-      case 'advanced': return 'text-[var(--color-error)] bg-[var(--color-error)]/20 dark:bg-[var(--color-error)]/30';
-      default: return 'text-[var(--text-secondary)] bg-[var(--glass-bg)]';
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'beginner':
+        return 'bg-green-500';
+      case 'intermediate':
+        return 'bg-yellow-500';
+      case 'advanced':
+        return 'bg-orange-500';
+      case 'elite':
+        return 'bg-red-500';
+      default:
+        return 'bg-slate-500';
     }
   };
+
+  const getEquipmentIcon = (equipment: Equipment) => {
+    // Map equipment to emoji/icon (simplified)
+    const icons: Record<string, string> = {
+      barbell: '🏋️',
+      dumbbell: '💪',
+      kettlebell: '⚫',
+      cable: '🔗',
+      machine: '⚙️',
+      bodyweight: '🧘',
+      bands: '🎗️',
+      trx: '🔺',
+      none: '✋'
+    };
+    return icons[equipment] || '•';
+  };
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-blue-400 transition-colors">
+        <div className={`p-1.5 rounded ${getCategoryColor(exercise.category)}`}>
+          {getCategoryIcon(exercise.category)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="font-medium text-sm truncate">{exercise.name}</h4>
+          <div className="flex items-center gap-1 mt-0.5">
+            {exercise.equipment.slice(0, 2).map((eq, idx) => (
+              <span key={idx} className="text-xs">
+                {getEquipmentIcon(eq)}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+    <div
       className={`
-        relative p-4 rounded-lg border-2 cursor-pointer transition-all duration-200
-        ${getCategoryColor(exercise.category)}
-        ${isSelected ? 'ring-2 ring-blue-500 shadow-lg' : 'hover:shadow-md'}
+        relative bg-white dark:bg-slate-800 rounded-lg border-2 
+        ${isDragging ? 'border-blue-500 shadow-2xl' : 'border-slate-200 dark:border-slate-700'}
+        hover:border-blue-400 hover:shadow-md
+        transition-all duration-200
+        overflow-hidden
       `}
-      onClick={onClick}
     >
-      {/* Header */}
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center gap-2">
-          {getCategoryIcon(exercise.category)}
-          <h3 className="font-semibold text-sm text-[var(--text-primary)]">
-            {exercise.name}
-          </h3>
+      {/* Difficulty Indicator */}
+      <div
+        className={`absolute top-0 left-0 w-1 h-full ${getDifficultyColor(exercise.difficulty)}`}
+      />
+
+      <div className="p-3 pl-4">
+        {/* Header */}
+        <div className="flex items-start gap-2 mb-2">
+          <div className={`p-2 rounded-lg ${getCategoryColor(exercise.category)}`}>
+            {getCategoryIcon(exercise.category)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-sm leading-tight mb-1 line-clamp-2">
+              {exercise.name}
+            </h3>
+            <div className="flex flex-wrap gap-1">
+              <Badge variant="default" className="text-xs px-1.5 py-0">
+                {exercise.category}
+              </Badge>
+              <Badge variant="default" className="text-xs px-1.5 py-0 capitalize">
+                {exercise.difficulty}
+              </Badge>
+            </div>
+          </div>
         </div>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(exercise.difficulty_level)}`}>
-          {exercise.difficulty_level}
-        </span>
-      </div>
 
-      {/* Primary Muscle */}
-      <div className="text-xs text-[var(--text-secondary)] mb-2">
-        <strong>Primary:</strong> {exercise.primary_muscle || exercise.muscle_group}
-      </div>
-
-      {/* Scientific Data */}
-      {showScientificData && (
-        <div className="space-y-1 text-xs">
-          {/* RPE & RIR */}
-          {(exercise.default_rpe || exercise.default_rir) && (
-            <div className="flex items-center gap-1">
-              <Target size={12} className="text-blue-500" />
-              <span>
-                {exercise.default_rpe && `RPE: ${exercise.default_rpe}`}
-                {exercise.default_rpe && exercise.default_rir && ' | '}
-                {exercise.default_rir && `RIR: ${exercise.default_rir}`}
-              </span>
-            </div>
-          )}
-
-          {/* Tempo */}
-          {exercise.tempo && (
-            <div className="flex items-center gap-1">
-              <Zap size={12} className="text-yellow-500" />
-              <span>Tempo: {exercise.tempo}</span>
-            </div>
-          )}
-
-          {/* Rest */}
-          {exercise.rest_interval_seconds && (
-            <div className="flex items-center gap-1">
-              <Clock size={12} className="text-purple-500" />
-              <span>Rest: {exercise.rest_interval_seconds}s</span>
-            </div>
-          )}
-
-          {/* Unilateral */}
-          {exercise.unilateral && (
-            <div className="flex items-center gap-1">
-              <Users size={12} className="text-orange-500" />
-              <span>Unilateral</span>
+        {/* Muscle Groups */}
+        <div className="mb-2">
+          <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">
+            Primary: {exercise.primaryMuscles.map(m => m.replace('_', ' ')).join(', ')}
+          </div>
+          {exercise.secondaryMuscles.length > 0 && (
+            <div className="text-xs text-slate-500 dark:text-slate-500">
+              Secondary: {exercise.secondaryMuscles.slice(0, 2).map(m => m.replace('_', ' ')).join(', ')}
             </div>
           )}
         </div>
-      )}
 
-      {/* Equipment */}
-      <div className="mt-2 text-xs text-[var(--text-secondary)] opacity-70">
-        {exercise.equipment_standardized}
+        {/* Equipment */}
+        <div className="flex flex-wrap gap-1 mb-2">
+          {exercise.equipment.map((eq, idx) => (
+            <span
+              key={idx}
+              className="text-sm px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-slate-600 dark:text-slate-400"
+            >
+              {getEquipmentIcon(eq)} {eq.replace('_', ' ')}
+            </span>
+          ))}
+        </div>
+
+        {/* Description */}
+        <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">
+          {exercise.description}
+        </p>
+
+        {/* Tags */}
+        {exercise.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {exercise.tags.slice(0, 3).map((tag, idx) => (
+              <Badge
+                key={idx}
+                variant="secondary"
+                className="text-xs px-1.5 py-0"
+              >
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        )}
+
+        {/* Drag Hint */}
+        {!isDragging && (
+          <div className="text-xs text-slate-400 mt-2 text-center">
+            ← Drag to add →
+          </div>
+        )}
       </div>
-
-      {/* Selection Indicator */}
-      {isSelected && (
-        <div className="absolute top-2 right-2 w-3 h-3 bg-[var(--accent-color)] rounded-full animate-pulse"></div>
-      )}
-    </motion.div>
+    </div>
   );
 };
 
