@@ -1,11 +1,13 @@
 /**
- * TrainingPanel Sub-components
- * Refactored to break down the monolithic TrainingPanel component
+ * TRAINING PANEL - Module Exports
  */
 
-export { default as WorkoutDayTabs } from './WorkoutDayTabs';
-export { default as ExerciseRow } from './ExerciseRow';
-export { default as AddExerciseForm } from './AddExerciseForm';
-
-// Import types
-export type { ReactNode } from 'react';
+export { UltimateTrainingPanel } from './UltimateTrainingPanel';
+export { ExerciseFilterSidebar } from './ExerciseFilterSidebar';
+export { ExerciseLibrary } from './ExerciseLibrary';
+export { ExerciseCard } from './ExerciseCard';
+export { WorkoutCanvas } from './WorkoutCanvas';
+export { WorkoutExerciseCard } from './WorkoutExerciseCard';
+export { WorkoutAnalyticsFooter } from './WorkoutAnalyticsFooter';
+export { WorkoutDaySelector } from './WorkoutDaySelector';
+export { VisualBodyMap } from './VisualBodyMap';
