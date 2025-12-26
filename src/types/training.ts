@@ -737,18 +737,4 @@ export function calculateTotalVolume(sets: ResistanceWorkoutSet[]): number {
   }, 0);
 }
 
-// Export all types
-export type {
-  BaseExercise,
-  BaseWorkoutSet,
-  ResistanceWorkoutSet,
-  CardioWorkoutSet,
-  PlyometricWorkoutSet,
-  CorrectiveWorkoutSet,
-  WorkoutDay,
-  WorkoutProgram,
-  WorkoutLog,
-  WorkoutSetLog,
-  TempoPattern,
-  HeartRateZoneInfo,
-};
+// Note: All types are already exported where they are defined
