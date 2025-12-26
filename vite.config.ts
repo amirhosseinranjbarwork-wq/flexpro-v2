@@ -4,6 +4,10 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  // Optimize dependencies including immer for zustand
+  optimizeDeps: {
+    include: ['immer', 'zustand', 'zustand/middleware', 'zustand/middleware/immer'],
+  },
   build: {
     target: 'esnext',
     minify: 'terser',
@@ -64,6 +68,11 @@ export default defineConfig({
           // Charts
           if (id.includes('chart.js') || id.includes('react-chartjs-2')) {
             return 'vendor-data';
+          }
+
+          // State management (Zustand + Immer)
+          if (id.includes('zustand') || id.includes('immer')) {
+            return 'vendor-state';
           }
         }
       }

@@ -1,11 +1,11 @@
 /**
  * Workout Builder Store
  * Zustand state management for the Scientific Workout Builder
+ * NOTE: Rewritten without immer middleware to avoid peer dependency issues
  */
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import { immer } from 'zustand/middleware/immer';
 import type { 
   ExerciseType,
   MuscleGroup,
@@ -331,12 +331,33 @@ const filterExercises = (exercises: ExerciseFromDB[], filters: WorkoutFilters): 
   });
 };
 
+// Helper to update exercise in workoutDays
+const updateExerciseInDays = (
+  workoutDays: Record<number, WorkoutDayState>,
+  currentDay: number,
+  instanceId: string,
+  updater: (exercise: WorkoutExerciseInstance) => WorkoutExerciseInstance
+): Record<number, WorkoutDayState> => {
+  const day = workoutDays[currentDay];
+  if (!day) return workoutDays;
+  
+  return {
+    ...workoutDays,
+    [currentDay]: {
+      ...day,
+      exercises: day.exercises.map(ex => 
+        ex.instanceId === instanceId ? updater(ex) : ex
+      ),
+    },
+  };
+};
+
 // ========== Store ==========
 
 export const useWorkoutStore = create<WorkoutState & WorkoutActions>()(
   devtools(
     persist(
-      immer((set, get) => ({
+      (set, get) => ({
         // Initial State - Using mock data for offline mode
         availableExercises: MOCK_EXERCISES,
         isLoadingExercises: false,
@@ -353,41 +374,37 @@ export const useWorkoutStore = create<WorkoutState & WorkoutActions>()(
         filters: DEFAULT_FILTERS,
         selectedInstanceId: null,
         isDragging: false,
-        filteredExercises: MOCK_EXERCISES, // Initialize with mock data
+        filteredExercises: MOCK_EXERCISES,
 
         // ========== Exercise Loading ==========
-        setAvailableExercises: (exercises) => set((state) => {
-          state.availableExercises = exercises;
-          state.filteredExercises = filterExercises(exercises, state.filters);
-        }),
+        setAvailableExercises: (exercises) => set((state) => ({
+          availableExercises: exercises,
+          filteredExercises: filterExercises(exercises, state.filters),
+        })),
         
-        setLoadingExercises: (loading) => set((state) => {
-          state.isLoadingExercises = loading;
-        }),
+        setLoadingExercises: (loading) => set({ isLoadingExercises: loading }),
 
         // ========== Day Management ==========
-        setCurrentDay: (day) => set((state) => {
-          state.currentDay = day;
-          // Initialize day if it doesn't exist
-          if (!state.workoutDays[day]) {
-            state.workoutDays[day] = { dayNumber: day, exercises: [] };
-          }
-        }),
+        setCurrentDay: (day) => set((state) => ({
+          currentDay: day,
+          workoutDays: state.workoutDays[day] 
+            ? state.workoutDays 
+            : { ...state.workoutDays, [day]: { dayNumber: day, exercises: [] } },
+        })),
         
-        initializeDay: (dayNumber, name) => set((state) => {
-          if (!state.workoutDays[dayNumber]) {
-            state.workoutDays[dayNumber] = { dayNumber, name, exercises: [] };
-          } else {
-            state.workoutDays[dayNumber].name = name;
-          }
-        }),
+        initializeDay: (dayNumber, name) => set((state) => ({
+          workoutDays: {
+            ...state.workoutDays,
+            [dayNumber]: state.workoutDays[dayNumber]
+              ? { ...state.workoutDays[dayNumber], name }
+              : { dayNumber, name, exercises: [] },
+          },
+        })),
 
         // ========== Exercise Management ==========
         addExerciseToWorkout: (exercise, exerciseType) => set((state) => {
           const day = state.currentDay;
-          if (!state.workoutDays[day]) {
-            state.workoutDays[day] = { dayNumber: day, exercises: [] };
-          }
+          const currentDayData = state.workoutDays[day] || { dayNumber: day, exercises: [] };
           
           const type = exerciseType || determineExerciseType(exercise);
           const config = createDefaultConfig(exercise, type);
@@ -397,168 +414,211 @@ export const useWorkoutStore = create<WorkoutState & WorkoutActions>()(
             exerciseId: exercise.id,
             exercise,
             exerciseType: type,
-            orderIndex: state.workoutDays[day].exercises.length,
+            orderIndex: currentDayData.exercises.length,
             config,
           };
           
-          state.workoutDays[day].exercises.push(newInstance);
+          return {
+            workoutDays: {
+              ...state.workoutDays,
+              [day]: {
+                ...currentDayData,
+                exercises: [...currentDayData.exercises, newInstance],
+              },
+            },
+          };
         }),
         
         removeExercise: (instanceId) => set((state) => {
           const day = state.currentDay;
-          const exercises = state.workoutDays[day]?.exercises || [];
-          const index = exercises.findIndex(e => e.instanceId === instanceId);
+          const dayData = state.workoutDays[day];
+          if (!dayData) return state;
           
-          if (index !== -1) {
-            state.workoutDays[day].exercises.splice(index, 1);
-            // Re-index
-            state.workoutDays[day].exercises.forEach((ex, i) => {
-              ex.orderIndex = i;
-            });
-          }
+          const newExercises = dayData.exercises
+            .filter(e => e.instanceId !== instanceId)
+            .map((ex, i) => ({ ...ex, orderIndex: i }));
           
-          // Clear selection if removed
-          if (state.selectedInstanceId === instanceId) {
-            state.selectedInstanceId = null;
-          }
+          return {
+            workoutDays: {
+              ...state.workoutDays,
+              [day]: { ...dayData, exercises: newExercises },
+            },
+            selectedInstanceId: state.selectedInstanceId === instanceId ? null : state.selectedInstanceId,
+          };
         }),
         
         duplicateExercise: (instanceId) => set((state) => {
           const day = state.currentDay;
-          const exercises = state.workoutDays[day]?.exercises || [];
-          const original = exercises.find(e => e.instanceId === instanceId);
+          const dayData = state.workoutDays[day];
+          if (!dayData) return state;
           
-          if (original) {
-            const duplicate: WorkoutExerciseInstance = {
-              ...original,
-              instanceId: generateInstanceId(),
-              orderIndex: exercises.length,
-              config: { ...original.config },
-            };
-            state.workoutDays[day].exercises.push(duplicate);
-          }
+          const original = dayData.exercises.find(e => e.instanceId === instanceId);
+          if (!original) return state;
+          
+          const duplicate: WorkoutExerciseInstance = {
+            ...original,
+            instanceId: generateInstanceId(),
+            orderIndex: dayData.exercises.length,
+            config: { ...original.config },
+          };
+          
+          return {
+            workoutDays: {
+              ...state.workoutDays,
+              [day]: {
+                ...dayData,
+                exercises: [...dayData.exercises, duplicate],
+              },
+            },
+          };
         }),
         
         clearWorkout: () => set((state) => {
           const day = state.currentDay;
-          if (state.workoutDays[day]) {
-            state.workoutDays[day].exercises = [];
-          }
-          state.selectedInstanceId = null;
+          const dayData = state.workoutDays[day];
+          if (!dayData) return state;
+          
+          return {
+            workoutDays: {
+              ...state.workoutDays,
+              [day]: { ...dayData, exercises: [] },
+            },
+            selectedInstanceId: null,
+          };
         }),
 
         // ========== Configuration Updates ==========
-        updateExerciseConfig: (instanceId, field, value) => set((state) => {
-          const day = state.currentDay;
-          const exercise = state.workoutDays[day]?.exercises.find(
-            e => e.instanceId === instanceId
-          );
-          if (exercise) {
-            (exercise.config as Record<string, unknown>)[field as string] = value;
-          }
-        }),
+        updateExerciseConfig: (instanceId, field, value) => set((state) => ({
+          workoutDays: updateExerciseInDays(
+            state.workoutDays,
+            state.currentDay,
+            instanceId,
+            (ex) => ({
+              ...ex,
+              config: { ...ex.config, [field]: value } as ExerciseConfig,
+            })
+          ),
+        })),
         
-        updateResistanceConfig: (instanceId, updates) => set((state) => {
-          const day = state.currentDay;
-          const exercise = state.workoutDays[day]?.exercises.find(
-            e => e.instanceId === instanceId
-          );
-          if (exercise && exercise.config.type === 'resistance') {
-            Object.assign(exercise.config, updates);
-          }
-        }),
+        updateResistanceConfig: (instanceId, updates) => set((state) => ({
+          workoutDays: updateExerciseInDays(
+            state.workoutDays,
+            state.currentDay,
+            instanceId,
+            (ex) => ex.config.type === 'resistance' 
+              ? { ...ex, config: { ...ex.config, ...updates } }
+              : ex
+          ),
+        })),
         
-        updateCardioConfig: (instanceId, updates) => set((state) => {
-          const day = state.currentDay;
-          const exercise = state.workoutDays[day]?.exercises.find(
-            e => e.instanceId === instanceId
-          );
-          if (exercise && exercise.config.type === 'cardio') {
-            Object.assign(exercise.config, updates);
-          }
-        }),
+        updateCardioConfig: (instanceId, updates) => set((state) => ({
+          workoutDays: updateExerciseInDays(
+            state.workoutDays,
+            state.currentDay,
+            instanceId,
+            (ex) => ex.config.type === 'cardio'
+              ? { ...ex, config: { ...ex.config, ...updates } }
+              : ex
+          ),
+        })),
         
-        updatePlyometricConfig: (instanceId, updates) => set((state) => {
-          const day = state.currentDay;
-          const exercise = state.workoutDays[day]?.exercises.find(
-            e => e.instanceId === instanceId
-          );
-          if (exercise && exercise.config.type === 'plyometric') {
-            Object.assign(exercise.config, updates);
-          }
-        }),
+        updatePlyometricConfig: (instanceId, updates) => set((state) => ({
+          workoutDays: updateExerciseInDays(
+            state.workoutDays,
+            state.currentDay,
+            instanceId,
+            (ex) => ex.config.type === 'plyometric'
+              ? { ...ex, config: { ...ex.config, ...updates } }
+              : ex
+          ),
+        })),
         
-        updateCorrectiveConfig: (instanceId, updates) => set((state) => {
-          const day = state.currentDay;
-          const exercise = state.workoutDays[day]?.exercises.find(
-            e => e.instanceId === instanceId
-          );
-          if (exercise && exercise.config.type === 'corrective') {
-            Object.assign(exercise.config, updates);
-          }
-        }),
+        updateCorrectiveConfig: (instanceId, updates) => set((state) => ({
+          workoutDays: updateExerciseInDays(
+            state.workoutDays,
+            state.currentDay,
+            instanceId,
+            (ex) => ex.config.type === 'corrective'
+              ? { ...ex, config: { ...ex.config, ...updates } }
+              : ex
+          ),
+        })),
 
         // ========== Reordering ==========
         reorderExercises: (oldIndex, newIndex) => set((state) => {
           const day = state.currentDay;
-          const exercises = state.workoutDays[day]?.exercises;
+          const dayData = state.workoutDays[day];
+          if (!dayData || oldIndex === newIndex) return state;
           
-          if (exercises && oldIndex !== newIndex) {
-            const [removed] = exercises.splice(oldIndex, 1);
-            exercises.splice(newIndex, 0, removed);
-            // Re-index
-            exercises.forEach((ex, i) => {
-              ex.orderIndex = i;
-            });
-          }
+          const newExercises = [...dayData.exercises];
+          const [removed] = newExercises.splice(oldIndex, 1);
+          newExercises.splice(newIndex, 0, removed);
+          
+          // Re-index
+          const reindexed = newExercises.map((ex, i) => ({ ...ex, orderIndex: i }));
+          
+          return {
+            workoutDays: {
+              ...state.workoutDays,
+              [day]: { ...dayData, exercises: reindexed },
+            },
+          };
         }),
         
         moveExercise: (instanceId, direction) => set((state) => {
           const day = state.currentDay;
-          const exercises = state.workoutDays[day]?.exercises;
+          const dayData = state.workoutDays[day];
+          if (!dayData) return state;
           
-          if (!exercises) return;
-          
-          const currentIndex = exercises.findIndex(e => e.instanceId === instanceId);
-          if (currentIndex === -1) return;
+          const currentIndex = dayData.exercises.findIndex(e => e.instanceId === instanceId);
+          if (currentIndex === -1) return state;
           
           const newIndex = direction === 'up' 
             ? Math.max(0, currentIndex - 1)
-            : Math.min(exercises.length - 1, currentIndex + 1);
+            : Math.min(dayData.exercises.length - 1, currentIndex + 1);
           
-          if (currentIndex !== newIndex) {
-            const [removed] = exercises.splice(currentIndex, 1);
-            exercises.splice(newIndex, 0, removed);
-            exercises.forEach((ex, i) => {
-              ex.orderIndex = i;
-            });
-          }
+          if (currentIndex === newIndex) return state;
+          
+          const newExercises = [...dayData.exercises];
+          const [removed] = newExercises.splice(currentIndex, 1);
+          newExercises.splice(newIndex, 0, removed);
+          
+          const reindexed = newExercises.map((ex, i) => ({ ...ex, orderIndex: i }));
+          
+          return {
+            workoutDays: {
+              ...state.workoutDays,
+              [day]: { ...dayData, exercises: reindexed },
+            },
+          };
         }),
 
         // ========== Filters ==========
         setFilter: (key, value) => set((state) => {
-          state.filters[key] = value;
-          state.filteredExercises = filterExercises(state.availableExercises, state.filters);
+          const newFilters = { ...state.filters, [key]: value };
+          return {
+            filters: newFilters,
+            filteredExercises: filterExercises(state.availableExercises, newFilters),
+          };
         }),
         
-        resetFilters: () => set((state) => {
-          state.filters = DEFAULT_FILTERS;
-          state.filteredExercises = state.availableExercises;
-        }),
+        resetFilters: () => set((state) => ({
+          filters: DEFAULT_FILTERS,
+          filteredExercises: state.availableExercises,
+        })),
         
         setSearchTerm: (term) => set((state) => {
-          state.filters.search = term;
-          state.filteredExercises = filterExercises(state.availableExercises, state.filters);
+          const newFilters = { ...state.filters, search: term };
+          return {
+            filters: newFilters,
+            filteredExercises: filterExercises(state.availableExercises, newFilters),
+          };
         }),
 
         // ========== Selection ==========
-        selectExercise: (instanceId) => set((state) => {
-          state.selectedInstanceId = instanceId;
-        }),
+        selectExercise: (instanceId) => set({ selectedInstanceId: instanceId }),
         
-        setDragging: (isDragging) => set((state) => {
-          state.isDragging = isDragging;
-        }),
+        setDragging: (isDragging) => set({ isDragging }),
 
         // ========== Computed Getters ==========
         getCurrentDayExercises: () => {
@@ -632,7 +692,7 @@ export const useWorkoutStore = create<WorkoutState & WorkoutActions>()(
           
           return Math.ceil(totalSeconds / 60);
         },
-      })),
+      }),
       {
         name: 'workout-builder-storage',
         partialize: (state) => ({

@@ -3,6 +3,14 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 import { toast } from 'react-hot-toast';
 import type { TabKey, PrintType, PrintData } from '../types/index';
 
+// Type declarations for dynamically loaded PDF libraries
+declare global {
+  interface Window {
+    html2canvas?: typeof import('html2canvas').default;
+    jsPDF?: typeof import('jspdf').default;
+  }
+}
+
 interface UIContextType {
   theme: 'light' | 'dark';
   currentTab: TabKey;
