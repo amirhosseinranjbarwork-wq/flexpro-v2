@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
-import { Save, AlertTriangle, Plus, Search, Dumbbell, Download } from 'lucide-react';
+import { Save, AlertTriangle, Plus, Search, Dumbbell, Download, Sparkles, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import type { User, WorkoutItem, WorkoutMode } from '../types/index';
 import type { ExerciseCategory, EquipmentType, DifficultyLevel } from '../types/database';
+
+// New Scientific Workout Builder (from TrainingPanel folder)
+import TrainingLayout from './TrainingPanel/TrainingLayout';
 
 // Local type for exercise data that matches both Supabase and fallback data
 interface ExerciseData {
@@ -34,19 +37,47 @@ import { useExercises } from '../hooks/useExercises';
 import { CardSkeleton, TextSkeleton } from '../components';
 
 interface TrainingPanelProps {
-  activeUser: User;
-  onUpdateUser: (_user: User) => void;
+  activeUser?: User;
+  onUpdateUser?: (_user: User) => void;
 }
 
-const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser }) => {
+// Default empty user for when props are not provided
+const DEFAULT_USER: User = {
+  id: 'default',
+  name: 'Guest User',
+  age: 25,
+  gender: 'male',
+  height: 170,
+  weight: 70,
+  coach_id: undefined,
+  injuries: [],
+  medicalConditions: [],
+  plans: {
+    workouts: {},
+    diet: [],
+    dietRest: [],
+    supps: [],
+    prog: [],
+  },
+};
+
+// Helper to safely call onUpdateUser
+const safeUpdateUser = (callback: ((_user: User) => void) | undefined, user: User) => {
+  if (callback) callback(user);
+};
+
+const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser = DEFAULT_USER, onUpdateUser }) => {
   const { hasPermission } = useApp();
-  const canEdit = hasPermission('editProgram', activeUser.id);
+  const canEdit = hasPermission('editProgram', activeUser?.id || 'default');
   const [day, setDay] = useState(1);
   const [mode, setMode] = useState('resist');
   const [searchTerm, setSearchTerm] = useState('');
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showLoadModal, setShowLoadModal] = useState(false);
   const debouncedSearch = useDebounce(searchTerm, 300);
+  
+  // Toggle for new Scientific Workout Builder (Offline-ready)
+  const [useScientificBuilder, setUseScientificBuilder] = useState(false);
 
   // فیلترهای علمی جدید
   const [categoryFilter, setCategoryFilter] = useState<ExerciseCategory | ''>('');
@@ -256,7 +287,7 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
     if (oldIndex < 0 || oldIndex >= newUser.plans.workouts[day].length) return;
     if (newIndex < 0 || newIndex >= newUser.plans.workouts[day].length) return;
     newUser.plans.workouts[day] = arrayMove(newUser.plans.workouts[day], oldIndex, newIndex);
-    onUpdateUser(newUser);
+    safeUpdateUser(onUpdateUser, newUser);
   }, [canEdit, activeUser, day, onUpdateUser]);
 
   const handleDeleteExercise = useCallback((idx: number) => {
@@ -267,7 +298,7 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
     const u = { ...activeUser };
     if (!u.plans?.workouts?.[day]) return;
     u.plans.workouts[day] = u.plans.workouts[day].filter((_, i) => i !== idx);
-    onUpdateUser(u);
+    safeUpdateUser(onUpdateUser, u);
   }, [canEdit, activeUser, day, onUpdateUser]);
 
   const handleAddExercise = useCallback((): void => {
@@ -372,7 +403,7 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
     }
 
     newUser.plans.workouts[day].push(item);
-    onUpdateUser(newUser);
+    safeUpdateUser(onUpdateUser, newUser);
     setFormData(initialFormState);
     toast.success('ثبت شد');
   }, [canEdit, activeUser, day, mode, formData, onUpdateUser]);
@@ -404,8 +435,58 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
     );
   }
 
+  // Render the new Scientific Workout Builder if enabled
+  if (useScientificBuilder) {
+    return (
+      <div className="space-y-4 animate-fade-in">
+        {/* Header with back button */}
+        <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-2xl border border-slate-800">
+          <button
+            onClick={() => setUseScientificBuilder(false)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800/50 text-slate-300 
+                       hover:bg-slate-700/50 hover:text-white transition-all border border-slate-700"
+          >
+            <ArrowLeft size={18} />
+            <span>بازگشت به پنل قدیمی</span>
+          </button>
+          <div className="flex items-center gap-2">
+            <Sparkles className="text-yellow-400" size={20} />
+            <h2 className="text-lg font-bold text-white">ورک‌اوت بیلدر علمی</h2>
+          </div>
+          <div className="text-xs text-slate-500 px-3 py-1 rounded-full bg-green-500/10 text-green-400 border border-green-500/30">
+            حالت آفلاین فعال
+          </div>
+        </div>
+        
+        {/* Scientific Workout Builder Layout */}
+        <TrainingLayout 
+          onSaveWorkout={() => {
+            toast.success('برنامه تمرینی ذخیره شد');
+          }} 
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Toggle Button for Scientific Builder */}
+      <div className="flex justify-center mb-4">
+        <motion.button
+          onClick={() => setUseScientificBuilder(true)}
+          className="flex items-center gap-3 px-6 py-3 rounded-2xl 
+                     bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold
+                     hover:from-blue-500 hover:to-purple-500 transition-all shadow-lg
+                     hover:shadow-blue-500/30 hover:scale-105"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <Sparkles size={20} />
+          <span>ورک‌اوت بیلدر علمی جدید</span>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-white/20">BETA</span>
+        </motion.button>
+      </div>
+
       {/* نوار جلسات - طراحی مدرن و یکپارچه */}
       <div className="glass-panel p-4 rounded-3xl border border-[var(--glass-border)] shadow-lg backdrop-blur-xl">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -940,7 +1021,7 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ activeUser, onUpdateUser 
         clientId={String(activeUser.id)}
         onTemplateLoaded={() => {
           // Refresh user data after loading template
-          onUpdateUser(activeUser);
+          safeUpdateUser(onUpdateUser, activeUser);
         }}
       />
     </div>

@@ -28,8 +28,8 @@ export const removeUser = async (_id?: string) => mock(true);
 
 // Templates API
 export const fetchTemplates = async (_coachId?: string) => mock([]);
-export const upsertTemplate = async () => mock({});
-export const removeTemplate = async () => mock(true);
+export const upsertTemplate = async (_data?: unknown) => mock({});
+export const removeTemplate = async (_id?: unknown, _coachId?: unknown) => mock(true);
 
 // Utility
 export const ensureSupabaseReady = async () => true;
@@ -57,7 +57,7 @@ export const findCoachByCode = async (_code?: string) => mock({ id: 'coach-1', f
 export const fetchRequestsByCoach = async (_coachId?: string) => mock([]);
 export const fetchRequestsByClient = async (_clientId?: string) => mock([]);
 export const createProgramRequest = async (_data?: unknown) => mock({ id: 'request-1' });
-export const updateRequestStatus = async (_id?: string, _status?: string) => mock(true);
+export const updateRequestStatus = async (_id?: string, _status?: string, _note?: string, _req?: unknown) => mock(true);
 export const deleteProgramRequest = async (_id?: string) => mock(true);
 export const deleteProgramRequestLocally = async () => mock(true);
 
