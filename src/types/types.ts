@@ -325,10 +325,13 @@ export interface AppContextType {
 // ========== Context Types (continued) ==========
 export interface DataContextType {
   users: User[];
+  setUsers: React.Dispatch<React.SetStateAction<User[]>>;
   requests: ProgramRequest[];
   activeUser: User | null;
   activeUserId: UserId | null;
   selectedClientId: UserId | null;
+  selectedUser: UserId | null;
+  setSelectedUser: (id: UserId | null) => void;
   templates: Template[];
   currentRole: Role;
   currentAccountId: UserId | null;

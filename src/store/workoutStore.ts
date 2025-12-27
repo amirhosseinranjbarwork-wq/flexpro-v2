@@ -580,7 +580,15 @@ export const useWorkoutStore = create<WorkoutStore>()(
       // Getters
       getFilteredExercises: () => {
         const { filters } = get();
-        let exercises = [...ULTIMATE_EXERCISES];
+        // Ensure all exercises have required fields with defaults
+        let exercises = ULTIMATE_EXERCISES.map(ex => ({
+          ...ex,
+          primaryMuscles: ex.primaryMuscles || [],
+          secondaryMuscles: ex.secondaryMuscles || [],
+          equipment: ex.equipment || [],
+          tags: ex.tags || [],
+          description: ex.description || ''
+        }));
 
         if (filters.categories && filters.categories.length > 0) {
           exercises = exercises.filter(ex => filters.categories!.includes(ex.category));
@@ -589,14 +597,22 @@ export const useWorkoutStore = create<WorkoutStore>()(
         if (filters.muscleGroups && filters.muscleGroups.length > 0) {
           exercises = exercises.filter(ex =>
             filters.muscleGroups!.some(mg =>
+<<<<<<< HEAD
               ex.primaryMuscles.includes(mg) || ex.secondaryMuscles.includes(mg)
+=======
+              (ex.primaryMuscles || []).includes(mg) || (ex.secondaryMuscles || []).includes(mg)
+>>>>>>> cursor/module-redesign-and-data-layer-9fe1
             )
           );
         }
 
         if (filters.equipment && filters.equipment.length > 0) {
           exercises = exercises.filter(ex =>
+<<<<<<< HEAD
             filters.equipment!.some(eq => ex.equipment.includes(eq))
+=======
+            filters.equipment!.some(eq => (ex.equipment || []).includes(eq))
+>>>>>>> cursor/module-redesign-and-data-layer-9fe1
           );
         }
 

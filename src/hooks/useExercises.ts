@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
+import { exercisesApi } from '../services/api';
 import { exercises } from '../data/exercises';
 
-// Fallback data when Supabase is not available - using first 20 comprehensive exercises
+// Fallback data when API is not available - using first 20 comprehensive exercises
 const fallbackExercises = exercises.slice(0, 20).map(exercise => ({
   id: exercise.id,
   name: exercise.name,
@@ -18,38 +18,35 @@ export function useExercises() {
   return useQuery({
     queryKey: ['exercises'],
     queryFn: async () => {
-      if (!supabase || !isSupabaseEnabled) {
-        if (import.meta.env.DEV) {
-          console.warn('Supabase not available, using fallback data');
-        }
-        return fallbackExercises;
-      }
-
       try {
-        const { data, error } = await supabase
-          .from('exercises')
-          .select('*')
-          .order('name');
-
-        if (error) {
-          if (import.meta.env.DEV) {
-            console.warn('Supabase error, using fallback data:', error.message);
-          }
-          return fallbackExercises;
-        }
-
+        // Try API first (local-first approach)
+        const data = await exercisesApi.getAll();
+        
         if (!data || data.length === 0) {
           if (import.meta.env.DEV) {
-            console.warn('No exercises data from Supabase, using fallback data');
+            console.warn('No exercises data from API, using fallback data');
           }
           return fallbackExercises;
         }
 
-        return data;
+        // Transform API response to match expected format
+        return data.map(ex => ({
+          id: ex.exercise_id || String(ex.id),
+          name: ex.name,
+          muscle_group: ex.muscle_group || '',
+          sub_muscle_group: ex.sub_muscle_group || null,
+          equipment: ex.equipment || '',
+          type: ex.type || '',
+          difficulty: ex.difficulty || '',
+          category: ex.category || '',
+          scientific_data: ex.scientific_data,
+          // Include all fields from scientific_data if available
+          ...(ex.scientific_data || {}),
+        }));
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         if (import.meta.env.DEV) {
-          console.warn('useExercises error, using fallback data:', errorMessage);
+          console.warn('useExercises API error, using fallback data:', errorMessage);
         }
         return fallbackExercises;
       }

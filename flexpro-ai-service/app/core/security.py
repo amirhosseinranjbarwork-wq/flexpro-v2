@@ -1,107 +1,91 @@
 """
 Security utilities for FlexPro AI Service
-Handles Supabase JWT token verification
+Handles local JWT token verification (migrated from Supabase)
 """
 
-import time
 from typing import Dict, Any
-import jwt
-import httpx
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.auth import decode_access_token
+from app.db.database import get_db
+from app.models.sql_models import User
+
+security_scheme = HTTPBearer()
 
 
-async def verify_supabase_token(token: str) -> Dict[str, Any]:
+async def verify_token(token: str, db: Session) -> Dict[str, Any]:
     """
-    Verify Supabase JWT token
+    Verify local JWT token and return user data
 
     Args:
         token: JWT token from Authorization header
+        db: Database session
 
     Returns:
-        Decoded user data
+        Decoded user data with database user info
 
     Raises:
         HTTPException: If token is invalid
     """
     try:
-        # Decode JWT without verification first to get header
-        header = jwt.get_unverified_header(token)
-        kid = header.get('kid')
-
-        if not kid:
-            raise HTTPException(status_code=401, detail="Invalid token header")
-
-        # Get JWK from Supabase
-        jwk_url = f"{settings.SUPABASE_URL}/rest/v1/jwt"
-        async with httpx.AsyncClient() as client:
-            response = await client.get(jwk_url)
-            response.raise_for_status()
-            jwk_data = response.json()
-
-        # Find the correct key
-        public_key = None
-        for key in jwk_data.get('keys', []):
-            if key.get('kid') == kid:
-                public_key = jwt.algorithms.RSAAlgorithm.from_jwk(key)
-                break
-
-        if not public_key:
-            raise HTTPException(status_code=401, detail="Invalid token key")
-
-        # Verify and decode token
-        decoded = jwt.decode(
-            token,
-            public_key,
-            algorithms=['RS256'],
-            audience='authenticated',
-            issuer=f"{settings.SUPABASE_URL}/auth/v2"
-        )
-
-        # Check token expiration
-        if decoded.get('exp', 0) < time.time():
-            raise HTTPException(status_code=401, detail="Token expired")
-
-        return decoded
-
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        payload = decode_access_token(token)
+        user_id = int(payload.get("sub"))
+        
+        # Get user from database
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        
+        # Return user data
+        return {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": user.role,
+            "sub": str(user.id)
+        }
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid token format")
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
 
 
+async def get_current_user_data(
+    credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    Dependency to get current user data from JWT token
+    
+    Returns:
+        User data dictionary
+    """
+    token = credentials.credentials
+    return await verify_token(token, db)
+
+
 def get_user_role(user_data: Dict[str, Any]) -> str:
     """
-    Extract user role from JWT payload
+    Extract user role from user data
 
     Args:
-        user_data: Decoded JWT payload
+        user_data: User data dictionary
 
     Returns:
         User role ('coach' or 'client')
     """
-    # Extract role from user metadata or app_metadata
-    app_metadata = user_data.get('app_metadata', {})
-    user_metadata = user_data.get('user_metadata', {})
-
-    role = (
-        app_metadata.get('role') or
-        user_metadata.get('role') or
-        'client'  # Default to client
-    )
-
-    return role
+    return user_data.get('role', 'client')
 
 
-def require_coach_role(user_data: Dict[str, Any]) -> None:
+def require_coach_role(user_data: Dict[str, Any] = Depends(get_current_user_data)) -> None:
     """
     Check if user has coach role
 
     Args:
-        user_data: Decoded JWT payload
+        user_data: User data dictionary
 
     Raises:
         HTTPException: If user is not a coach

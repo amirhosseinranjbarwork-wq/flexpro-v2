@@ -6,15 +6,27 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { useWorkoutStore } from '../../store/workoutStore';
-import { Exercise } from '../../types/ultimate-training';
+<<<<<<< HEAD
+import { Exercise, ExerciseCategory } from '../../types/ultimate-training';
 import { ExerciseCard } from './ExerciseCard';
 import { ScrollArea } from '../ui/scroll-area';
 import Badge from '../ui/Badge';
 import { Library, Lightbulb } from 'lucide-react';
 
-export const ExerciseLibrary: React.FC = () => {
+interface ExerciseLibraryProps {
+  categoryFilter?: ExerciseCategory;
+}
+
+export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ categoryFilter }) => {
   const { getFilteredExercises, getSmartSuggestions, activeDayId } = useWorkoutStore();
-  const filteredExercises = getFilteredExercises();
+  let filteredExercises = getFilteredExercises();
+
+  // Filter by category if provided
+  if (categoryFilter) {
+    filteredExercises = filteredExercises.filter(ex => ex.category === categoryFilter);
+  }
+
+
   const smartSuggestions = activeDayId ? getSmartSuggestions(activeDayId) : [];
 
   const hasSuggestions = smartSuggestions.length > 0;

@@ -422,13 +422,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      if (!auth?.user?.id) {
-        toast.error('اتصال به حساب کاربری برقرار نیست');
-        return;
-      }
+      // In local mode (when auth is disabled), use a default coach ID
+      const coachId = auth?.user?.id || 'local_coach_' + Date.now();
 
       try {
-        const coachId = auth.user.id;
         const userId = userData.id ?? makeId();
         const newUser = migrateUser({ ...userData, id: userId });
 
@@ -496,8 +493,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (error) {
         console.error('Failed to save user:', error);
         toast.error('خطا در ذخیره اطلاعات');
-        // Revert local state on critical error
-        setUsers(prev => prev.filter(u => u.id !== userData.id));
+        // Revert local state on critical error - only if user was already in the list
+        const userId = userData.id ?? makeId();
+        setUsers(prev => {
+          const idx = prev.findIndex(u => u.id === userId);
+          if (idx > -1) {
+            // User was already in the list, remove it
+            return prev.filter(u => u.id !== userId);
+          }
+          // User was new, don't revert
+          return prev;
+        });
+        throw error; // Re-throw to let caller handle it
       }
     },
     [hasPermission, auth?.user?.id, isSupabaseReady, users.length]
@@ -509,6 +516,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       syncUserToSupabase(u);
     },
     [syncUserToSupabase]
+  );
+
+  // Wrapper functions for compatibility
+  const addUser = useCallback(
+    async (userData: UserInput) => {
+      await saveUser(userData);
+    },
+    [saveUser]
+  );
+
+  const updateUser = useCallback(
+    async (userId: UserId, userData: UserInput) => {
+      await saveUser({ ...userData, id: userId });
+    },
+    [saveUser]
   );
 
   const deleteUser = useCallback(
@@ -810,10 +832,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <DataContext.Provider
       value={{
         users,
+        setUsers,
         requests,
         activeUser,
         activeUserId,
         selectedClientId,
+        selectedUser: selectedClientId,
+        setSelectedUser: setSelectedClientId,
         templates,
         currentRole,
         currentAccountId,
@@ -823,6 +848,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setActiveUserId,
         hasPermission,
         saveUser,
+        addUser,
+        updateUser,
         deleteUser,
         acceptRequest,
         rejectRequest,

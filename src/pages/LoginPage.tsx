@@ -33,13 +33,13 @@ const LoginPage: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
 
-  // بررسی خطای راه‌اندازی Supabase
-  useEffect(() => {
-    const initError = getSupabaseInitError();
-    if (initError && import.meta.env.DEV) {
-      console.warn('Supabase initialization error:', initError);
-    }
-  }, []);
+  // TEMPORARY: Disabled Supabase error checking
+  // useEffect(() => {
+  //   const initError = getSupabaseInitError();
+  //   if (initError && import.meta.env.DEV) {
+  //     console.warn('Supabase initialization error:', initError);
+  //   }
+  // }, []);
 
   useEffect(() => {
     if (roleLoading) return;

@@ -8,6 +8,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { User } from '../types/index';
+import { SCIENTIFIC_FOODS } from '../data/scientific-foods';
 import { useApp } from '../context/AppContext';
 import { useData } from '../context/DataContext';
 import EmptyState from './ui/EmptyState';
@@ -76,25 +77,6 @@ interface DietPanelProps {
 
 const DietPanel: React.FC<DietPanelProps> = (props) => {
   const { hasPermission } = useApp();
-  const { activeUser: contextActiveUser, updateActiveUser } = useData();
-  
-  // Use props if provided, otherwise use context
-  const activeUser = props.activeUser ?? contextActiveUser;
-  const onUpdateUser = props.onUpdateUser ?? updateActiveUser;
-  
-  // Early return if activeUser is not available
-  if (!activeUser) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <UtensilsCrossed className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-          <p className="text-slate-400">لطفا ابتدا یک کاربر را انتخاب کنید</p>
-        </div>
-      </div>
-    );
-  }
-  
-  const canEdit = hasPermission('editProgram', activeUser.id);
   const [dayType, setDayType] = useState('training'); // 'training' یا 'rest'
   const [meal, setMeal] = useState('صبحانه');
   const [category, setCategory] = useState('');
@@ -107,6 +89,9 @@ const DietPanel: React.FC<DietPanelProps> = (props) => {
 
   // بارگذاری داده‌های غذایی از Supabase
   const { data: foodsData } = useFoods();
+
+  // Get canEdit safely - will check activeUser later
+  const canEdit = activeUser?.id ? hasPermission('editProgram', activeUser.id) : false;
 
   // سازماندهی داده‌ها بر اساس ساختار قدیمی برای سازگاری
   interface FoodInfo {
@@ -124,15 +109,28 @@ const DietPanel: React.FC<DietPanelProps> = (props) => {
   }
 
   const foodData = useMemo((): Record<string, Record<string, FoodInfo>> | null => {
-    if (!foodsData) return null;
+    // Use Supabase data if available, otherwise use scientific foods
+    const dataSource = foodsData && foodsData.length > 0 ? foodsData : SCIENTIFIC_FOODS.map(food => ({
+      category: food.category,
+      name: food.name,
+      unit: food.servingUnit || 'گرم',
+      baseAmount: food.servingSize || 100,
+      calories: food.calories || 0,
+      protein: food.macros?.protein || 0,
+      carbs: food.macros?.carbohydrates || 0,
+      fat: food.macros?.fat || 0
+    }));
+
+    if (!dataSource || dataSource.length === 0) return null;
 
     const grouped: Record<string, Record<string, FoodInfo>> = {};
 
-    foodsData.forEach((food: { category: string; name: string; unit?: string; baseAmount?: number; calories?: number; protein?: number; carbs?: number; fat?: number }) => {
-      if (!grouped[food.category]) {
-        grouped[food.category] = {};
+    dataSource.forEach((food: { category: string; name: string; unit?: string; baseAmount?: number; calories?: number; protein?: number; carbs?: number; fat?: number }) => {
+      const categoryKey = typeof food.category === 'string' ? food.category : String(food.category);
+      if (!grouped[categoryKey]) {
+        grouped[categoryKey] = {};
       }
-      grouped[food.category][food.name] = {
+      grouped[categoryKey][food.name] = {
         u: food.unit || 'گرم',
         b: food.baseAmount || 100,
         c: food.calories || 0,
@@ -574,8 +572,8 @@ const DietPanel: React.FC<DietPanelProps> = (props) => {
     }
     
     // TDEE پایه (بدون در نظر گرفتن هدف) - برای محاسبات آتی ذخیره می‌شود
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const baseTDEE = Math.max(0, Math.round(bmr * baseActivityFactor));
+    // Note: baseTDEE calculated but not used in current implementation
+    void Math.max(0, Math.round(bmr * baseActivityFactor));
     
     // تعدیل TDEE بر اساس هدف ورزشکار و نوع روز
     let adjustedFactor = baseActivityFactor;
@@ -739,6 +737,7 @@ const DietPanel: React.FC<DietPanelProps> = (props) => {
   const { bmr, tdee, targetCalories, protein: targetP, carbs: targetC, fat: targetF } = useMemo(() => {
     return calcNutritionTargets();
   }, [
+    calcNutritionTargets,
     activeUser.weight,
     activeUser.height,
     activeUser.age,
@@ -751,6 +750,15 @@ const DietPanel: React.FC<DietPanelProps> = (props) => {
   ]);
 
   const dietItems = currentDietItems;
+
+  // Early return if no active user - after all hooks
+  if (!activeUser || !activeUser.id) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-slate-400">خطا: اطلاعات کاربر یافت نشد</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
