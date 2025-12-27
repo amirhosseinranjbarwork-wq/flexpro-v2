@@ -2,7 +2,7 @@
  * TRAINING PANEL - Module Exports
  */
 
-export { UltimateTrainingPanel } from './UltimateTrainingPanel';
+export { PremiumTrainingPanel } from './PremiumTrainingPanel';
 export { ExerciseFilterSidebar } from './ExerciseFilterSidebar';
 export { ExerciseLibrary } from './ExerciseLibrary';
 export { ExerciseCard } from './ExerciseCard';

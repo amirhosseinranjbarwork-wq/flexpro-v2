@@ -4,6 +4,7 @@ import Swal from 'sweetalert2';
 import { useApp } from '../context/AppContext';
 import type { User } from '../types/index';
 import { useSupplements } from '../hooks/useExercises';
+import { ULTIMATE_SUPPLEMENTS } from '../data/ultimate-supplements';
 
 interface SupplementsPanelProps {
   activeUser: User;
@@ -12,16 +13,24 @@ interface SupplementsPanelProps {
 
 const SupplementsPanel: React.FC<SupplementsPanelProps> = ({ activeUser, onUpdateUser }) => {
   const { theme, hasPermission } = useApp();
-  const canEdit = hasPermission('editProgram', activeUser.id);
   const [formData, setFormData] = useState({ name: '', dose: '', time: '', note: '' });
 
   // بارگذاری داده‌های مکمل‌ها از Supabase
   const { data: supplementsFromDB = [] } = useSupplements();
 
+  // Get canEdit safely - will check activeUser later
+  const canEdit = activeUser?.id ? hasPermission('editProgram', activeUser.id) : false;
+
   // لیست مکمل‌ها (fallback برای کمپتیبیلیتی)
   const supplementsData = useMemo(() => {
+    // Use Supabase data if available, otherwise use ultimate supplements
     if (supplementsFromDB && supplementsFromDB.length > 0) {
       return supplementsFromDB.map((s: any) => s.name);
+    }
+    
+    // Use ultimate supplements as fallback
+    if (ULTIMATE_SUPPLEMENTS && ULTIMATE_SUPPLEMENTS.length > 0) {
+      return ULTIMATE_SUPPLEMENTS.map(s => s.name);
     }
     
     return [
@@ -206,6 +215,15 @@ const SupplementsPanel: React.FC<SupplementsPanelProps> = ({ activeUser, onUpdat
     newUser.plans.supps.splice(index, 1);
     onUpdateUser(newUser);
   };
+
+  // Early return if no active user - after all hooks
+  if (!activeUser || !activeUser.id) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-slate-400">خطا: اطلاعات کاربر یافت نشد</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in-up">

@@ -37,11 +37,12 @@ if (supabaseUrl && supabaseAnonKey) {
 		console.error('🚨 Supabase init failed:', error);
 	}
 } else {
-	const missingVars: string[] = [];
-	if (!supabaseUrl) missingVars.push('VITE_SUPABASE_URL');
-	if (!supabaseAnonKey) missingVars.push('VITE_SUPABASE_ANON_KEY');
-	initError = `متغیرهای محیطی زیر یافت نشد: ${missingVars.join(', ')}. لطفا فایل .env را بررسی کنید.`;
-	console.error('🚨', initError);
+	// TEMPORARY: Suppress Supabase warnings when not configured
+	// Supabase is optional - app works in local mode without it
+	if (import.meta.env.DEV) {
+		console.log('ℹ️ Supabase not configured - running in local mode');
+	}
+	initError = null; // Don't set error, just log info
 }
 
 export const isSupabaseEnabled = Boolean(supabase);

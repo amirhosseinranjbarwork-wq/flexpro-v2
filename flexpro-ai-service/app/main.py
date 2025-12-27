@@ -7,16 +7,18 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI, Request, HTTPException, Depends
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import structlog
 
 from app.core.config import settings
-from app.core.security import verify_supabase_token
 from app.api.v1.api import api_router
-from app.db.supabase import init_supabase
+from app.db.database import init_db
+from app.db.seed import seed_exercises, seed_default_admin_user
+from app.models.sql_models import Exercise
+from sqlalchemy.orm import Session
+from app.db.database import SessionLocal
 
 # Configure structured logging
 structlog.configure(
@@ -51,12 +53,27 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager"""
     logger.info("Starting FlexPro AI Service")
 
-    # Initialize Supabase connection
+    # Initialize SQLite database
     try:
-        await init_supabase()
-        logger.info("Supabase connection initialized")
+        init_db()
+        logger.info("SQLite database initialized")
+        
+        # Seed database if empty
+        db = SessionLocal()
+        try:
+            exercise_count = db.query(Exercise).count()
+            if exercise_count == 0:
+                logger.info("Database is empty, seeding initial data...")
+                seed_exercises(db)
+                seed_default_admin_user(db)
+                logger.info("Database seeding completed")
+            else:
+                logger.info(f"Database already has {exercise_count} exercises")
+        finally:
+            db.close()
+            
     except Exception as e:
-        logger.error("Failed to initialize Supabase", error=str(e))
+        logger.error("Failed to initialize database", error=str(e))
         raise
 
     yield
@@ -82,24 +99,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Security scheme
-security = HTTPBearer()
-
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> dict:
-    """Verify Supabase JWT token and return user info"""
-    try:
-        token = credentials.credentials
-        user_data = await verify_supabase_token(token)
-        return user_data
-    except Exception as e:
-        logger.warning("Authentication failed", error=str(e))
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid authentication credentials"
-        )
-
 # Global exception handler
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -110,10 +109,11 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 # Include API routers
+# Note: Auth endpoints don't require authentication (handled in auth.py)
+# Other endpoints require authentication (handled in their respective files)
 app.include_router(
     api_router,
-    prefix="/api/v1",
-    dependencies=[Depends(get_current_user)]
+    prefix="/api/v1"
 )
 
 # Health check endpoint

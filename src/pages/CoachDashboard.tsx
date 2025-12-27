@@ -5,25 +5,23 @@ import { useData } from '../context/DataContext';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Sun, Moon, LogOut, Menu, X, User as UserIcon, Users, Dumbbell,
-  UtensilsCrossed, Pill, Printer, Activity, Award, BarChart3,
-  Settings, TrendingUp, Bell, Calendar, Search, Plus, Edit,
-  ChevronRight, Target, Zap, Heart, Star, Clock, CheckCircle2,
-  AlertCircle, FileText, Copy, Shield, Sparkles
+  Sun, Moon, LogOut, Menu, X, Users, Dumbbell,
+  UtensilsCrossed, Pill, Printer, Activity,
+  Settings, TrendingUp, Bell, Search, Plus,
+  ChevronRight, CheckCircle2,
+  Copy, Shield
 } from 'lucide-react';
 
 // Lazy load panels
-const TrainingPanel = lazy(() => import('../components/TrainingPanel'));
+const PremiumTrainingPanel = lazy(() => import('../components/TrainingPanel/PremiumTrainingPanel'));
 const DietPanel = lazy(() => import('../components/DietPanel'));
 const SupplementsPanel = lazy(() => import('../components/SupplementsPanel'));
 const ProfilePanel = lazy(() => import('../components/ProfilePanel'));
-const ClientInfoPanel = lazy(() => import('../components/ClientInfoPanel'));
 const PrintPanel = lazy(() => import('../components/print/PrintPanel'));
 
 import UserModal from '../components/UserModal';
-import type { UserId, UserInput } from '../types/index';
-import { fetchClientById, getOrCreateCoachCode, upsertClient } from '../lib/supabaseApi';
-import { mapClientToUser } from '../context/DataContext';
+import type { UserId, UserInput, User } from '../types/index';
+import { getOrCreateCoachCode } from '../lib/supabaseApi';
 
 // Loading Component
 const PanelLoadingFallback = () => (
@@ -143,13 +141,12 @@ type TabType = 'dashboard' | 'students' | 'training' | 'nutrition' | 'supplement
 export default function CoachDashboard() {
   const { user, signOut, profile } = useAuth();
   const { theme, toggleTheme } = useUI();
-  const { users, setUsers, selectedUser, setSelectedUser, addUser, updateUser } = useData();
+  const { users, selectedUser, setSelectedUser, addUser, updateUser } = useData();
   
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserInput | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [coachCode, setCoachCode] = useState<string>('');
   const [showNotifications, setShowNotifications] = useState(false);
@@ -178,9 +175,9 @@ export default function CoachDashboard() {
   // Stats
   const stats = useMemo(() => ({
     totalStudents: users.length,
-    activePrograms: users.filter(u => u.plans?.training?.length > 0).length,
-    completedWorkouts: users.reduce((sum, u) => sum + (u.workoutLogs?.length || 0), 0),
-    avgProgress: users.length > 0 ? Math.round(users.reduce((sum, u) => sum + (u.progress || 0), 0) / users.length) : 0
+    activePrograms: users.filter(u => u.plans?.workouts && Object.keys(u.plans.workouts).length > 0).length,
+    completedWorkouts: 0, // TODO: Implement workout logs tracking
+    avgProgress: 0 // TODO: Implement progress tracking
   }), [users]);
 
   // Handlers
@@ -189,14 +186,9 @@ export default function CoachDashboard() {
     setShowUserModal(true);
   }, []);
 
-  const handleEditStudent = useCallback((student: any) => {
-    setEditingUser(student);
-    setShowUserModal(true);
-  }, []);
-
   const handleSaveStudent = useCallback(async (userData: UserInput) => {
     try {
-      if (editingUser) {
+      if (editingUser && editingUser.id) {
         await updateUser(editingUser.id, userData);
         toast.success('اطلاعات شاگرد به‌روزرسانی شد');
       } else {
@@ -206,6 +198,7 @@ export default function CoachDashboard() {
       setShowUserModal(false);
       setEditingUser(null);
     } catch (error) {
+      console.error('Error saving student:', error);
       toast.error('خطا در ذخیره اطلاعات');
     }
   }, [editingUser, addUser, updateUser]);
@@ -543,35 +536,186 @@ export default function CoachDashboard() {
             {/* Training Tab */}
             {activeTab === 'training' && (
               <Suspense fallback={<PanelLoadingFallback />}>
-                <TrainingPanel />
+                {selectedUser ? (
+                  (() => {
+                    const activeUser = users.find(u => u.id === selectedUser);
+                    if (!activeUser) {
+                      return (
+                        <div className="text-center py-12">
+                          <p className="text-slate-400">لطفاً ابتدا یک شاگرد انتخاب کنید</p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <PremiumTrainingPanel 
+                        activeUser={activeUser}
+                        onUpdateUser={(updatedUser) => {
+                          updateUser(updatedUser.id, updatedUser);
+                        }}
+                      />
+                    );
+                  })()
+                ) : (
+                  <div className="text-center py-12">
+                    <Users className="w-16 h-16 mx-auto mb-4 text-slate-700" />
+                    <p className="text-slate-400 mb-4">لطفاً ابتدا یک شاگرد انتخاب کنید</p>
+                    <button
+                      onClick={handleAddStudent}
+                      className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                    >
+                      افزودن شاگرد
+                    </button>
+                  </div>
+                )}
               </Suspense>
             )}
 
             {/* Nutrition Tab */}
             {activeTab === 'nutrition' && (
               <Suspense fallback={<PanelLoadingFallback />}>
-                <DietPanel />
+                {selectedUser ? (
+                  (() => {
+                    const activeUser = users.find(u => u.id === selectedUser);
+                    if (!activeUser) {
+                      return (
+                        <div className="text-center py-12">
+                          <p className="text-slate-400">لطفاً ابتدا یک شاگرد انتخاب کنید</p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <DietPanel 
+                        activeUser={activeUser} 
+                        onUpdateUser={(updatedUser) => {
+                          updateUser(updatedUser.id, updatedUser);
+                        }} 
+                      />
+                    );
+                  })()
+                ) : (
+                  <div className="text-center py-12">
+                    <Users className="w-16 h-16 mx-auto mb-4 text-slate-700" />
+                    <p className="text-slate-400 mb-4">لطفاً ابتدا یک شاگرد انتخاب کنید</p>
+                    <button
+                      onClick={handleAddStudent}
+                      className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                    >
+                      افزودن شاگرد
+                    </button>
+                  </div>
+                )}
               </Suspense>
             )}
 
             {/* Supplements Tab */}
             {activeTab === 'supplements' && (
               <Suspense fallback={<PanelLoadingFallback />}>
-                <SupplementsPanel />
+                {selectedUser ? (
+                  (() => {
+                    const activeUser = users.find(u => u.id === selectedUser);
+                    if (!activeUser) {
+                      return (
+                        <div className="text-center py-12">
+                          <p className="text-slate-400">لطفاً ابتدا یک شاگرد انتخاب کنید</p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <SupplementsPanel 
+                        activeUser={activeUser} 
+                        onUpdateUser={(updatedUser) => {
+                          updateUser(updatedUser.id, updatedUser);
+                        }} 
+                      />
+                    );
+                  })()
+                ) : (
+                  <div className="text-center py-12">
+                    <Users className="w-16 h-16 mx-auto mb-4 text-slate-700" />
+                    <p className="text-slate-400 mb-4">لطفاً ابتدا یک شاگرد انتخاب کنید</p>
+                    <button
+                      onClick={handleAddStudent}
+                      className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                    >
+                      افزودن شاگرد
+                    </button>
+                  </div>
+                )}
               </Suspense>
             )}
 
             {/* Print Tab */}
             {activeTab === 'print' && (
               <Suspense fallback={<PanelLoadingFallback />}>
-                <PrintPanel />
+                {selectedUser ? (
+                  (() => {
+                    const activeUser = users.find(u => u.id === selectedUser);
+                    if (!activeUser) {
+                      return (
+                        <div className="text-center py-12">
+                          <p className="text-slate-400">لطفاً ابتدا یک شاگرد انتخاب کنید</p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <PrintPanel 
+                        user={activeUser}
+                        onGeneratePrint={(type, data) => {
+                          console.log('Print requested:', type, data);
+                          toast.success('در حال آماده‌سازی برای پرینت...');
+                        }}
+                      />
+                    );
+                  })()
+                ) : (
+                  <div className="text-center py-12">
+                    <Users className="w-16 h-16 mx-auto mb-4 text-slate-700" />
+                    <p className="text-slate-400 mb-4">لطفاً ابتدا یک شاگرد انتخاب کنید</p>
+                    <button
+                      onClick={handleAddStudent}
+                      className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                    >
+                      افزودن شاگرد
+                    </button>
+                  </div>
+                )}
               </Suspense>
             )}
 
             {/* Profile Tab */}
             {activeTab === 'profile' && (
               <Suspense fallback={<PanelLoadingFallback />}>
-                <ProfilePanel />
+                {selectedUser ? (
+                  (() => {
+                    const activeUser = users.find(u => u.id === selectedUser);
+                    if (!activeUser) {
+                      return (
+                        <div className="text-center py-12">
+                          <p className="text-slate-400">لطفاً ابتدا یک شاگرد انتخاب کنید</p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <ProfilePanel 
+                        activeUser={activeUser}
+                        onUpdateUser={(updatedUser) => {
+                          updateUser(updatedUser.id, updatedUser);
+                        }}
+                      />
+                    );
+                  })()
+                ) : (
+                  <div className="text-center py-12">
+                    <Users className="w-16 h-16 mx-auto mb-4 text-slate-700" />
+                    <p className="text-slate-400 mb-4">لطفاً ابتدا یک شاگرد انتخاب کنید</p>
+                    <button
+                      onClick={handleAddStudent}
+                      className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                    >
+                      افزودن شاگرد
+                    </button>
+                  </div>
+                )}
               </Suspense>
             )}
           </AnimatePresence>
@@ -587,8 +731,7 @@ export default function CoachDashboard() {
             setEditingUser(null);
           }}
           onSave={handleSaveStudent}
-          initialData={editingUser || undefined}
-          mode={editingUser ? 'edit' : 'add'}
+          initialData={editingUser ? editingUser as User : undefined}
         />
       )}
     </div>

@@ -1,4 +1,5 @@
-import { useAuth } from './context/AuthContext';
+// TEMPORARY: Auth disabled
+// import { useAuth } from './context/AuthContext';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import LandingPage from './pages/LandingPage';
@@ -36,15 +37,16 @@ const AuthLoadingSpinner = () => (
 );
 
 function App() {
-  const { user, loading, ready } = useAuth();
+  // TEMPORARY: Bypass auth loading - go directly to dashboard
+  // const { user, loading, ready } = useAuth();
 
   // Show loading spinner while auth is initializing
-  if (!ready || loading) {
-    console.log('🔄 App: Auth not ready yet, showing loading spinner');
-    return <AuthLoadingSpinner />;
-  }
+  // if (!ready || loading) {
+  //   console.log('🔄 App: Auth not ready yet, showing loading spinner');
+  //   return <AuthLoadingSpinner />;
+  // }
 
-  console.log('✅ App: Auth ready, user:', user ? 'authenticated' : 'not authenticated');
+  // console.log('✅ App: Auth ready, user:', user ? 'authenticated' : 'not authenticated');
 
   return (
     <ErrorBoundary>
@@ -77,28 +79,25 @@ function App() {
         }}
       />
       <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        {/* TEMPORARY: Redirect root to dashboard, bypass login */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/register" element={<Navigate to="/dashboard" replace />} />
         <Route
           path="/dashboard"
-          element={
-            <PrivateRoute signedIn={!!user} fallback="/login">
-              <Dashboard />
-            </PrivateRoute>
-          }
+          element={<Dashboard />}
         />
         <Route
           path="/admin"
           element={
-            <PrivateRoute signedIn={!!user} fallback="/login">
+            <PrivateRoute signedIn={true} fallback="/dashboard">
               <AdminRoute>
                 <AdminDashboard />
               </AdminRoute>
             </PrivateRoute>
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </div>
     </ErrorBoundary>

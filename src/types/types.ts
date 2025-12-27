@@ -281,10 +281,13 @@ export interface AppContextType {
 // ========== Context Types (continued) ==========
 export interface DataContextType {
   users: User[];
+  setUsers: React.Dispatch<React.SetStateAction<User[]>>;
   requests: ProgramRequest[];
   activeUser: User | null;
   activeUserId: UserId | null;
   selectedClientId: UserId | null;
+  selectedUser: UserId | null;
+  setSelectedUser: (id: UserId | null) => void;
   templates: Template[];
   currentRole: Role;
   currentAccountId: UserId | null;
@@ -294,6 +297,8 @@ export interface DataContextType {
   setActiveUserId: (id: UserId | null) => void;
   hasPermission: (action: PermissionAction, targetUserId?: UserId | null) => boolean;
   saveUser: (user: UserInput) => Promise<void>;
+  addUser: (user: UserInput) => Promise<void>;
+  updateUser: (userId: UserId, user: UserInput) => Promise<void>;
   deleteUser: (id: UserId) => Promise<void>;
   acceptRequest: (request: ProgramRequest) => Promise<void>;
   rejectRequest: (request: ProgramRequest) => Promise<void>;

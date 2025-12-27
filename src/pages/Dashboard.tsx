@@ -1,11 +1,8 @@
-import { Suspense, lazy } from 'react';
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import React, { Suspense, lazy } from 'react';
 import { Activity } from 'lucide-react';
 
 // Code Splitting - Lazy load dashboards
 const CoachDashboard = lazy(() => import('./CoachDashboard'));
-const ClientDashboard = lazy(() => import('./ClientDashboard'));
 
 const LoadingFallback = () => (
   <div className="flex h-screen items-center justify-center bg-slate-950">
@@ -42,43 +39,52 @@ const LoadingFallback = () => (
 );
 
 const Dashboard: React.FC = () => {
-  const { user, role, loading, profile } = useAuth();
-
-  if (loading) {
-    return <LoadingFallback />;
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (role === 'coach' || profile?.role === 'coach') {
-    return (
-      <Suspense fallback={<LoadingFallback />}>
-        <CoachDashboard />
-      </Suspense>
-    );
-  }
-
-  if (role === 'client' || profile?.role === 'client') {
-    return (
-      <Suspense fallback={<LoadingFallback />}>
-        <ClientDashboard />
-      </Suspense>
-    );
-  }
-
+  // TEMPORARY: Bypass authentication - directly show CoachDashboard
+  // TODO: Re-enable authentication checks when needed
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <div className="text-center">
-        <div className="w-16 h-16 mx-auto bg-red-500/20 border border-red-500/30 rounded-2xl flex items-center justify-center mb-4">
-          <Activity className="w-8 h-8 text-red-400" />
-        </div>
-        <h2 className="text-xl font-bold text-white mb-2">نقش کاربر نامعتبر است</h2>
-        <p className="text-slate-400">لطفاً دوباره وارد شوید</p>
-      </div>
-    </div>
+    <Suspense fallback={<LoadingFallback />}>
+      <CoachDashboard />
+    </Suspense>
   );
+
+  // Original code (commented out temporarily):
+  // const { user, role, loading, profile } = useAuth();
+  // 
+  // if (loading) {
+  //   return <LoadingFallback />;
+  // }
+  // 
+  // if (!user) {
+  //   return <Navigate to="/login" replace />;
+  // }
+  // 
+  // if (role === 'coach' || profile?.role === 'coach') {
+  //   return (
+  //     <Suspense fallback={<LoadingFallback />}>
+  //       <CoachDashboard />
+  //     </Suspense>
+  //   );
+  // }
+  // 
+  // if (role === 'client' || profile?.role === 'client') {
+  //   return (
+  //     <Suspense fallback={<LoadingFallback />}>
+  //       <ClientDashboard />
+  //     </Suspense>
+  //   );
+  // }
+  // 
+  // return (
+  //   <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+  //     <div className="text-center">
+  //       <div className="w-16 h-16 mx-auto bg-red-500/20 border border-red-500/30 rounded-2xl flex items-center justify-center mb-4">
+  //         <Activity className="w-8 h-8 text-red-400" />
+  //       </div>
+  //       <h2 className="text-xl font-bold text-white mb-2">نقش کاربر نامعتبر است</h2>
+  //       <p className="text-slate-400">لطفاً دوباره وارد شوید</p>
+  //     </div>
+  //   </div>
+  // );
 };
 
 export default Dashboard;
