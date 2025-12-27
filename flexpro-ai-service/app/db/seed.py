@@ -1,230 +1,628 @@
 """
-Database Seeding Script
-Populates the SQLite database with initial exercise data
+Rich Data Seeding Script for FlexPro
+Seeds exercises, foods, and supplements with scientific data
 """
-
-import json
-import sys
-from pathlib import Path
 from sqlalchemy.orm import Session
-from app.db.database import SessionLocal, init_db
-from app.models.sql_models import Exercise, User, Food, WorkoutPlan
-from passlib.context import CryptContext
+from app.db.database import SessionLocal, engine, Base
+from datetime import datetime
+import logging
 
-# Password hashing context
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+logger = logging.getLogger(__name__)
 
+# ============================================================================
+# EXERCISES DATA - Converted from TypeScript ultimate-exercises.ts
+# ============================================================================
 
-def hash_password(password: str) -> str:
-    """Hash a password"""
-    return pwd_context.hash(password)
-
-
-def seed_exercises(db: Session, exercises_data: list = None):
-    """
-    Seed exercises table
+EXERCISES_DATA = [
+    # CHEST EXERCISES
+    {
+        "id": "ex_barbell_bench_press",
+        "name": "Barbell Bench Press",
+        "category": "resistance",
+        "primary_muscles": ["chest"],
+        "secondary_muscles": ["triceps", "shoulders"],
+        "equipment": ["barbell"],
+        "difficulty": "intermediate",
+        "description": "The king of upper body pressing movements. Lie on a flat bench and press the barbell from chest to full arm extension.",
+        "instructions": "Retract scapulae, arch lower back slightly, bar path diagonal toward face, touch chest at nipple line, drive feet into ground",
+        "default_sets": 4,
+        "default_reps": 6,
+        "default_rest": 180,
+        "rpe": 8,
+        "tempo": "3-0-1-0",
+        "tags": ["compound", "mass_builder", "powerlifting", "strength"]
+    },
+    {
+        "id": "ex_dumbbell_incline_press",
+        "name": "Dumbbell Incline Press",
+        "category": "resistance",
+        "primary_muscles": ["chest"],
+        "secondary_muscles": ["shoulders", "triceps"],
+        "equipment": ["dumbbell"],
+        "difficulty": "beginner",
+        "description": "Press dumbbells on a 30-45 degree incline bench to target upper chest.",
+        "instructions": "Set bench to 30-45 degrees, keep elbows at 45-degree angle, full ROM, slight arch in dumbbells at top",
+        "default_sets": 4,
+        "default_reps": 10,
+        "default_rest": 120,
+        "rpe": 7,
+        "tempo": "3-0-1-1",
+        "tags": ["hypertrophy", "upper_chest", "dumbbell"]
+    },
+    {
+        "id": "ex_cable_crossover",
+        "name": "Cable Crossover",
+        "category": "resistance",
+        "primary_muscles": ["chest"],
+        "secondary_muscles": ["shoulders"],
+        "equipment": ["cable"],
+        "difficulty": "beginner",
+        "description": "Isolation movement using cables to maximally stretch and contract the pecs.",
+        "instructions": "Slight forward lean, internally rotate shoulders at peak, maintain elbow angle, control negative",
+        "default_sets": 3,
+        "default_reps": 15,
+        "default_rest": 60,
+        "rpe": 8,
+        "tempo": "2-0-1-2",
+        "tags": ["isolation", "pump", "finisher", "constant_tension"]
+    },
     
-    Args:
-        db: Database session
-        exercises_data: List of exercise dictionaries. If None, uses default exercises.
-    """
-    # Check if exercises already exist
-    existing_count = db.query(Exercise).count()
-    if existing_count > 0:
-        print(f"Exercises table already has {existing_count} entries. Skipping seed.")
-        return
+    # BACK EXERCISES
+    {
+        "id": "ex_deadlift",
+        "name": "Conventional Deadlift",
+        "category": "resistance",
+        "primary_muscles": ["back", "glutes", "hamstrings"],
+        "secondary_muscles": ["traps", "forearms", "abs"],
+        "equipment": ["barbell"],
+        "difficulty": "advanced",
+        "description": "The ultimate posterior chain developer. Hip hinge movement lifting the barbell from the floor to standing.",
+        "instructions": "Bar over mid-foot, hips higher than knees, neutral spine, push floor away, keep bar close",
+        "default_sets": 5,
+        "default_reps": 5,
+        "default_rest": 240,
+        "rpe": 9,
+        "tempo": "2-0-2-0",
+        "tags": ["compound", "full_body", "strength", "powerlifting"]
+    },
+    {
+        "id": "ex_pull_up",
+        "name": "Pull-Up",
+        "category": "resistance",
+        "primary_muscles": ["back"],
+        "secondary_muscles": ["biceps", "forearms"],
+        "equipment": ["bodyweight"],
+        "difficulty": "intermediate",
+        "description": "Bodyweight vertical pulling exercise. Pull yourself up until chin clears bar.",
+        "instructions": "Dead hang start, depress and retract scapulae, pull elbows down and back, control descent",
+        "default_sets": 4,
+        "default_reps": 10,
+        "default_rest": 150,
+        "rpe": 8,
+        "tempo": "2-0-1-1",
+        "tags": ["bodyweight", "compound", "back_width", "calisthenics"]
+    },
+    {
+        "id": "ex_barbell_row",
+        "name": "Barbell Bent-Over Row",
+        "category": "resistance",
+        "primary_muscles": ["back"],
+        "secondary_muscles": ["biceps", "lower_back", "traps"],
+        "equipment": ["barbell"],
+        "difficulty": "intermediate",
+        "description": "Fundamental horizontal pulling movement for back thickness.",
+        "instructions": "Hip hinge 45 degrees, pull to lower chest, keep elbows close, squeeze shoulder blades, maintain neutral spine",
+        "default_sets": 4,
+        "default_reps": 8,
+        "default_rest": 150,
+        "rpe": 8,
+        "tempo": "2-0-1-1",
+        "tags": ["compound", "back_thickness", "mass_builder"]
+    },
     
-    # Default exercises if none provided
-    if exercises_data is None:
-        exercises_data = get_default_exercises()
+    # SHOULDER EXERCISES
+    {
+        "id": "ex_overhead_press",
+        "name": "Standing Overhead Press",
+        "category": "resistance",
+        "primary_muscles": ["shoulders"],
+        "secondary_muscles": ["triceps", "traps", "abs"],
+        "equipment": ["barbell"],
+        "difficulty": "intermediate",
+        "description": "The king of shoulder builders. Press barbell from shoulders to overhead while standing.",
+        "instructions": "Grip slightly wider than shoulders, brace core, press in slight arc, lock out overhead, shrug at top",
+        "default_sets": 4,
+        "default_reps": 6,
+        "default_rest": 180,
+        "rpe": 8,
+        "tempo": "2-0-1-0",
+        "tags": ["compound", "shoulder_mass", "strength", "functional"]
+    },
+    {
+        "id": "ex_lateral_raise",
+        "name": "Dumbbell Lateral Raise",
+        "category": "resistance",
+        "primary_muscles": ["shoulders"],
+        "secondary_muscles": [],
+        "equipment": ["dumbbell"],
+        "difficulty": "beginner",
+        "description": "Isolation exercise targeting the lateral (middle) deltoid head.",
+        "instructions": "Slight bend in elbows, lead with elbows, raise to shoulder height, thumbs slightly down, control descent",
+        "default_sets": 4,
+        "default_reps": 15,
+        "default_rest": 60,
+        "rpe": 8,
+        "tempo": "2-0-1-2",
+        "tags": ["isolation", "shoulder_width", "pump", "side_delts"]
+    },
     
-    print(f"Seeding {len(exercises_data)} exercises...")
+    # LEG EXERCISES
+    {
+        "id": "ex_back_squat",
+        "name": "Barbell Back Squat",
+        "category": "resistance",
+        "primary_muscles": ["quads", "glutes"],
+        "secondary_muscles": ["hamstrings", "abs", "lower_back"],
+        "equipment": ["barbell"],
+        "difficulty": "intermediate",
+        "description": "The king of leg exercises. Barbell positioned on upper back, squat to depth.",
+        "instructions": "Bar on upper traps or rear delts, feet shoulder width, break hips and knees together, chest up, drive through mid-foot",
+        "default_sets": 4,
+        "default_reps": 6,
+        "default_rest": 240,
+        "rpe": 8,
+        "tempo": "3-0-1-0",
+        "tags": ["compound", "leg_mass", "strength", "powerlifting"]
+    },
+    {
+        "id": "ex_romanian_deadlift",
+        "name": "Romanian Deadlift",
+        "category": "resistance",
+        "primary_muscles": ["hamstrings", "glutes"],
+        "secondary_muscles": ["lower_back", "forearms"],
+        "equipment": ["barbell"],
+        "difficulty": "intermediate",
+        "description": "Hip hinge movement emphasizing hamstring stretch and development.",
+        "instructions": "Start from standing, soft knee bend, push hips back, lower until deep stretch, drive hips forward",
+        "default_sets": 4,
+        "default_reps": 10,
+        "default_rest": 120,
+        "rpe": 8,
+        "tempo": "3-1-1-0",
+        "tags": ["hamstring", "posterior_chain", "hypertrophy"]
+    },
+    {
+        "id": "ex_bulgarian_split_squat",
+        "name": "Bulgarian Split Squat",
+        "category": "resistance",
+        "primary_muscles": ["quads", "glutes"],
+        "secondary_muscles": ["hamstrings"],
+        "equipment": ["dumbbell"],
+        "difficulty": "intermediate",
+        "description": "Unilateral leg exercise with rear foot elevated on bench.",
+        "instructions": "Rear foot on bench, front foot far enough forward, descend straight down, keep torso upright, drive through heel",
+        "default_sets": 3,
+        "default_reps": 12,
+        "default_rest": 90,
+        "rpe": 8,
+        "tempo": "3-0-1-0",
+        "tags": ["unilateral", "quad_focus", "glute_focus", "stability"]
+    },
     
-    for exercise_data in exercises_data:
-        # Extract basic fields
-        exercise_id = exercise_data.get("id", "")
-        name = exercise_data.get("name", "")
-        category = exercise_data.get("category", "")
-        
-        # Extract muscle group (from primaryMuscles array or muscle_group field)
-        primary_muscles = exercise_data.get("primaryMuscles", [])
-        if primary_muscles and isinstance(primary_muscles, list) and len(primary_muscles) > 0:
-            muscle_group = primary_muscles[0] if isinstance(primary_muscles[0], str) else primary_muscles[0].value if hasattr(primary_muscles[0], 'value') else str(primary_muscles[0])
-        else:
-            muscle_group = exercise_data.get("muscle_group", "")
-        
-        # Extract equipment
-        equipment_list = exercise_data.get("equipment", [])
-        if equipment_list and isinstance(equipment_list, list) and len(equipment_list) > 0:
-            equipment = equipment_list[0] if isinstance(equipment_list[0], str) else equipment_list[0].value if hasattr(equipment_list[0], 'value') else str(equipment_list[0])
-        else:
-            equipment = exercise_data.get("equipment", "")
-        
-        exercise_type = exercise_data.get("type", "")
-        difficulty = exercise_data.get("difficulty", "")
-        
-        # Store full exercise data as JSON
-        scientific_data = {
-            "id": exercise_id,
-            "name": name,
-            "category": category,
-            "primaryMuscles": primary_muscles,
-            "secondaryMuscles": exercise_data.get("secondaryMuscles", []),
-            "equipment": equipment_list,
-            "movementPattern": exercise_data.get("movementPattern", ""),
-            "difficulty": difficulty,
-            "description": exercise_data.get("description", ""),
-            "cues": exercise_data.get("cues", []),
-            "commonMistakes": exercise_data.get("commonMistakes", []),
-            "tags": exercise_data.get("tags", []),
-            "defaultParameters": exercise_data.get("defaultParameters", {}),
-        }
-        
-        exercise = Exercise(
-            exercise_id=exercise_id,
-            name=name,
-            category=category,
-            muscle_group=muscle_group,
-            equipment=equipment,
-            type=exercise_type,
-            difficulty=difficulty,
-            scientific_data=scientific_data
-        )
-        
-        db.add(exercise)
+    # ARM EXERCISES
+    {
+        "id": "ex_barbell_curl",
+        "name": "Barbell Bicep Curl",
+        "category": "resistance",
+        "primary_muscles": ["biceps"],
+        "secondary_muscles": ["forearms"],
+        "equipment": ["barbell"],
+        "difficulty": "beginner",
+        "description": "Classic bicep builder. Curl barbell from arms extended to full contraction.",
+        "instructions": "Stand feet hip-width, elbows tucked, curl without swinging, squeeze at top, control negative",
+        "default_sets": 3,
+        "default_reps": 10,
+        "default_rest": 90,
+        "rpe": 8,
+        "tempo": "2-1-1-0",
+        "tags": ["isolation", "biceps", "arms", "classic"]
+    },
+    {
+        "id": "ex_close_grip_bench",
+        "name": "Close-Grip Bench Press",
+        "category": "resistance",
+        "primary_muscles": ["triceps"],
+        "secondary_muscles": ["chest", "shoulders"],
+        "equipment": ["barbell"],
+        "difficulty": "intermediate",
+        "description": "Compound tricep exercise using narrow grip on bench press.",
+        "instructions": "Grip shoulder-width, keep elbows tucked, lower to lower chest, press focusing on triceps, maintain scapular retraction",
+        "default_sets": 4,
+        "default_reps": 8,
+        "default_rest": 120,
+        "rpe": 8,
+        "tempo": "2-0-1-0",
+        "tags": ["compound", "triceps", "strength", "mass"]
+    },
     
-    db.commit()
-    print(f"✅ Successfully seeded {len(exercises_data)} exercises")
+    # CARDIO EXERCISES
+    {
+        "id": "ex_treadmill_running",
+        "name": "Treadmill Running",
+        "category": "cardio",
+        "primary_muscles": ["full_body"],
+        "secondary_muscles": ["calves", "quads"],
+        "equipment": ["treadmill"],
+        "difficulty": "beginner",
+        "description": "Controlled indoor running for cardiovascular conditioning.",
+        "instructions": "Land mid-foot, keep posture upright, natural arm swing, breathe rhythmically, start with warmup pace",
+        "default_duration": 30,
+        "intensity_zone": 2,
+        "tags": ["cardio", "endurance", "fat_loss", "conditioning"]
+    },
+    {
+        "id": "ex_jump_rope",
+        "name": "Jump Rope",
+        "category": "cardio",
+        "primary_muscles": ["calves"],
+        "secondary_muscles": ["shoulders", "forearms"],
+        "equipment": ["none"],
+        "difficulty": "intermediate",
+        "description": "Classic cardio exercise using a jump rope for footwork and conditioning.",
+        "instructions": "Jump on balls of feet, minimal ground contact, wrist rotation for rope, stay light, keep knees bent",
+        "default_duration": 15,
+        "intensity_zone": 3,
+        "tags": ["cardio", "coordination", "conditioning", "portable"]
+    },
+    
+    # CORE EXERCISES
+    {
+        "id": "ex_plank",
+        "name": "Plank Hold",
+        "category": "resistance",
+        "primary_muscles": ["abs"],
+        "secondary_muscles": ["lower_back", "shoulders"],
+        "equipment": ["bodyweight"],
+        "difficulty": "beginner",
+        "description": "Isometric core exercise. Hold body in straight line from head to heels.",
+        "instructions": "Forearms on ground, body in straight line, squeeze glutes, brace abs, breathe normally, don't let hips sag",
+        "default_sets": 3,
+        "default_reps": 1,
+        "default_rest": 60,
+        "rpe": 7,
+        "tags": ["isometric", "core_stability", "bodyweight", "beginner_friendly"]
+    }
+]
+
+# ============================================================================
+# FOODS DATA - Nutritional Database
+# ============================================================================
+
+FOODS_DATA = [
+    {
+        "id": "food_chicken_breast",
+        "name": "Chicken Breast (Skinless)",
+        "category": "protein",
+        "serving_size": 100,
+        "serving_unit": "100g",
+        "calories": 165,
+        "protein": 31,
+        "carbs": 0,
+        "fat": 3.6,
+        "fiber": 0,
+        "benefits": "High protein, low fat, excellent bioavailability",
+        "tags": ["lean_protein", "muscle_building", "staple"]
+    },
+    {
+        "id": "food_salmon",
+        "name": "Atlantic Salmon (Wild)",
+        "category": "protein",
+        "serving_size": 100,
+        "serving_unit": "100g",
+        "calories": 206,
+        "protein": 25,
+        "carbs": 0,
+        "fat": 11,
+        "fiber": 0,
+        "benefits": "Ultra-high omega-3, anti-inflammatory, heart health",
+        "tags": ["omega3", "healthy_fats", "premium"]
+    },
+    {
+        "id": "food_eggs_whole",
+        "name": "Whole Eggs",
+        "category": "protein",
+        "serving_size": 100,
+        "serving_unit": "2 large eggs",
+        "calories": 143,
+        "protein": 12.6,
+        "carbs": 0.7,
+        "fat": 9.5,
+        "fiber": 0,
+        "benefits": "Highest biological value protein, rich in choline",
+        "tags": ["complete_protein", "bioavailable", "breakfast"]
+    },
+    {
+        "id": "food_greek_yogurt",
+        "name": "Greek Yogurt (Non-fat)",
+        "category": "dairy",
+        "serving_size": 170,
+        "serving_unit": "1 container",
+        "calories": 100,
+        "protein": 17,
+        "carbs": 6,
+        "fat": 0.7,
+        "fiber": 0,
+        "benefits": "High protein, probiotics, slow-digesting casein",
+        "tags": ["high_protein", "probiotics", "convenient"]
+    },
+    {
+        "id": "food_white_rice",
+        "name": "White Rice (Cooked)",
+        "category": "carbohydrate",
+        "serving_size": 100,
+        "serving_unit": "1/2 cup cooked",
+        "calories": 130,
+        "protein": 2.7,
+        "carbs": 28,
+        "fat": 0.3,
+        "fiber": 0.4,
+        "benefits": "Quick-digesting carb for post-workout, easy on digestion",
+        "tags": ["fast_carb", "post_workout", "staple"]
+    },
+    {
+        "id": "food_sweet_potato",
+        "name": "Sweet Potato (Baked)",
+        "category": "carbohydrate",
+        "serving_size": 100,
+        "serving_unit": "1 medium",
+        "calories": 90,
+        "protein": 2,
+        "carbs": 21,
+        "fat": 0.2,
+        "fiber": 3.3,
+        "benefits": "High in vitamin A, moderate GI, antioxidant-rich",
+        "tags": ["complex_carb", "nutrient_dense", "paleo"]
+    },
+    {
+        "id": "food_oatmeal",
+        "name": "Oatmeal (Rolled Oats)",
+        "category": "grain",
+        "serving_size": 50,
+        "serving_unit": "1/2 cup dry",
+        "calories": 190,
+        "protein": 6.7,
+        "carbs": 34,
+        "fat": 3.4,
+        "fiber": 5,
+        "benefits": "High in beta-glucan fiber, slow-digesting, heart-healthy",
+        "tags": ["slow_carb", "breakfast", "fiber_rich"]
+    },
+    {
+        "id": "food_banana",
+        "name": "Banana",
+        "category": "fruit",
+        "serving_size": 120,
+        "serving_unit": "1 medium",
+        "calories": 105,
+        "protein": 1.3,
+        "carbs": 27,
+        "fat": 0.4,
+        "fiber": 3.1,
+        "benefits": "High in potassium, quick energy, convenient",
+        "tags": ["quick_carb", "potassium", "pre_workout"]
+    },
+    {
+        "id": "food_avocado",
+        "name": "Avocado",
+        "category": "healthy_fat",
+        "serving_size": 100,
+        "serving_unit": "1/2 medium",
+        "calories": 160,
+        "protein": 2,
+        "carbs": 8.5,
+        "fat": 15,
+        "fiber": 6.7,
+        "benefits": "Rich in monounsaturated fats, high potassium, promotes nutrient absorption",
+        "tags": ["healthy_fats", "heart_health", "keto"]
+    },
+    {
+        "id": "food_almonds",
+        "name": "Almonds (Raw)",
+        "category": "nut_seed",
+        "serving_size": 28,
+        "serving_unit": "1 oz (23 almonds)",
+        "calories": 164,
+        "protein": 6,
+        "carbs": 6,
+        "fat": 14,
+        "fiber": 3.5,
+        "benefits": "Very high in vitamin E, good magnesium source, promotes satiety",
+        "tags": ["healthy_fats", "snack", "portable"]
+    },
+    {
+        "id": "food_broccoli",
+        "name": "Broccoli (Cooked)",
+        "category": "vegetable",
+        "serving_size": 100,
+        "serving_unit": "1 cup",
+        "calories": 35,
+        "protein": 2.4,
+        "carbs": 7,
+        "fat": 0.4,
+        "fiber": 3.3,
+        "benefits": "Very high in vitamin C and K, contains sulforaphane, high fiber",
+        "tags": ["low_calorie", "nutrient_dense", "cruciferous"]
+    },
+    {
+        "id": "food_spinach",
+        "name": "Spinach (Raw)",
+        "category": "vegetable",
+        "serving_size": 100,
+        "serving_unit": "3 cups raw",
+        "calories": 23,
+        "protein": 2.9,
+        "carbs": 3.6,
+        "fat": 0.4,
+        "fiber": 2.2,
+        "benefits": "Extremely nutrient-dense, high in iron, nitrate content for blood flow",
+        "tags": ["low_calorie", "iron", "leafy_green"]
+    }
+]
+
+# ============================================================================
+# SUPPLEMENTS DATA - Evidence-Based Recommendations
+# ============================================================================
+
+SUPPLEMENTS_DATA = [
+    {
+        "id": "supp_creatine_monohydrate",
+        "name": "Creatine Monohydrate",
+        "category": "creatine",
+        "standard_dose": 5,
+        "dose_unit": "g",
+        "timing": "anytime",
+        "evidence_level": "strong",
+        "benefits": "Increases muscle creatine stores, enhances strength (3-5%), supports lean mass gains",
+        "instructions": "5g daily, loading phase optional (20g for 5 days)",
+        "tags": ["most_researched", "highly_effective", "affordable"]
+    },
+    {
+        "id": "supp_whey_isolate",
+        "name": "Whey Protein Isolate",
+        "category": "protein",
+        "standard_dose": 25,
+        "dose_unit": "g",
+        "timing": "post_workout",
+        "evidence_level": "strong",
+        "benefits": "Rapidly elevates muscle protein synthesis, highest leucine content, supports recovery",
+        "instructions": "25g per serving, 0.25g/kg bodyweight optimal for MPS",
+        "tags": ["fast_digesting", "high_leucine", "convenient"]
+    },
+    {
+        "id": "supp_beta_alanine",
+        "name": "Beta-Alanine",
+        "category": "amino_acid",
+        "standard_dose": 3.2,
+        "dose_unit": "g",
+        "timing": "anytime",
+        "evidence_level": "strong",
+        "benefits": "Increases muscle carnosine (up to 80%), buffers lactic acid, improves 60-240s exercise performance",
+        "instructions": "3.2g daily split into 2 doses, timing irrelevant (works via saturation)",
+        "tags": ["endurance", "buffering", "proven"]
+    },
+    {
+        "id": "supp_citrulline",
+        "name": "Citrulline Malate",
+        "category": "pre_workout",
+        "standard_dose": 8,
+        "dose_unit": "g",
+        "timing": "pre_workout",
+        "evidence_level": "moderate",
+        "benefits": "Increases nitric oxide, enhances blood flow and pump, may increase training volume by 10%",
+        "instructions": "8g citrulline malate (6g pure citrulline), take 30-60 min pre-workout",
+        "tags": ["nitric_oxide", "pump", "endurance"]
+    },
+    {
+        "id": "supp_vitamin_d3",
+        "name": "Vitamin D3",
+        "category": "vitamin",
+        "standard_dose": 2000,
+        "dose_unit": "IU",
+        "timing": "with_meals",
+        "evidence_level": "strong",
+        "benefits": "Supports bone health, immune function, may support testosterone, mood regulation",
+        "instructions": "2000 IU daily with fats, dose based on blood levels (aim 40-60 ng/mL)",
+        "tags": ["essential", "deficiency_common", "testosterone"]
+    },
+    {
+        "id": "supp_fish_oil",
+        "name": "Fish Oil (EPA/DHA)",
+        "category": "general_health",
+        "standard_dose": 2000,
+        "dose_unit": "mg",
+        "timing": "with_meals",
+        "evidence_level": "strong",
+        "benefits": "Powerful anti-inflammatory, supports heart health, may reduce DOMS, brain health",
+        "instructions": "1-3g combined EPA+DHA daily with food",
+        "tags": ["anti_inflammatory", "heart_health", "recovery"]
+    },
+    {
+        "id": "supp_magnesium",
+        "name": "Magnesium Glycinate",
+        "category": "mineral",
+        "standard_dose": 400,
+        "dose_unit": "mg",
+        "timing": "before_bed",
+        "evidence_level": "strong",
+        "benefits": "Supports muscle relaxation, improves sleep quality, reduces cramps, over 300 enzymatic reactions",
+        "instructions": "400mg before bed, glycinate for sleep/recovery",
+        "tags": ["recovery", "sleep", "essential"]
+    },
+    {
+        "id": "supp_caffeine",
+        "name": "Caffeine Anhydrous",
+        "category": "pre_workout",
+        "standard_dose": 200,
+        "dose_unit": "mg",
+        "timing": "pre_workout",
+        "evidence_level": "strong",
+        "benefits": "Increases alertness, enhances endurance (2-4%), reduces perceived exertion, may increase power",
+        "instructions": "3-6mg/kg bodyweight, take 30-60 min pre-workout, avoid within 6 hours of sleep",
+        "tags": ["stimulant", "proven", "performance"]
+    }
+]
 
 
-def get_default_exercises():
-    """
-    Returns a list of default exercises to seed the database
-    This is a minimal set - in production, load from JSON file exported from TypeScript
-    """
-    return [
-        {
-            "id": "ex_barbell_bench_press",
-            "name": "Barbell Bench Press",
-            "category": "resistance",
-            "primaryMuscles": ["chest"],
-            "secondaryMuscles": ["triceps", "shoulders"],
-            "equipment": ["barbell"],
-            "movementPattern": "horizontal_push",
-            "difficulty": "intermediate",
-            "description": "The king of upper body pressing movements.",
-            "cues": ["Retract scapulae", "Arch lower back slightly"],
-            "commonMistakes": ["Flaring elbows too wide"],
-            "tags": ["compound", "mass_builder"],
-            "defaultParameters": {"sets": 4, "reps": 6, "tempo": "3-0-1-0", "rest": 180}
-        },
-        {
-            "id": "ex_deadlift",
-            "name": "Conventional Deadlift",
-            "category": "resistance",
-            "primaryMuscles": ["back", "glutes", "hamstrings"],
-            "secondaryMuscles": ["traps", "forearms"],
-            "equipment": ["barbell"],
-            "movementPattern": "hinge",
-            "difficulty": "advanced",
-            "description": "The ultimate posterior chain developer.",
-            "cues": ["Bar over mid-foot", "Neutral spine"],
-            "commonMistakes": ["Rounding lower back"],
-            "tags": ["compound", "full_body", "strength"],
-            "defaultParameters": {"sets": 5, "reps": 5, "tempo": "2-0-2-0", "rest": 240}
-        },
-        {
-            "id": "ex_squat",
-            "name": "Barbell Back Squat",
-            "category": "resistance",
-            "primaryMuscles": ["quads", "glutes"],
-            "secondaryMuscles": ["hamstrings", "lower_back"],
-            "equipment": ["barbell"],
-            "movementPattern": "squat",
-            "difficulty": "intermediate",
-            "description": "The king of lower body movements.",
-            "cues": ["Keep chest up", "Knees track over toes"],
-            "commonMistakes": ["Knee valgus", "Forward lean"],
-            "tags": ["compound", "legs", "strength"],
-            "defaultParameters": {"sets": 4, "reps": 8, "tempo": "3-0-1-0", "rest": 180}
-        }
-    ]
-
-
-def seed_from_json_file(db: Session, json_file_path: str):
-    """
-    Seed exercises from a JSON file exported from TypeScript
-    
-    Args:
-        db: Database session
-        json_file_path: Path to JSON file containing exercises
-    """
-    json_path = Path(json_file_path)
-    if not json_path.exists():
-        print(f"❌ JSON file not found: {json_file_path}")
-        return
-    
-    print(f"Loading exercises from {json_file_path}...")
-    with open(json_path, 'r', encoding='utf-8') as f:
-        exercises_data = json.load(f)
-    
-    if isinstance(exercises_data, list):
-        seed_exercises(db, exercises_data)
-    elif isinstance(exercises_data, dict) and "exercises" in exercises_data:
-        seed_exercises(db, exercises_data["exercises"])
-    else:
-        print("❌ Invalid JSON format. Expected array of exercises or object with 'exercises' key.")
-
-
-def seed_default_admin_user(db: Session):
-    """Create a default admin user for testing"""
-    existing_user = db.query(User).filter(User.username == "admin").first()
-    if existing_user:
-        print("Default admin user already exists. Skipping.")
-        return
-    
-    admin_user = User(
-        username="admin",
-        email="admin@flexpro.com",
-        password_hash=hash_password("admin123"),
-        full_name="Admin User",
-        role="coach",
-        is_super_admin=1
-    )
-    
-    db.add(admin_user)
-    db.commit()
-    print("✅ Created default admin user (username: admin, password: admin123)")
-
-
-def main():
-    """Main seeding function"""
-    print("🌱 Starting database seeding...")
-    
-    # Initialize database (create tables)
-    init_db()
-    print("✅ Database initialized")
-    
-    # Create database session
+def seed_database():
+    """Seed the database with rich scientific data"""
     db = SessionLocal()
     
     try:
-        # Seed exercises
-        # Check if JSON file path provided as command line argument
-        if len(sys.argv) > 1:
-            json_file = sys.argv[1]
-            seed_from_json_file(db, json_file)
+        # Import models here to avoid circular imports
+        from app.api.v1.endpoints.health import Exercise, Food, Supplement
+        
+        logger.info("Starting database seeding...")
+        
+        # Seed Exercises
+        exercise_count = db.query(Exercise).count()
+        if exercise_count == 0:
+            logger.info(f"Seeding {len(EXERCISES_DATA)} exercises...")
+            for ex_data in EXERCISES_DATA:
+                exercise = Exercise(**ex_data)
+                db.add(exercise)
+            db.commit()
+            logger.info(f"✓ Seeded {len(EXERCISES_DATA)} exercises")
         else:
-            # Use default exercises
-            seed_exercises(db)
+            logger.info(f"Exercises already seeded ({exercise_count} found)")
         
-        # Seed default admin user
-        seed_default_admin_user(db)
+        # Seed Foods
+        food_count = db.query(Food).count()
+        if food_count == 0:
+            logger.info(f"Seeding {len(FOODS_DATA)} foods...")
+            for food_data in FOODS_DATA:
+                food = Food(**food_data)
+                db.add(food)
+            db.commit()
+            logger.info(f"✓ Seeded {len(FOODS_DATA)} foods")
+        else:
+            logger.info(f"Foods already seeded ({food_count} found)")
         
-        print("✅ Database seeding completed successfully!")
+        # Seed Supplements
+        supplement_count = db.query(Supplement).count()
+        if supplement_count == 0:
+            logger.info(f"Seeding {len(SUPPLEMENTS_DATA)} supplements...")
+            for supp_data in SUPPLEMENTS_DATA:
+                supplement = Supplement(**supp_data)
+                db.add(supplement)
+            db.commit()
+            logger.info(f"✓ Seeded {len(SUPPLEMENTS_DATA)} supplements")
+        else:
+            logger.info(f"Supplements already seeded ({supplement_count} found)")
+        
+        logger.info("✓ Database seeding completed successfully!")
         
     except Exception as e:
-        print(f"❌ Error during seeding: {str(e)}")
+        logger.error(f"Error seeding database: {e}")
         db.rollback()
         raise
     finally:
@@ -232,6 +630,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
-
-
+    logging.basicConfig(level=logging.INFO)
+    logger.info("Running seed script...")
+    Base.metadata.create_all(bind=engine)
+    seed_database()

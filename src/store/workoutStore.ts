@@ -17,6 +17,8 @@ import {
   ExerciseCategory
 } from '../types/ultimate-training';
 import { ULTIMATE_EXERCISES } from '../data/ultimate-exercises';
+import { workoutsApi } from '../services/api';
+import toast from 'react-hot-toast';
 
 // ============================================================================
 // STORE INTERFACE
@@ -39,6 +41,9 @@ interface WorkoutStore {
   createProgram: (name: string, goalType: WorkoutProgram['goalType']) => void;
   updateProgram: (updates: Partial<WorkoutProgram>) => void;
   deleteProgram: () => void;
+  saveProgram: () => Promise<void>;
+  loadProgram: (id: string) => Promise<void>;
+  loadAllPrograms: () => Promise<WorkoutProgram[]>;
   
   // Actions - Days
   addDay: (name: string, focus: string) => void;
@@ -300,6 +305,99 @@ export const useWorkoutStore = create<WorkoutStore>()(
           currentProgram: null,
           activeDayId: null
         });
+      },
+
+      // Save program to backend
+      saveProgram: async () => {
+        const { currentProgram } = get();
+        if (!currentProgram) {
+          toast.error('No program to save');
+          return;
+        }
+
+        try {
+          const programData = {
+            name: currentProgram.name,
+            description: currentProgram.description,
+            goal_type: currentProgram.goalType,
+            duration: currentProgram.duration,
+            difficulty: currentProgram.difficulty,
+            weekly_schedule: JSON.stringify(currentProgram.weeklySchedule)
+          };
+
+          let savedProgram;
+          if (currentProgram.id) {
+            // Update existing
+            savedProgram = await workoutsApi.update(currentProgram.id, programData);
+          } else {
+            // Create new
+            savedProgram = await workoutsApi.create(programData);
+          }
+
+          // Update store with saved program ID
+          set({
+            currentProgram: {
+              ...currentProgram,
+              id: savedProgram.id,
+              updatedAt: new Date()
+            }
+          });
+
+          toast.success('Program saved successfully!');
+        } catch (error: any) {
+          toast.error(error.detail || 'Failed to save program');
+          throw error;
+        }
+      },
+
+      // Load program from backend
+      loadProgram: async (id: string) => {
+        try {
+          const program = await workoutsApi.getById(id);
+          
+          const loadedProgram: WorkoutProgram = {
+            id: program.id,
+            name: program.name,
+            description: program.description || '',
+            goalType: program.goal_type as any,
+            duration: program.duration,
+            difficulty: program.difficulty as any,
+            weeklySchedule: JSON.parse(program.weekly_schedule as any),
+            createdAt: new Date(program.created_at || ''),
+            updatedAt: new Date(program.updated_at || '')
+          };
+
+          set({
+            currentProgram: loadedProgram,
+            activeDayId: loadedProgram.weeklySchedule[0]?.id || null
+          });
+
+          toast.success('Program loaded successfully!');
+        } catch (error: any) {
+          toast.error(error.detail || 'Failed to load program');
+          throw error;
+        }
+      },
+
+      // Load all programs
+      loadAllPrograms: async () => {
+        try {
+          const programs = await workoutsApi.getAll();
+          return programs.map(p => ({
+            id: p.id,
+            name: p.name,
+            description: p.description || '',
+            goalType: p.goal_type as any,
+            duration: p.duration,
+            difficulty: p.difficulty as any,
+            weeklySchedule: JSON.parse(p.weekly_schedule as any),
+            createdAt: new Date(p.created_at || ''),
+            updatedAt: new Date(p.updated_at || '')
+          }));
+        } catch (error: any) {
+          toast.error(error.detail || 'Failed to load programs');
+          return [];
+        }
       },
 
       // Day actions
