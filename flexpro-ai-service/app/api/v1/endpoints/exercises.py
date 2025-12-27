@@ -103,3 +103,4 @@ async def get_exercise_by_exercise_id(
     
     return exercise
 
+

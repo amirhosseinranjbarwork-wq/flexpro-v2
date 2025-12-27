@@ -79,3 +79,4 @@ def decode_access_token(token: str) -> Dict[str, Any]:
     except jwt.JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+

@@ -277,3 +277,4 @@ const PowerliftingTrainingTab: React.FC<PowerliftingTrainingTabProps> = ({
 export default PowerliftingTrainingTab;
 
 
+

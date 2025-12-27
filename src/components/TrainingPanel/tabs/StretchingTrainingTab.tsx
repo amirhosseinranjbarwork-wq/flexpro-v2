@@ -246,3 +246,4 @@ const StretchingTrainingTab: React.FC<StretchingTrainingTabProps> = ({
 export default StretchingTrainingTab;
 
 
+

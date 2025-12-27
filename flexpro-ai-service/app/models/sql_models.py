@@ -90,3 +90,4 @@ class WorkoutPlan(Base):
     # Relationships
     user = relationship("User", back_populates="workout_plans")
 
+
