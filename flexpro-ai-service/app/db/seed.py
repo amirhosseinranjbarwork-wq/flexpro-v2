@@ -578,8 +578,8 @@ def seed_database():
     db = SessionLocal()
     
     try:
-        # Import models here to avoid circular imports
-        from app.api.v1.endpoints.health import Exercise, Food, Supplement
+        # Import models
+        from app.models.sql_models_extended import Exercise, Food, Supplement
         
         logger.info("Starting database seeding...")
         
