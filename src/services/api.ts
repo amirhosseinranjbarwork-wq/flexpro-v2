@@ -1,379 +1,513 @@
 /**
- * Local API Service
- * Centralized API client for communicating with the FastAPI backend
+ * API SERVICE LAYER - Complete Local Backend Integration
+ * All communication with FastAPI SQLite backend
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
-export interface ApiError {
-  detail: string;
-  message?: string;
-}
-
-class ApiClient {
-  private baseURL: string;
-  private token: string | null = null;
-
-  constructor(baseURL: string) {
-    this.baseURL = baseURL;
-    // Load token from localStorage on initialization
-    this.loadToken();
-  }
-
-  /**
-   * Load authentication token from localStorage
-   */
-  private loadToken(): void {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('flexpro_token');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          this.token = parsed.access_token || null;
-        } catch {
-          this.token = stored; // Fallback if stored as plain string
-        }
-      }
-    }
-  }
-
-  /**
-   * Save authentication token to localStorage
-   */
-  setToken(token: string): void {
-    this.token = token;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('flexpro_token', JSON.stringify({ access_token: token }));
-    }
-  }
-
-  /**
-   * Clear authentication token
-   */
-  clearToken(): void {
-    this.token = null;
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('flexpro_token');
-    }
-  }
-
-  /**
-   * Get current authentication token
-   */
-  getToken(): string | null {
-    return this.token;
-  }
-
-  /**
-   * Make an API request
-   */
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
-    
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
-
-    // Add authorization header if token exists
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
-    }
-
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers,
-      });
-
-      // Handle non-JSON responses
-      const contentType = response.headers.get('content-type');
-      if (!contentType?.includes('application/json')) {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return {} as T; // Return empty object for non-JSON responses
-      }
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        const error: ApiError = data;
-        throw new Error(error.detail || error.message || `HTTP error! status: ${response.status}`);
-      }
-
-      return data;
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('An unknown error occurred');
-    }
-  }
-
-  /**
-   * GET request
-   */
-  async get<T>(endpoint: string, params?: Record<string, string | number | undefined>): Promise<T> {
-    let url = endpoint;
-    if (params) {
-      const searchParams = new URLSearchParams();
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          searchParams.append(key, String(value));
-        }
-      });
-      const queryString = searchParams.toString();
-      if (queryString) {
-        url += `?${queryString}`;
-      }
-    }
-    return this.request<T>(url, { method: 'GET' });
-  }
-
-  /**
-   * POST request
-   */
-  async post<T>(endpoint: string, data?: unknown): Promise<T> {
-    return this.request<T>(endpoint, {
-      method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
-    });
-  }
-
-  /**
-   * PUT request
-   */
-  async put<T>(endpoint: string, data?: unknown): Promise<T> {
-    return this.request<T>(endpoint, {
-      method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
-    });
-  }
-
-  /**
-   * DELETE request
-   */
-  async delete<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint, { method: 'DELETE' });
-  }
-}
-
-// Create singleton instance
-export const api = new ApiClient(API_BASE_URL);
-
 // ============================================================================
-// Authentication API
+// TYPES
 // ============================================================================
 
 export interface LoginCredentials {
-  username: string;
+  email: string;
   password: string;
 }
 
 export interface RegisterData {
-  username: string;
-  email?: string;
+  email: string;
   password: string;
-  full_name?: string;
-  role?: 'coach' | 'client';
+  full_name: string;
+  role?: 'client' | 'coach' | 'admin';
 }
 
 export interface AuthResponse {
   access_token: string;
   token_type: string;
-  user: {
-    id: number;
-    username: string;
-    email?: string;
-    full_name?: string;
-    role: string;
-    coach_code?: string;
-    is_super_admin: number;
-  };
+  user: User;
 }
 
-export const authApi = {
-  /**
-   * Login user
-   */
-  async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    const response = await api.post<AuthResponse>('/api/v1/auth/login', credentials);
-    api.setToken(response.access_token);
-    return response;
-  },
-
-  /**
-   * Register new user
-   */
-  async register(data: RegisterData): Promise<AuthResponse> {
-    const response = await api.post<AuthResponse>('/api/v1/auth/register', data);
-    api.setToken(response.access_token);
-    return response;
-  },
-
-  /**
-   * Get current user info
-   */
-  async getCurrentUser(): Promise<AuthResponse['user']> {
-    return api.get<AuthResponse['user']>('/api/v1/auth/me');
-  },
-
-  /**
-   * Logout user
-   */
-  logout(): void {
-    api.clearToken();
-  },
-};
-
-// ============================================================================
-// Exercises API
-// ============================================================================
+export interface User {
+  id: string;
+  email: string;
+  full_name: string;
+  role: string;
+  created_at: string;
+}
 
 export interface Exercise {
-  id: number;
-  exercise_id: string;
+  id: string;
   name: string;
-  category?: string;
-  muscle_group?: string;
-  sub_muscle_group?: string;
-  equipment?: string;
-  type?: string;
-  difficulty?: string;
-  scientific_data?: Record<string, unknown>;
+  category: string;
+  primary_muscles: string[];
+  secondary_muscles: string[];
+  equipment: string[];
+  difficulty: string;
+  description: string;
+  instructions?: string;
+  default_sets?: number;
+  default_reps?: number;
+  default_rest?: number;
+  rpe?: number;
+  tempo?: string;
+  tags?: string[];
 }
-
-export const exercisesApi = {
-  /**
-   * Get all exercises with optional filters
-   */
-  async getAll(filters?: {
-    category?: string;
-    muscle_group?: string;
-    equipment?: string;
-    search?: string;
-  }): Promise<Exercise[]> {
-    return api.get<Exercise[]>('/api/v1/exercises/', filters);
-  },
-
-  /**
-   * Get exercise by ID
-   */
-  async getById(id: number): Promise<Exercise> {
-    return api.get<Exercise>(`/api/v1/exercises/${id}`);
-  },
-
-  /**
-   * Get exercise by original exercise_id
-   */
-  async getByExerciseId(exerciseId: string): Promise<Exercise> {
-    return api.get<Exercise>(`/api/v1/exercises/by-exercise-id/${exerciseId}`);
-  },
-};
-
-// ============================================================================
-// Workouts API
-// ============================================================================
-
-export interface WorkoutPlan {
-  id: number;
-  user_id: number;
-  data: Record<string, unknown>;
-  plan_name?: string;
-  plan_type?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface WorkoutPlanCreate {
-  data: Record<string, unknown>;
-  plan_name?: string;
-  plan_type?: string;
-}
-
-export const workoutsApi = {
-  /**
-   * Get all workout plans for current user
-   */
-  async getAll(planType?: string): Promise<WorkoutPlan[]> {
-    return api.get<WorkoutPlan[]>('/api/v1/workouts/', planType ? { plan_type: planType } : undefined);
-  },
-
-  /**
-   * Get workout plan by ID
-   */
-  async getById(id: number): Promise<WorkoutPlan> {
-    return api.get<WorkoutPlan>(`/api/v1/workouts/${id}`);
-  },
-
-  /**
-   * Create new workout plan
-   */
-  async create(data: WorkoutPlanCreate): Promise<WorkoutPlan> {
-    return api.post<WorkoutPlan>('/api/v1/workouts/', data);
-  },
-
-  /**
-   * Update workout plan
-   */
-  async update(id: number, data: Partial<WorkoutPlanCreate>): Promise<WorkoutPlan> {
-    return api.put<WorkoutPlan>(`/api/v1/workouts/${id}`, data);
-  },
-
-  /**
-   * Delete workout plan
-   */
-  async delete(id: number): Promise<void> {
-    return api.delete<void>(`/api/v1/workouts/${id}`);
-  },
-
-  /**
-   * Get workout plans for a specific user (coach only)
-   */
-  async getByUserId(userId: number, planType?: string): Promise<WorkoutPlan[]> {
-    return api.get<WorkoutPlan[]>(
-      `/api/v1/workouts/user/${userId}`,
-      planType ? { plan_type: planType } : undefined
-    );
-  },
-};
-
-// ============================================================================
-// Foods API
-// ============================================================================
 
 export interface Food {
-  id: number;
-  food_id: string;
+  id: string;
   name: string;
-  name_en?: string;
-  category?: string;
-  subcategory?: string;
-  calories?: number;
-  macros?: Record<string, unknown>;
+  category: string;
+  serving_size: number;
+  serving_unit: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+  benefits?: string;
+  tags?: string[];
 }
 
-export const foodsApi = {
-  /**
-   * Get all foods with optional filters
-   */
-  async getAll(filters?: {
-    category?: string;
-    search?: string;
-  }): Promise<Food[]> {
-    return api.get<Food[]>('/api/v1/foods/', filters);
+export interface Supplement {
+  id: string;
+  name: string;
+  category: string;
+  standard_dose: number;
+  dose_unit: string;
+  timing: string;
+  evidence_level: string;
+  benefits: string;
+  instructions?: string;
+  tags?: string[];
+}
+
+export interface WorkoutProgram {
+  id?: string;
+  user_id?: string;
+  name: string;
+  description?: string;
+  goal_type: string;
+  duration: number;
+  difficulty: string;
+  weekly_schedule: any; // JSON
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ApiError {
+  detail: string;
+  status?: number;
+}
+
+// ============================================================================
+// CONFIGURATION
+// ============================================================================
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_VERSION = '/api/v1';
+const BASE_URL = `${API_BASE_URL}${API_VERSION}`;
+
+// ============================================================================
+// HTTP CLIENT
+// ============================================================================
+
+class ApiClient {
+  private baseUrl: string;
+  private token: string | null = null;
+
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+    this.loadToken();
+  }
+
+  private loadToken() {
+    this.token = localStorage.getItem('auth_token');
+  }
+
+  private saveToken(token: string) {
+    this.token = token;
+    localStorage.setItem('auth_token', token);
+  }
+
+  private clearToken() {
+    this.token = null;
+    localStorage.removeItem('auth_token');
+  }
+
+  private getHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    return headers;
+  }
+
+  private async handleResponse<T>(response: Response): Promise<T> {
+    if (!response.ok) {
+      let errorDetail = `HTTP Error ${response.status}`;
+      
+      try {
+        const errorData = await response.json();
+        errorDetail = errorData.detail || errorData.message || errorDetail;
+      } catch {
+        // If JSON parsing fails, use status text
+        errorDetail = response.statusText || errorDetail;
+      }
+
+      throw {
+        detail: errorDetail,
+        status: response.status
+      } as ApiError;
+    }
+
+    // Handle 204 No Content
+    if (response.status === 204) {
+      return {} as T;
+    }
+
+    try {
+      return await response.json();
+    } catch {
+      return {} as T;
+    }
+  }
+
+  async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
+    try {
+      const url = new URL(`${this.baseUrl}${endpoint}`);
+      
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            url.searchParams.append(key, String(value));
+          }
+        });
+      }
+
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: this.getHeaders(),
+      });
+
+      return this.handleResponse<T>(response);
+    } catch (error) {
+      if ((error as any).detail) {
+        throw error;
+      }
+      throw {
+        detail: 'Connection to local server failed. Please ensure the backend is running.',
+        status: 0
+      } as ApiError;
+    }
+  }
+
+  async post<T>(endpoint: string, data?: any): Promise<T> {
+    try {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: data ? JSON.stringify(data) : undefined,
+      });
+
+      return this.handleResponse<T>(response);
+    } catch (error) {
+      if ((error as any).detail) {
+        throw error;
+      }
+      throw {
+        detail: 'Connection to local server failed. Please ensure the backend is running.',
+        status: 0
+      } as ApiError;
+    }
+  }
+
+  async put<T>(endpoint: string, data?: any): Promise<T> {
+    try {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: data ? JSON.stringify(data) : undefined,
+      });
+
+      return this.handleResponse<T>(response);
+    } catch (error) {
+      if ((error as any).detail) {
+        throw error;
+      }
+      throw {
+        detail: 'Connection to local server failed. Please ensure the backend is running.',
+        status: 0
+      } as ApiError;
+    }
+  }
+
+  async delete<T>(endpoint: string): Promise<T> {
+    try {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        method: 'DELETE',
+        headers: this.getHeaders(),
+      });
+
+      return this.handleResponse<T>(response);
+    } catch (error) {
+      if ((error as any).detail) {
+        throw error;
+      }
+      throw {
+        detail: 'Connection to local server failed. Please ensure the backend is running.',
+        status: 0
+      } as ApiError;
+    }
+  }
+
+  // Authentication helpers
+  setToken(token: string) {
+    this.saveToken(token);
+  }
+
+  logout() {
+    this.clearToken();
+  }
+
+  isAuthenticated(): boolean {
+    return !!this.token;
+  }
+}
+
+// ============================================================================
+// API INSTANCE
+// ============================================================================
+
+const apiClient = new ApiClient(BASE_URL);
+
+// ============================================================================
+// AUTH API
+// ============================================================================
+
+export const authApi = {
+  async login(credentials: LoginCredentials): Promise<AuthResponse> {
+    const formData = new URLSearchParams();
+    formData.append('username', credentials.email);
+    formData.append('password', credentials.password);
+
+    try {
+      const response = await fetch(`${BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData.toString(),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw {
+          detail: errorData.detail || 'Login failed',
+          status: response.status
+        } as ApiError;
+      }
+
+      const data = await response.json();
+      apiClient.setToken(data.access_token);
+      return data;
+    } catch (error) {
+      if ((error as any).detail) {
+        throw error;
+      }
+      throw {
+        detail: 'Connection to local server failed. Please ensure the backend is running.',
+        status: 0
+      } as ApiError;
+    }
   },
 
-  /**
-   * Get food by ID
-   */
-  async getById(id: number): Promise<Food> {
-    return api.get<Food>(`/api/v1/foods/${id}`);
+  async register(data: RegisterData): Promise<AuthResponse> {
+    const response = await apiClient.post<AuthResponse>('/auth/register', data);
+    if (response.access_token) {
+      apiClient.setToken(response.access_token);
+    }
+    return response;
   },
+
+  async getCurrentUser(): Promise<User> {
+    return apiClient.get<User>('/auth/me');
+  },
+
+  logout() {
+    apiClient.logout();
+  },
+
+  isAuthenticated(): boolean {
+    return apiClient.isAuthenticated();
+  }
 };
 
+// ============================================================================
+// EXERCISES API
+// ============================================================================
 
+export const exercisesApi = {
+  async getAll(params?: {
+    category?: string;
+    difficulty?: string;
+    equipment?: string;
+    muscle_group?: string;
+    search?: string;
+    skip?: number;
+    limit?: number;
+  }): Promise<Exercise[]> {
+    return apiClient.get<Exercise[]>('/exercises', params);
+  },
+
+  async getById(id: string): Promise<Exercise> {
+    return apiClient.get<Exercise>(`/exercises/${id}`);
+  },
+
+  async create(exercise: Partial<Exercise>): Promise<Exercise> {
+    return apiClient.post<Exercise>('/exercises', exercise);
+  },
+
+  async update(id: string, exercise: Partial<Exercise>): Promise<Exercise> {
+    return apiClient.put<Exercise>(`/exercises/${id}`, exercise);
+  },
+
+  async delete(id: string): Promise<void> {
+    return apiClient.delete<void>(`/exercises/${id}`);
+  }
+};
+
+// ============================================================================
+// FOODS API
+// ============================================================================
+
+export const foodsApi = {
+  async getAll(params?: {
+    category?: string;
+    search?: string;
+    skip?: number;
+    limit?: number;
+  }): Promise<Food[]> {
+    return apiClient.get<Food[]>('/foods', params);
+  },
+
+  async getById(id: string): Promise<Food> {
+    return apiClient.get<Food>(`/foods/${id}`);
+  },
+
+  async create(food: Partial<Food>): Promise<Food> {
+    return apiClient.post<Food>('/foods', food);
+  },
+
+  async update(id: string, food: Partial<Food>): Promise<Food> {
+    return apiClient.put<Food>(`/foods/${id}`, food);
+  },
+
+  async delete(id: string): Promise<void> {
+    return apiClient.delete<void>(`/foods/${id}`);
+  },
+
+  async getCategories(): Promise<string[]> {
+    return apiClient.get<string[]>('/foods/categories/');
+  }
+};
+
+// ============================================================================
+// SUPPLEMENTS API
+// ============================================================================
+
+export const supplementsApi = {
+  async getAll(params?: {
+    category?: string;
+    evidence_level?: string;
+    search?: string;
+    skip?: number;
+    limit?: number;
+  }): Promise<Supplement[]> {
+    return apiClient.get<Supplement[]>('/supplements', params);
+  },
+
+  async getById(id: string): Promise<Supplement> {
+    return apiClient.get<Supplement>(`/supplements/${id}`);
+  },
+
+  async create(supplement: Partial<Supplement>): Promise<Supplement> {
+    return apiClient.post<Supplement>('/supplements', supplement);
+  },
+
+  async update(id: string, supplement: Partial<Supplement>): Promise<Supplement> {
+    return apiClient.put<Supplement>(`/supplements/${id}`, supplement);
+  },
+
+  async delete(id: string): Promise<void> {
+    return apiClient.delete<void>(`/supplements/${id}`);
+  },
+
+  async getCategories(): Promise<string[]> {
+    // Extract unique categories from all supplements
+    const all = await this.getAll();
+    return [...new Set(all.map(s => s.category).filter(Boolean))];
+  },
+
+  async getTopRated(limit: number = 10, minRating: number = 8): Promise<Supplement[]> {
+    const all = await this.getAll();
+    return all
+      .filter(s => (s as any).scientific_rating && (s as any).scientific_rating >= minRating)
+      .sort((a, b) => ((b as any).scientific_rating || 0) - ((a as any).scientific_rating || 0))
+      .slice(0, limit);
+  }
+};
+
+// ============================================================================
+// WORKOUTS API
+// ============================================================================
+
+export const workoutsApi = {
+  async getAll(params?: {
+    user_id?: string;
+    skip?: number;
+    limit?: number;
+  }): Promise<WorkoutProgram[]> {
+    return apiClient.get<WorkoutProgram[]>('/workouts', params);
+  },
+
+  async getById(id: string): Promise<WorkoutProgram> {
+    return apiClient.get<WorkoutProgram>(`/workouts/${id}`);
+  },
+
+  async create(workout: Partial<WorkoutProgram>): Promise<WorkoutProgram> {
+    return apiClient.post<WorkoutProgram>('/workouts', workout);
+  },
+
+  async update(id: string, workout: Partial<WorkoutProgram>): Promise<WorkoutProgram> {
+    return apiClient.put<WorkoutProgram>(`/workouts/${id}`, workout);
+  },
+
+  async delete(id: string): Promise<void> {
+    return apiClient.delete<void>(`/workouts/${id}`);
+  }
+};
+
+// ============================================================================
+// HEALTH CHECK
+// ============================================================================
+
+export const healthApi = {
+  async check(): Promise<{ status: string; message: string }> {
+    return apiClient.get<{ status: string; message: string }>('/health');
+  }
+};
+
+// ============================================================================
+// DEFAULT EXPORT
+// ============================================================================
+
+export default {
+  auth: authApi,
+  exercises: exercisesApi,
+  foods: foodsApi,
+  supplements: supplementsApi,
+  workouts: workoutsApi,
+  health: healthApi
+};

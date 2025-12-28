@@ -1,6 +1,6 @@
 /**
  * CORRECTIVE TRAINING TAB - تمرین اصلاحی
- * پارامترهای کامل: sets, reps, duration, focus area
+ * انتخاب حرکت + تنظیم پارامترها در همان تب
  */
 
 import React, { useState, useMemo } from 'react';
@@ -10,8 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
-import Badge from '../../ui/Badge';
-import { Plus, Trash2, GripVertical, Shield, Clock, Target } from 'lucide-react';
+import { Plus, Trash2, Shield, Search, X } from 'lucide-react';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -30,13 +29,15 @@ interface ExerciseWithParams {
 }
 
 const CorrectiveTrainingTab: React.FC<CorrectiveTrainingTabProps> = ({
-  activeUser,
-  onUpdateUser
+  activeUser: _activeUser,
+  onUpdateUser: _onUpdateUser
 }) => {
-  const { currentProgram, activeDayId, addExerciseToDay, getFilteredExercises } = useWorkoutStore();
+  const { activeDayId, addExerciseToDay, getFilteredExercises } = useWorkoutStore();
   const [exercises, setExercises] = useState<ExerciseWithParams[]>([]);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [showExerciseSelector, setShowExerciseSelector] = useState(false);
   const [showParamsForm, setShowParamsForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [params, setParams] = useState<CorrectiveParameters>({
     sets: 3,
     reps: 10,
@@ -48,15 +49,25 @@ const CorrectiveTrainingTab: React.FC<CorrectiveTrainingTabProps> = ({
     return getFilteredExercises().filter(ex => ex.category === ExerciseCategory.CORRECTIVE);
   }, [getFilteredExercises]);
 
-  const handleAddExercise = (exercise: Exercise) => {
+  const filteredExercises = useMemo(() => {
+    if (!searchQuery.trim()) return correctiveExercises;
+    const query = searchQuery.toLowerCase();
+    return correctiveExercises.filter(ex => 
+      ex.name.toLowerCase().includes(query) ||
+      ex.description?.toLowerCase().includes(query)
+    );
+  }, [correctiveExercises, searchQuery]);
+
+  const handleSelectExercise = (exercise: Exercise) => {
     setSelectedExercise(exercise);
+    setShowExerciseSelector(false);
+    setShowParamsForm(true);
     setParams({
       sets: 3,
       reps: 10,
       focus: exercise.description || '',
       duration: 30
     });
-    setShowParamsForm(true);
   };
 
   const handleSaveExercise = () => {
@@ -109,11 +120,11 @@ const CorrectiveTrainingTab: React.FC<CorrectiveTrainingTabProps> = ({
             تمرین اصلاحی
           </h2>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
-            تمرینات اصلاحی برای بهبود الگوهای حرکتی و پیشگیری از آسیب
+            انتخاب حرکت و تنظیم پارامترهای تمرین اصلاحی
           </p>
         </div>
         <Button
-          onClick={() => setShowParamsForm(true)}
+          onClick={() => setShowExerciseSelector(true)}
           className="bg-gradient-to-r from-green-600 to-teal-600"
         >
           <Plus className="w-4 h-4 ml-2" />
@@ -121,133 +132,129 @@ const CorrectiveTrainingTab: React.FC<CorrectiveTrainingTabProps> = ({
         </Button>
       </div>
 
-      {/* Parameters Form Modal */}
-      {showParamsForm && (
+      {/* Exercise Selector Modal */}
+      {showExerciseSelector && (
         <Card className="border-2 border-green-500 shadow-xl">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>تنظیم پارامترهای تمرین اصلاحی</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowParamsForm(false);
-                  setSelectedExercise(null);
-                }}
-              >
-                ×
+            <div className="flex items-center justify-between">
+              <CardTitle>انتخاب حرکت اصلاحی</CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setShowExerciseSelector(false)}>
+                <X className="w-4 h-4" />
               </Button>
-            </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {/* Search */}
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <Input
+                  placeholder="جستجوی حرکت اصلاحی..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pr-10"
+                />
+              </div>
+            </div>
+
+            {/* Exercise List */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-96 overflow-y-auto">
+              {filteredExercises.map(ex => (
+                <Button
+                  key={ex.id}
+                  variant="outline"
+                  onClick={() => handleSelectExercise(ex)}
+                  className="justify-start text-right h-auto p-3"
+                >
+                  <div className="flex-1 text-right">
+                    <div className="font-semibold">{translateExerciseName(ex.name)}</div>
+                    <div className="text-xs text-slate-500 mt-1">
+                      {ex.description?.substring(0, 50)}...
+                    </div>
+                  </div>
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Parameters Form */}
+      {showParamsForm && selectedExercise && (
+        <Card className="border-2 border-green-500 shadow-xl">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>تنظیم پارامترهای {translateExerciseName(selectedExercise.name)}</CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => { setShowParamsForm(false); setSelectedExercise(null); }}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Exercise Selection */}
-            {!selectedExercise && (
+            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+              <h3 className="font-bold text-lg mb-2">{translateExerciseName(selectedExercise.name)}</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400">{selectedExercise.description}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>انتخاب حرکت اصلاحی</Label>
-                <div className="grid grid-cols-2 gap-2 mt-2 max-h-60 overflow-y-auto">
-                  {correctiveExercises.map(ex => (
-                    <Button
-                      key={ex.id}
-                      variant="outline"
-                      onClick={() => handleAddExercise(ex)}
-                      className="justify-start text-right"
-                    >
-                      {translateExerciseName(ex.name)}
-                    </Button>
-                  ))}
-                </div>
+                <Label htmlFor="sets">ست‌ها</Label>
+                <Input
+                  id="sets"
+                  type="number"
+                  value={params.sets}
+                  onChange={(e) => setParams({ ...params, sets: parseInt(e.target.value) || 0 })}
+                  min="1"
+                />
               </div>
-            )}
+              <div>
+                <Label htmlFor="reps">تکرار</Label>
+                <Input
+                  id="reps"
+                  type="number"
+                  value={params.reps}
+                  onChange={(e) => setParams({ ...params, reps: parseInt(e.target.value) || 0 })}
+                  min="1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="duration">مدت زمان نگه‌داری (ثانیه)</Label>
+                <Input
+                  id="duration"
+                  type="number"
+                  value={params.duration}
+                  onChange={(e) => setParams({ ...params, duration: parseInt(e.target.value) || 0 })}
+                  min="1"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="focus">ناحیه تمرکز</Label>
+                <Input
+                  id="focus"
+                  type="text"
+                  value={params.focus}
+                  onChange={(e) => setParams({ ...params, focus: e.target.value })}
+                  placeholder="مثال: شانه، کمر، زانو"
+                />
+              </div>
+            </div>
 
-            {/* Parameters */}
-            {selectedExercise && (
-              <>
-                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                  <h3 className="font-bold text-lg mb-2">{translateExerciseName(selectedExercise.name)}</h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {selectedExercise.description}
-                  </p>
-                </div>
+            <div>
+              <Label htmlFor="notes">یادداشت</Label>
+              <textarea
+                id="notes"
+                value={params.notes || ''}
+                onChange={(e) => setParams({ ...params, notes: e.target.value })}
+                className="w-full mt-2 p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800"
+                rows={3}
+                placeholder="یادداشت‌های اضافی..."
+              />
+            </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Sets */}
-                  <div>
-                    <Label htmlFor="sets">ست‌ها</Label>
-                    <Input
-                      id="sets"
-                      type="number"
-                      value={params.sets}
-                      onChange={(e) => setParams({ ...params, sets: parseInt(e.target.value) || 0 })}
-                      min="1"
-                      max="10"
-                    />
-                  </div>
-
-                  {/* Reps */}
-                  <div>
-                    <Label htmlFor="reps">تکرار</Label>
-                    <Input
-                      id="reps"
-                      type="number"
-                      value={params.reps || ''}
-                      onChange={(e) => setParams({ ...params, reps: parseInt(e.target.value) || undefined })}
-                      placeholder="اختیاری"
-                    />
-                  </div>
-
-                  {/* Duration */}
-                  <div>
-                    <Label htmlFor="duration" className="flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      مدت زمان نگه‌داری (ثانیه)
-                    </Label>
-                    <Input
-                      id="duration"
-                      type="number"
-                      value={params.duration || ''}
-                      onChange={(e) => setParams({ ...params, duration: parseInt(e.target.value) || undefined })}
-                      placeholder="30"
-                    />
-                  </div>
-
-                  {/* Focus Area */}
-                  <div>
-                    <Label htmlFor="focus" className="flex items-center gap-2">
-                      <Target className="w-4 h-4" />
-                      ناحیه تمرکز
-                    </Label>
-                    <Input
-                      id="focus"
-                      type="text"
-                      value={params.focus}
-                      onChange={(e) => setParams({ ...params, focus: e.target.value })}
-                      placeholder="مثلاً: ثبات کتف"
-                    />
-                  </div>
-                </div>
-
-                {/* Notes */}
-                <div>
-                  <Label htmlFor="notes">یادداشت</Label>
-                  <textarea
-                    id="notes"
-                    value={params.notes || ''}
-                    onChange={(e) => setParams({ ...params, notes: e.target.value })}
-                    className="w-full mt-2 p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800"
-                    rows={3}
-                    placeholder="یادداشت‌های اضافی..."
-                  />
-                </div>
-
-                <Button
-                  onClick={handleSaveExercise}
-                  className="w-full bg-gradient-to-r from-green-600 to-teal-600"
-                >
-                  <Plus className="w-4 h-4 ml-2" />
-                  افزودن به برنامه
-                </Button>
-              </>
-            )}
+            <Button onClick={handleSaveExercise} className="w-full bg-gradient-to-r from-green-600 to-teal-600">
+              <Plus className="w-4 h-4 ml-2" />
+              افزودن به برنامه
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -261,7 +268,7 @@ const CorrectiveTrainingTab: React.FC<CorrectiveTrainingTabProps> = ({
                 <Shield className="w-16 h-16 mx-auto mb-4 text-slate-300" />
                 <p className="text-slate-500">هنوز حرکت اصلاحی اضافه نشده است</p>
                 <Button
-                  onClick={() => setShowParamsForm(true)}
+                  onClick={() => setShowExerciseSelector(true)}
                   className="mt-4 bg-gradient-to-r from-green-600 to-teal-600"
                 >
                   <Plus className="w-4 h-4 ml-2" />
@@ -307,9 +314,9 @@ const SortableExerciseRow: React.FC<SortableExerciseRowProps> = ({ item, onDelet
           <button
             {...attributes}
             {...listeners}
-            className="cursor-grab active:cursor-grabbing p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+            className="cursor-grab active:cursor-grabbing p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded mt-1"
           >
-            <GripVertical className="w-5 h-5 text-slate-400" />
+            <Plus className="w-5 h-5 text-slate-400 rotate-45" />
           </button>
 
           <div className="flex-1">
@@ -355,11 +362,10 @@ const SortableExerciseRow: React.FC<SortableExerciseRowProps> = ({ item, onDelet
                 </div>
               )}
             </div>
-
             {item.parameters.notes && (
-              <div className="mt-3 p-2 bg-slate-50 dark:bg-slate-800 rounded text-sm">
-                <strong>یادداشت:</strong> {item.parameters.notes}
-              </div>
+              <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+                📝 {item.parameters.notes}
+              </p>
             )}
           </div>
         </div>
@@ -369,6 +375,3 @@ const SortableExerciseRow: React.FC<SortableExerciseRowProps> = ({ item, onDelet
 };
 
 export default CorrectiveTrainingTab;
-
-
-

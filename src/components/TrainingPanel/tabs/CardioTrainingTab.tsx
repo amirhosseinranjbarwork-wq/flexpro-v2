@@ -1,6 +1,6 @@
 /**
  * CARDIO TRAINING TAB - تمرین کاردیو
- * پارامترهای کامل: duration, distance, zone, speed, incline, intervals, target HR
+ * انتخاب حرکت + تنظیم پارامترها در همان تب
  */
 
 import React, { useState, useMemo } from 'react';
@@ -10,8 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
-import Badge from '../../ui/Badge';
-import { Plus, Trash2, GripVertical, Heart, Clock, Target, TrendingUp } from 'lucide-react';
+import { Plus, Trash2, Heart, Search, X } from 'lucide-react';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -30,31 +29,41 @@ interface ExerciseWithParams {
 }
 
 const CardioTrainingTab: React.FC<CardioTrainingTabProps> = ({
-  activeUser,
-  onUpdateUser
+  activeUser: _activeUser,
+  onUpdateUser: _onUpdateUser
 }) => {
-  const { currentProgram, activeDayId, addExerciseToDay, getFilteredExercises } = useWorkoutStore();
+  const { activeDayId, addExerciseToDay, getFilteredExercises } = useWorkoutStore();
   const [exercises, setExercises] = useState<ExerciseWithParams[]>([]);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [showExerciseSelector, setShowExerciseSelector] = useState(false);
   const [showParamsForm, setShowParamsForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [params, setParams] = useState<CardioParameters>({
     duration: 30,
-    zone: CardioZone.ZONE_2,
-    rest: 0
+    zone: CardioZone.ZONE_2
   });
 
   const cardioExercises = useMemo(() => {
     return getFilteredExercises().filter(ex => ex.category === ExerciseCategory.CARDIO);
   }, [getFilteredExercises]);
 
-  const handleAddExercise = (exercise: Exercise) => {
+  const filteredExercises = useMemo(() => {
+    if (!searchQuery.trim()) return cardioExercises;
+    const query = searchQuery.toLowerCase();
+    return cardioExercises.filter(ex => 
+      ex.name.toLowerCase().includes(query) ||
+      ex.description?.toLowerCase().includes(query)
+    );
+  }, [cardioExercises, searchQuery]);
+
+  const handleSelectExercise = (exercise: Exercise) => {
     setSelectedExercise(exercise);
+    setShowExerciseSelector(false);
+    setShowParamsForm(true);
     setParams({
       duration: 30,
-      zone: CardioZone.ZONE_2,
-      rest: 0
+      zone: CardioZone.ZONE_2
     });
-    setShowParamsForm(true);
   };
 
   const handleSaveExercise = () => {
@@ -118,11 +127,11 @@ const CardioTrainingTab: React.FC<CardioTrainingTabProps> = ({
             تمرین کاردیو
           </h2>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
-            طراحی برنامه کاردیو با زون‌های مختلف و اینتروال
+            انتخاب حرکت و تنظیم پارامترهای تمرین کاردیو
           </p>
         </div>
         <Button
-          onClick={() => setShowParamsForm(true)}
+          onClick={() => setShowExerciseSelector(true)}
           className="bg-gradient-to-r from-red-600 to-pink-600"
         >
           <Plus className="w-4 h-4 ml-2" />
@@ -130,228 +139,221 @@ const CardioTrainingTab: React.FC<CardioTrainingTabProps> = ({
         </Button>
       </div>
 
-      {/* Parameters Form Modal */}
-      {showParamsForm && (
+      {/* Exercise Selector Modal */}
+      {showExerciseSelector && (
         <Card className="border-2 border-red-500 shadow-xl">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>تنظیم پارامترهای کاردیو</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowParamsForm(false);
-                  setSelectedExercise(null);
-                }}
-              >
-                ×
+            <div className="flex items-center justify-between">
+              <CardTitle>انتخاب حرکت کاردیو</CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setShowExerciseSelector(false)}>
+                <X className="w-4 h-4" />
               </Button>
-            </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {/* Search */}
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <Input
+                  placeholder="جستجوی حرکت کاردیو..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pr-10"
+                />
+              </div>
+            </div>
+
+            {/* Exercise List */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-96 overflow-y-auto">
+              {filteredExercises.map(ex => (
+                <Button
+                  key={ex.id}
+                  variant="outline"
+                  onClick={() => handleSelectExercise(ex)}
+                  className="justify-start text-right h-auto p-3"
+                >
+                  <div className="flex-1 text-right">
+                    <div className="font-semibold">{translateExerciseName(ex.name)}</div>
+                    <div className="text-xs text-slate-500 mt-1">
+                      {ex.description?.substring(0, 50)}...
+                    </div>
+                  </div>
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Parameters Form */}
+      {showParamsForm && selectedExercise && (
+        <Card className="border-2 border-red-500 shadow-xl">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>تنظیم پارامترهای {translateExerciseName(selectedExercise.name)}</CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => { setShowParamsForm(false); setSelectedExercise(null); }}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Exercise Selection */}
-            {!selectedExercise && (
+            <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+              <h3 className="font-bold text-lg mb-2">{translateExerciseName(selectedExercise.name)}</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400">{selectedExercise.description}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>انتخاب حرکت کاردیو</Label>
-                <div className="grid grid-cols-2 gap-2 mt-2 max-h-60 overflow-y-auto">
-                  {cardioExercises.map(ex => (
-                    <Button
-                      key={ex.id}
-                      variant="outline"
-                      onClick={() => handleAddExercise(ex)}
-                      className="justify-start text-right"
-                    >
-                      {translateExerciseName(ex.name)}
-                    </Button>
-                  ))}
+                <Label htmlFor="duration">مدت زمان (دقیقه)</Label>
+                <Input
+                  id="duration"
+                  type="number"
+                  value={params.duration}
+                  onChange={(e) => setParams({ ...params, duration: parseInt(e.target.value) || 0 })}
+                  min="1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="zone">زون ضربان قلب</Label>
+                <select
+                  id="zone"
+                  value={params.zone}
+                  onChange={(e) => setParams({ ...params, zone: parseInt(e.target.value) as CardioZone })}
+                  className="w-full mt-2 p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800"
+                >
+                  <option value={CardioZone.ZONE_1}>زون 1: ریکاوری (50-60%)</option>
+                  <option value={CardioZone.ZONE_2}>زون 2: پایه هوازی (60-70%)</option>
+                  <option value={CardioZone.ZONE_3}>زون 3: تمپو (70-80%)</option>
+                  <option value={CardioZone.ZONE_4}>زون 4: آستانه (80-90%)</option>
+                  <option value={CardioZone.ZONE_5}>زون 5: VO2max (90-100%)</option>
+                </select>
+              </div>
+              {params.distance !== undefined && (
+                <div>
+                  <Label htmlFor="distance">مسافت (کیلومتر)</Label>
+                  <Input
+                    id="distance"
+                    type="number"
+                    value={params.distance}
+                    onChange={(e) => setParams({ ...params, distance: parseFloat(e.target.value) || undefined })}
+                    step="0.1"
+                  />
+                </div>
+              )}
+              {params.speed !== undefined && (
+                <div>
+                  <Label htmlFor="speed">سرعت (km/h)</Label>
+                  <Input
+                    id="speed"
+                    type="number"
+                    value={params.speed}
+                    onChange={(e) => setParams({ ...params, speed: parseFloat(e.target.value) || undefined })}
+                    step="0.1"
+                  />
+                </div>
+              )}
+              {params.incline !== undefined && (
+                <div>
+                  <Label htmlFor="incline">شیب (%)</Label>
+                  <Input
+                    id="incline"
+                    type="number"
+                    value={params.incline}
+                    onChange={(e) => setParams({ ...params, incline: parseFloat(e.target.value) || undefined })}
+                    min="0"
+                    max="30"
+                  />
+                </div>
+              )}
+              {params.targetHeartRate !== undefined && (
+                <div>
+                  <Label htmlFor="targetHeartRate">ضربان قلب هدف (bpm)</Label>
+                  <Input
+                    id="targetHeartRate"
+                    type="number"
+                    value={params.targetHeartRate}
+                    onChange={(e) => setParams({ ...params, targetHeartRate: parseInt(e.target.value) || undefined })}
+                    min="60"
+                    max="220"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Intervals */}
+            {params.intervals && (
+              <div className="border-t pt-4">
+                <Label className="text-lg font-semibold mb-3 block">اینتروال</Label>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="intervalWork">کار (ثانیه)</Label>
+                    <Input
+                      id="intervalWork"
+                      type="number"
+                      value={params.intervals.work}
+                      onChange={(e) => setParams({
+                        ...params,
+                        intervals: {
+                          work: parseInt(e.target.value) || 0,
+                          rest: params.intervals?.rest || 60,
+                          rounds: params.intervals?.rounds || 10
+                        }
+                      })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="intervalRest">استراحت (ثانیه)</Label>
+                    <Input
+                      id="intervalRest"
+                      type="number"
+                      value={params.intervals.rest}
+                      onChange={(e) => setParams({
+                        ...params,
+                        intervals: {
+                          work: params.intervals?.work || 30,
+                          rest: parseInt(e.target.value) || 0,
+                          rounds: params.intervals?.rounds || 10
+                        }
+                      })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="intervalRounds">تعداد دور</Label>
+                    <Input
+                      id="intervalRounds"
+                      type="number"
+                      value={params.intervals.rounds}
+                      onChange={(e) => setParams({
+                        ...params,
+                        intervals: {
+                          work: params.intervals?.work || 30,
+                          rest: params.intervals?.rest || 60,
+                          rounds: parseInt(e.target.value) || 0
+                        }
+                      })}
+                    />
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Parameters */}
-            {selectedExercise && (
-              <>
-                <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                  <h3 className="font-bold text-lg mb-2">{translateExerciseName(selectedExercise.name)}</h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {selectedExercise.description}
-                  </p>
-                </div>
+            <div>
+              <Label htmlFor="notes">یادداشت</Label>
+              <textarea
+                id="notes"
+                value={params.notes || ''}
+                onChange={(e) => setParams({ ...params, notes: e.target.value })}
+                className="w-full mt-2 p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800"
+                rows={3}
+                placeholder="یادداشت‌های اضافی..."
+              />
+            </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Duration */}
-                  <div>
-                    <Label htmlFor="duration" className="flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      مدت زمان (دقیقه)
-                    </Label>
-                    <Input
-                      id="duration"
-                      type="number"
-                      value={params.duration}
-                      onChange={(e) => setParams({ ...params, duration: parseInt(e.target.value) || 0 })}
-                      min="1"
-                    />
-                  </div>
-
-                  {/* Zone */}
-                  <div>
-                    <Label htmlFor="zone" className="flex items-center gap-2">
-                      <Target className="w-4 h-4" />
-                      زون تمرینی
-                    </Label>
-                    <select
-                      id="zone"
-                      value={params.zone}
-                      onChange={(e) => setParams({ ...params, zone: parseInt(e.target.value) as CardioZone })}
-                      className="w-full mt-2 p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800"
-                    >
-                      <option value={CardioZone.ZONE_1}>زون 1: ریکاوری</option>
-                      <option value={CardioZone.ZONE_2}>زون 2: پایه هوازی</option>
-                      <option value={CardioZone.ZONE_3}>زون 3: تمپو</option>
-                      <option value={CardioZone.ZONE_4}>زون 4: آستانه</option>
-                      <option value={CardioZone.ZONE_5}>زون 5: VO2max</option>
-                    </select>
-                  </div>
-
-                  {/* Distance */}
-                  <div>
-                    <Label htmlFor="distance">مسافت (کیلومتر)</Label>
-                    <Input
-                      id="distance"
-                      type="number"
-                      value={params.distance || ''}
-                      onChange={(e) => setParams({ ...params, distance: parseFloat(e.target.value) || undefined })}
-                      placeholder="اختیاری"
-                    />
-                  </div>
-
-                  {/* Speed */}
-                  <div>
-                    <Label htmlFor="speed">سرعت (کیلومتر بر ساعت)</Label>
-                    <Input
-                      id="speed"
-                      type="number"
-                      value={params.speed || ''}
-                      onChange={(e) => setParams({ ...params, speed: parseFloat(e.target.value) || undefined })}
-                      placeholder="اختیاری"
-                    />
-                  </div>
-
-                  {/* Incline */}
-                  <div>
-                    <Label htmlFor="incline">شیب (درصد)</Label>
-                    <Input
-                      id="incline"
-                      type="number"
-                      value={params.incline || ''}
-                      onChange={(e) => setParams({ ...params, incline: parseFloat(e.target.value) || undefined })}
-                      placeholder="اختیاری"
-                    />
-                  </div>
-
-                  {/* Target HR */}
-                  <div>
-                    <Label htmlFor="targetHR" className="flex items-center gap-2">
-                      <Heart className="w-4 h-4" />
-                      ضربان قلب هدف (bpm)
-                    </Label>
-                    <Input
-                      id="targetHR"
-                      type="number"
-                      value={params.targetHeartRate || ''}
-                      onChange={(e) => setParams({ ...params, targetHeartRate: parseInt(e.target.value) || undefined })}
-                      placeholder="اختیاری"
-                    />
-                  </div>
-                </div>
-
-                {/* Intervals */}
-                <div className="pt-4 border-t">
-                  <Label className="flex items-center gap-2 mb-3">
-                    <TrendingUp className="w-4 h-4" />
-                    اینتروال (اختیاری)
-                  </Label>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="intervalWork">کار (ثانیه)</Label>
-                      <Input
-                        id="intervalWork"
-                        type="number"
-                        value={params.intervals?.work || ''}
-                        onChange={(e) => setParams({
-                          ...params,
-                          intervals: {
-                            ...params.intervals,
-                            work: parseInt(e.target.value) || 0,
-                            rest: params.intervals?.rest || 0,
-                            rounds: params.intervals?.rounds || 0
-                          } as any
-                        })}
-                        placeholder="30"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="intervalRest">استراحت (ثانیه)</Label>
-                      <Input
-                        id="intervalRest"
-                        type="number"
-                        value={params.intervals?.rest || ''}
-                        onChange={(e) => setParams({
-                          ...params,
-                          intervals: {
-                            ...params.intervals,
-                            work: params.intervals?.work || 0,
-                            rest: parseInt(e.target.value) || 0,
-                            rounds: params.intervals?.rounds || 0
-                          } as any
-                        })}
-                        placeholder="60"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="intervalRounds">تعداد دور</Label>
-                      <Input
-                        id="intervalRounds"
-                        type="number"
-                        value={params.intervals?.rounds || ''}
-                        onChange={(e) => setParams({
-                          ...params,
-                          intervals: {
-                            ...params.intervals,
-                            work: params.intervals?.work || 0,
-                            rest: params.intervals?.rest || 0,
-                            rounds: parseInt(e.target.value) || 0
-                          } as any
-                        })}
-                        placeholder="10"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Notes */}
-                <div>
-                  <Label htmlFor="notes">یادداشت</Label>
-                  <textarea
-                    id="notes"
-                    value={params.notes || ''}
-                    onChange={(e) => setParams({ ...params, notes: e.target.value })}
-                    className="w-full mt-2 p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800"
-                    rows={3}
-                    placeholder="یادداشت‌های اضافی..."
-                  />
-                </div>
-
-                <Button
-                  onClick={handleSaveExercise}
-                  className="w-full bg-gradient-to-r from-red-600 to-pink-600"
-                >
-                  <Plus className="w-4 h-4 ml-2" />
-                  افزودن به برنامه
-                </Button>
-              </>
-            )}
+            <Button onClick={handleSaveExercise} className="w-full bg-gradient-to-r from-red-600 to-pink-600">
+              <Plus className="w-4 h-4 ml-2" />
+              افزودن به برنامه
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -365,7 +367,7 @@ const CardioTrainingTab: React.FC<CardioTrainingTabProps> = ({
                 <Heart className="w-16 h-16 mx-auto mb-4 text-slate-300" />
                 <p className="text-slate-500">هنوز حرکت کاردیو اضافه نشده است</p>
                 <Button
-                  onClick={() => setShowParamsForm(true)}
+                  onClick={() => setShowExerciseSelector(true)}
                   className="mt-4 bg-gradient-to-r from-red-600 to-pink-600"
                 >
                   <Plus className="w-4 h-4 ml-2" />
@@ -378,6 +380,7 @@ const CardioTrainingTab: React.FC<CardioTrainingTabProps> = ({
                   key={item.id}
                   item={item}
                   onDelete={handleDeleteExercise}
+                  getZoneLabel={getZoneLabel}
                 />
               ))
             )}
@@ -392,9 +395,10 @@ const CardioTrainingTab: React.FC<CardioTrainingTabProps> = ({
 interface SortableExerciseRowProps {
   item: ExerciseWithParams;
   onDelete: (id: string) => void;
+  getZoneLabel: (zone: CardioZone) => string;
 }
 
-const SortableExerciseRow: React.FC<SortableExerciseRowProps> = ({ item, onDelete }) => {
+const SortableExerciseRow: React.FC<SortableExerciseRowProps> = ({ item, onDelete, getZoneLabel }) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: item.id
   });
@@ -404,17 +408,6 @@ const SortableExerciseRow: React.FC<SortableExerciseRowProps> = ({ item, onDelet
     transition
   };
 
-  const getZoneLabel = (zone: CardioZone) => {
-    switch (zone) {
-      case CardioZone.ZONE_1: return 'زون 1';
-      case CardioZone.ZONE_2: return 'زون 2';
-      case CardioZone.ZONE_3: return 'زون 3';
-      case CardioZone.ZONE_4: return 'زون 4';
-      case CardioZone.ZONE_5: return 'زون 5';
-      default: return 'زون 2';
-    }
-  };
-
   return (
     <Card ref={setNodeRef} style={style} className="hover:shadow-lg transition-shadow">
       <CardContent className="p-4">
@@ -422,9 +415,9 @@ const SortableExerciseRow: React.FC<SortableExerciseRowProps> = ({ item, onDelet
           <button
             {...attributes}
             {...listeners}
-            className="cursor-grab active:cursor-grabbing p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+            className="cursor-grab active:cursor-grabbing p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded mt-1"
           >
-            <GripVertical className="w-5 h-5 text-slate-400" />
+            <Plus className="w-5 h-5 text-slate-400 rotate-45" />
           </button>
 
           <div className="flex-1">
@@ -453,7 +446,7 @@ const SortableExerciseRow: React.FC<SortableExerciseRowProps> = ({ item, onDelet
               </div>
               <div className="bg-pink-50 dark:bg-pink-900/20 p-3 rounded-lg">
                 <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">زون</div>
-                <div className="font-bold text-lg">{getZoneLabel(item.parameters.zone)}</div>
+                <div className="font-bold text-lg text-sm">{getZoneLabel(item.parameters.zone)}</div>
               </div>
               {item.parameters.distance && (
                 <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
@@ -467,30 +460,11 @@ const SortableExerciseRow: React.FC<SortableExerciseRowProps> = ({ item, onDelet
                   <div className="font-bold text-lg">{item.parameters.speed} km/h</div>
                 </div>
               )}
-              {item.parameters.targetHeartRate && (
-                <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg">
-                  <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">ضربان هدف</div>
-                  <div className="font-bold text-lg">{item.parameters.targetHeartRate} bpm</div>
-                </div>
-              )}
             </div>
-
-            {/* Intervals */}
-            {item.parameters.intervals && (
-              <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800 rounded">
-                <div className="text-sm font-semibold mb-2">اینتروال:</div>
-                <div className="flex gap-4 text-sm">
-                  <span>کار: {item.parameters.intervals.work}s</span>
-                  <span>استراحت: {item.parameters.intervals.rest}s</span>
-                  <span>دور: {item.parameters.intervals.rounds}</span>
-                </div>
-              </div>
-            )}
-
             {item.parameters.notes && (
-              <div className="mt-3 p-2 bg-slate-50 dark:bg-slate-800 rounded text-sm">
-                <strong>یادداشت:</strong> {item.parameters.notes}
-              </div>
+              <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+                📝 {item.parameters.notes}
+              </p>
             )}
           </div>
         </div>
@@ -500,6 +474,3 @@ const SortableExerciseRow: React.FC<SortableExerciseRowProps> = ({ item, onDelet
 };
 
 export default CardioTrainingTab;
-
-
-

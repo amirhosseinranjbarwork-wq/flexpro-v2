@@ -14,7 +14,7 @@ import { useData } from '../context/DataContext';
 import EmptyState from './ui/EmptyState';
 import { useDebounce } from '../hooks/useDebounce';
 import { DragEndEvent } from '@dnd-kit/core';
-import { useFoods } from '../hooks/useExercises';
+import { useFoods } from '../hooks/useFoods';
 
 interface SortableFoodRowProps {
   item: DietItem;

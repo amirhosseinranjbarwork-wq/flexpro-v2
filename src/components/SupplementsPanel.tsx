@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { useApp } from '../context/AppContext';
 import type { User } from '../types/index';
-import { useSupplements } from '../hooks/useExercises';
+import { useSupplements } from '../hooks/useSupplements';
 import { ULTIMATE_SUPPLEMENTS } from '../data/ultimate-supplements';
 
 interface SupplementsPanelProps {

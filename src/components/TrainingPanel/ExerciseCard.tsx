@@ -29,7 +29,6 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   isDragging = false,
   compact = false
 }) => {
-<<<<<<< HEAD
   const getCategoryIcon = (category: ExerciseCategory | undefined) => {
     const iconClass = 'w-4 h-4';
     if (!category) return <Activity className={iconClass} />;
@@ -53,7 +52,6 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
     }
   };
 
-<<<<<<< HEAD
   const getCategoryColor = (category: ExerciseCategory | undefined) => {
     if (!category) return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200';
     switch (category) {
@@ -76,7 +74,6 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
     }
   };
 
-<<<<<<< HEAD
   const getDifficultyColor = (difficulty: string | undefined) => {
     if (!difficulty) return 'bg-slate-500';
     switch (difficulty.toLowerCase()) {
@@ -93,7 +90,6 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
     }
   };
 
-<<<<<<< HEAD
   const getEquipmentIcon = (equipment: Equipment | undefined) => {
     if (!equipment) return '•';
     // Map equipment to emoji/icon (simplified)
@@ -108,7 +104,6 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
       trx: '🔺',
       none: '✋'
     };
-<<<<<<< HEAD
     return icons[String(equipment)] || '•';
   };
 
@@ -202,8 +197,6 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                 .join(', ')}
             </div>
           )}
-            </div>
-          )}
         </div>
 
         {/* Equipment */}
@@ -244,8 +237,6 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
                   {String(tag)}
                 </Badge>
               ))}
-          </div>
-        )}
           </div>
         )}
 

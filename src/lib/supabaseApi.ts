@@ -1,86 +1,50 @@
-import { exercises } from '../data/exercises';
-import { foods } from '../data/foods';
+/**
+ * DEPRECATED: Supabase API has been removed
+ * This file exists only to prevent import errors during migration
+ * All functionality has been migrated to local API (src/services/api.ts)
+ */
 
-// --- MOCK DATA ---
-const MOCK_PROFILE = {
-  id: 'local-admin-id',
-  first_name: 'Local',
-  last_name: 'Developer',
-  role: 'coach',
-  is_super_admin: true,
-  coach_code: 'DEV-MODE'
-};
-
-const MOCK_CLIENTS = [
-  { id: 'client-1', first_name: 'Ali', last_name: 'Rezaei', role: 'client', email: 'client@test.com' },
-  { id: 'client-2', first_name: 'Sara', last_name: 'Tehrani', role: 'client', email: 'sara@test.com' },
-  { id: 'client-3', first_name: 'Mehdi', last_name: 'Ahmadi', role: 'client', email: 'mehdi@test.com' }
-];
-
-const mock = (data: any) => Promise.resolve({ data, error: null });
-
-// --- API REPLACEMENTS ---
-
-// Users API
-export const fetchUsers = async (_coachId?: string) => mock([]);
-export const upsertUser = async (_data?: unknown) => mock({});
-export const removeUser = async (_id?: string) => mock(true);
-
-// Templates API
-export const fetchTemplates = async (_coachId?: string) => mock([]);
-export const upsertTemplate = async (_data?: unknown) => mock({});
-export const removeTemplate = async (_id?: unknown, _coachId?: unknown) => mock(true);
-
-// Utility
+// Stub exports to prevent import errors
 export const isSupabaseReady = false;
-export const ensureSupabaseReady = async () => isSupabaseReady;
 
-// Clients API
-export const fetchClientsByCoach = async (_coachId?: string) => mock(MOCK_CLIENTS);
-export const fetchClients = async () => mock(MOCK_CLIENTS);
-export const fetchClientById = async (_clientId?: string) => mock(MOCK_CLIENTS[0]);
-export const upsertClient = async (_data?: unknown) => mock({});
-export const updateClient = async (_id?: string, _data?: unknown) => mock({});
-export const deleteClient = async (_id?: string) => mock(true);
+export async function ensureSupabaseReady(): Promise<boolean> {
+  return false;
+}
 
-// Workout Plans API
-export const fetchWorkoutPlansByCoach = async (_coachId?: string) => mock([]);
-export const fetchWorkoutPlansByClient = async (_clientId?: string) => mock([]);
-export const upsertWorkoutPlan = async (_data?: unknown) => mock({});
-export const deleteWorkoutPlan = async (_id?: string) => mock(true);
-
-// Coach Code API
-export const getOrCreateCoachCode = async (_userId?: string) => 'DEV-MODE';
-export const findCoachByCode = async (_code?: string) => mock({ id: 'coach-1', full_name: 'مربی آزمایشی' });
-
-// Program Requests API
-export const fetchRequestsByCoach = async (_coachId?: string) => mock([]);
-export const fetchRequestsByClient = async (_clientId?: string) => mock([]);
-export const createProgramRequest = async (_data?: unknown) => mock({ id: 'request-1' });
-export const updateRequestStatus = async (_id?: string, _status?: string, _note?: string, _req?: unknown) => mock(true);
-export const deleteProgramRequest = async (_id?: string) => mock(true);
-export const deleteProgramRequestLocally = async () => mock(true);
-
-// Profile API
-export const getProfile = async () => mock(MOCK_PROFILE);
-export const updateProfile = async () => mock(MOCK_PROFILE);
-export const checkUsernameAvailability = async () => true;
-
-// Library Data (Using your local files)
-export const fetchExercises = async () => exercises || [];
-export const fetchFoods = async () => foods || [];
-
-// Plans
-export const fetchDietPlansByCoach = async () => mock([]);
-export const createWorkoutPlan = async () => mock({ id: 'new-plan' });
-export const createDietPlan = async () => mock({ id: 'new-diet' });
-export const assignPlanToClient = async () => mock(true);
-
-// Storage
-export const uploadFile = async () => 'https://via.placeholder.com/150';
+// Stub functions
+export const fetchUsers = async () => Promise.resolve([]);
+export const upsertUser = async () => Promise.resolve({});
+export const removeUser = async () => Promise.resolve(true);
+export const fetchTemplates = async () => Promise.resolve([]);
+export const upsertTemplate = async () => Promise.resolve({});
+export const removeTemplate = async () => Promise.resolve(true);
+export const fetchClientsByCoach = async () => Promise.resolve([]);
+export const fetchClients = async () => Promise.resolve([]);
+export const fetchClientById = async () => Promise.resolve(null);
+export const upsertClient = async () => Promise.resolve({});
+export const updateClient = async () => Promise.resolve({});
+export const deleteClient = async () => Promise.resolve(true);
+export const fetchWorkoutPlansByCoach = async () => Promise.resolve([]);
+export const fetchWorkoutPlansByClient = async () => Promise.resolve([]);
+export const upsertWorkoutPlan = async () => Promise.resolve({});
+export const deleteWorkoutPlan = async () => Promise.resolve(true);
+export const getOrCreateCoachCode = async () => 'LOCAL-MODE';
+export const findCoachByCode = async () => Promise.resolve(null);
+export const fetchRequestsByCoach = async () => Promise.resolve([]);
+export const fetchRequestsByClient = async () => Promise.resolve([]);
+export const createProgramRequest = async () => Promise.resolve({ id: 'request-1' });
+export const updateRequestStatus = async () => Promise.resolve(true);
+export const deleteProgramRequest = async () => Promise.resolve(true);
+export const deleteProgramRequestLocally = async () => Promise.resolve(true);
+export const getProfile = async () => Promise.resolve(null);
+export const updateProfile = async () => Promise.resolve(null);
+export const checkUsernameAvailability = async () => Promise.resolve(true);
+export const fetchExercises = async () => Promise.resolve([]);
+export const fetchFoods = async () => Promise.resolve([]);
+export const fetchDietPlansByCoach = async () => Promise.resolve([]);
+export const createWorkoutPlan = async () => Promise.resolve({ id: 'new-plan' });
+export const createDietPlan = async () => Promise.resolve({ id: 'new-diet' });
+export const assignPlanToClient = async () => Promise.resolve(true);
+export const uploadFile = async () => Promise.resolve('https://via.placeholder.com/150');
 export const getPublicUrl = () => 'https://via.placeholder.com/150';
-
-// Disable direct access
-export const supabase = null;
-
 

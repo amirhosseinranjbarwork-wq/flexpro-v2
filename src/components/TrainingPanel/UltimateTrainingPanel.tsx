@@ -75,9 +75,9 @@ export const UltimateTrainingPanel: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <LayoutDashboard className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-          <h2 className="text-2xl font-bold mb-2">No Program Found</h2>
-          <p className="text-gray-600 mb-4">Create a new training program to get started</p>
+          <LayoutDashboard className="w-16 h-16 mx-auto mb-4 text-slate-400 dark:text-slate-500" />
+          <h2 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">No Program Found</h2>
+          <p className="text-slate-600 dark:text-slate-400 mb-4">Create a new training program to get started</p>
           <Button onClick={() => createProgram('My Training Program', 'hypertrophy')}>
             <Plus className="w-4 h-4 mr-2" />
             Create Program

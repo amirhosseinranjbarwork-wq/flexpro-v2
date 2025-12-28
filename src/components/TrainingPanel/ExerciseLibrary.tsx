@@ -6,30 +6,24 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { useWorkoutStore } from '../../store/workoutStore';
-<<<<<<< HEAD
 import { Exercise, ExerciseCategory } from '../../types/ultimate-training';
 import { ExerciseCard } from './ExerciseCard';
 import { ScrollArea } from '../ui/scroll-area';
 import Badge from '../ui/Badge';
-import { Library, Lightbulb } from 'lucide-react';
+import { Library } from 'lucide-react';
 
 interface ExerciseLibraryProps {
   categoryFilter?: ExerciseCategory;
 }
 
 export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ categoryFilter }) => {
-  const { getFilteredExercises, getSmartSuggestions, activeDayId } = useWorkoutStore();
+  const { getFilteredExercises } = useWorkoutStore();
   let filteredExercises = getFilteredExercises();
-
+  
   // Filter by category if provided
   if (categoryFilter) {
     filteredExercises = filteredExercises.filter(ex => ex.category === categoryFilter);
   }
-
-
-  const smartSuggestions = activeDayId ? getSmartSuggestions(activeDayId) : [];
-
-  const hasSuggestions = smartSuggestions.length > 0;
 
   return (
     <div className="flex flex-col h-full">
@@ -45,29 +39,7 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ categoryFilter
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="p-4 space-y-4">
-          {/* Smart Suggestions */}
-          {hasSuggestions && (
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-3">
-                <Lightbulb className="w-4 h-4 text-yellow-500" />
-                <h3 className="font-semibold text-sm text-yellow-700 dark:text-yellow-500">
-                  Smart Suggestions
-                </h3>
-              </div>
-              <div className="space-y-2">
-                {smartSuggestions.slice(0, 3).map(exercise => (
-                  <DraggableExerciseCard
-                    key={exercise.id}
-                    exercise={exercise}
-                    isSuggestion
-                  />
-                ))}
-              </div>
-              <div className="my-4 border-t border-slate-200 dark:border-slate-700" />
-            </div>
-          )}
-
+        <div className="p-4 space-y-2">
           {/* All Exercises */}
           <div className="space-y-2">
             {filteredExercises.length === 0 ? (
@@ -91,12 +63,10 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ categoryFilter
 // Draggable wrapper for exercise cards
 interface DraggableExerciseCardProps {
   exercise: Exercise;
-  isSuggestion?: boolean;
 }
 
 const DraggableExerciseCard: React.FC<DraggableExerciseCardProps> = ({
-  exercise,
-  isSuggestion = false
+  exercise
 }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: exercise.id,
@@ -116,19 +86,9 @@ const DraggableExerciseCard: React.FC<DraggableExerciseCardProps> = ({
       style={style}
       {...attributes}
       {...listeners}
-      className={`cursor-grab active:cursor-grabbing ${
-        isSuggestion ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''
-      }`}
+      className="cursor-grab active:cursor-grabbing"
     >
       <ExerciseCard exercise={exercise} isDragging={isDragging} />
-      {isSuggestion && (
-        <Badge
-          variant="default"
-          className="absolute top-2 right-2 bg-yellow-500 text-yellow-900"
-        >
-          Suggested
-        </Badge>
-      )}
     </div>
   );
 };

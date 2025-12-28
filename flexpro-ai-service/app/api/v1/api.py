@@ -5,7 +5,7 @@ Combines all API endpoints
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import workout, diet, health, auth, exercises, workouts, foods
+from app.api.v1.endpoints import workout, diet, health, auth, exercises_extended, workouts, foods_extended, supplements
 
 api_router = APIRouter()
 
@@ -18,7 +18,7 @@ api_router.include_router(
 
 # Data endpoints (require authentication)
 api_router.include_router(
-    exercises.router,
+    exercises_extended.router,
     prefix="/exercises",
     tags=["exercises"]
 )
@@ -30,9 +30,15 @@ api_router.include_router(
 )
 
 api_router.include_router(
-    foods.router,
+    foods_extended.router,
     prefix="/foods",
     tags=["foods"]
+)
+
+api_router.include_router(
+    supplements.router,
+    prefix="/supplements",
+    tags=["supplements"]
 )
 
 # AI Generation endpoints (require authentication)

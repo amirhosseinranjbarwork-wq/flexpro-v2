@@ -367,36 +367,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       setLoading(false);
     }
 
-    // Legacy Supabase code (kept for backward compatibility)
-    if (!isSupabaseEnabled || !supabase) {
-      return;
-    }
-    
-    // بررسی تنظیمات Supabase
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    
-    if (!supabaseUrl || !supabaseKey) {
-      const error = new Error('تنظیمات Supabase یافت نشد. لطفا فایل .env را بررسی کنید.');
-      if (import.meta.env.DEV) console.error('Supabase config missing:', { supabaseUrl: !!supabaseUrl, supabaseKey: !!supabaseKey });
-      throw error;
-    }
-    
-    // بررسی اعتبار URL
-    if (!supabaseUrl.startsWith('http://') && !supabaseUrl.startsWith('https://')) {
-      const error = new Error('آدرس Supabase نامعتبر است. لطفا URL را بررسی کنید.');
-      if (import.meta.env.DEV) console.error('Invalid Supabase URL:', supabaseUrl);
-      throw error;
-    }
-    
-    // Validation ورودی‌ها
-    if (!identifier || !identifier.trim()) {
-      throw new Error('ایمیل یا نام کاربری الزامی است');
-    }
-    
-    if (!password || password.length < 6) {
-      throw new Error('رمز عبور باید حداقل 6 کاراکتر باشد');
-    }
+    // DEPRECATED: Legacy Supabase code removed - all authentication now uses local API
     
     setLoading(true);
     try {

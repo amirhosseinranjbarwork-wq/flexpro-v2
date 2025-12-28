@@ -4,11 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } from '@dnd-kit/core';
 import { useWorkoutStore } from '../../store/workoutStore';
-import { Exercise, ExerciseCategory } from '../../types/ultimate-training';
-import { ExerciseLibrary } from './ExerciseLibrary';
-import { ExerciseCard } from './ExerciseCard';
+import { ExerciseCategory } from '../../types/ultimate-training';
 import { Button } from '../ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
 import { 
@@ -22,7 +19,6 @@ import {
   Save,
   Download,
   Plus,
-  Settings,
   Sparkles
 } from 'lucide-react';
 import ResistanceTrainingTab from './tabs/ResistanceTrainingTab';
@@ -44,16 +40,11 @@ export const PremiumTrainingPanel: React.FC<PremiumTrainingPanelProps> = ({
 }) => {
   const {
     currentProgram,
-    activeDayId,
-    isLibraryOpen,
-    toggleLibrary,
     createProgram,
     addDay
   } = useWorkoutStore();
 
   const [activeTab, setActiveTab] = useState<ExerciseCategory>(ExerciseCategory.RESISTANCE);
-  const [activeExercise, setActiveExercise] = useState<Exercise | null>(null);
-  const [isLibraryVisible, setIsLibraryVisible] = useState(true);
 
   // Initialize program if none exists
   useEffect(() => {
@@ -62,33 +53,6 @@ export const PremiumTrainingPanel: React.FC<PremiumTrainingPanelProps> = ({
       addDay('روز 1', 'تمرین بالاتنه');
     }
   }, [currentProgram, createProgram, addDay]);
-
-  // Handle drag start
-  const handleDragStart = (event: DragStartEvent) => {
-    const exerciseId = event.active.id as string;
-    const exercise = useWorkoutStore.getState().getFilteredExercises()
-      .find(ex => ex.id === exerciseId);
-    if (exercise) {
-      setActiveExercise(exercise);
-    }
-  };
-
-  // Handle drag end
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    
-    if (over && activeDayId) {
-      const exerciseId = active.id as string;
-      const exercise = useWorkoutStore.getState().getFilteredExercises()
-        .find(ex => ex.id === exerciseId);
-      
-      if (exercise) {
-        useWorkoutStore.getState().addExerciseToDay(activeDayId, exercise);
-      }
-    }
-    
-    setActiveExercise(null);
-  };
 
   const getTabIcon = (category: ExerciseCategory) => {
     switch (category) {
@@ -157,12 +121,7 @@ export const PremiumTrainingPanel: React.FC<PremiumTrainingPanelProps> = ({
   }
 
   return (
-    <DndContext
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="flex flex-col h-full bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+    <div className="flex flex-col h-full bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
         {/* Premium Header */}
         <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-700/50 px-6 py-4 shadow-lg">
           <div className="flex items-center justify-between">
@@ -185,13 +144,6 @@ export const PremiumTrainingPanel: React.FC<PremiumTrainingPanelProps> = ({
             </div>
             
             <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setIsLibraryVisible(!isLibraryVisible)}
-              >
-                {isLibraryVisible ? 'مخفی کردن' : 'نمایش'} کتابخانه
-              </Button>
               <Button variant="outline" size="sm">
                 <Download className="w-4 h-4 ml-2" />
                 خروجی
@@ -199,6 +151,7 @@ export const PremiumTrainingPanel: React.FC<PremiumTrainingPanelProps> = ({
               <Button 
                 size="sm" 
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                onClick={() => useWorkoutStore.getState().saveProgram()}
               >
                 <Save className="w-4 h-4 ml-2" />
                 ذخیره
@@ -209,22 +162,6 @@ export const PremiumTrainingPanel: React.FC<PremiumTrainingPanelProps> = ({
 
         {/* Main Content */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Exercise Library Sidebar */}
-          {isLibraryVisible && (
-            <div className="w-96 border-l border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm flex flex-col shadow-xl">
-              <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-                <h2 className="font-bold text-lg flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-purple-600" />
-                  کتابخانه حرکات
-                </h2>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                  حرکات را بکشید و رها کنید
-                </p>
-              </div>
-              <ExerciseLibrary categoryFilter={activeTab} />
-            </div>
-          )}
-
           {/* Training Tabs Content */}
           <div className="flex-1 flex flex-col overflow-hidden">
             <div className="p-4 bg-white/30 dark:bg-slate-800/30 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700">
@@ -311,17 +248,7 @@ export const PremiumTrainingPanel: React.FC<PremiumTrainingPanelProps> = ({
             </div>
           </div>
         </div>
-
-        {/* Drag Overlay */}
-        <DragOverlay>
-          {activeExercise && (
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl p-4 border-2 border-blue-500 opacity-90 transform rotate-2">
-              <ExerciseCard exercise={activeExercise} isDragging />
-            </div>
-          )}
-        </DragOverlay>
       </div>
-    </DndContext>
   );
 };
 

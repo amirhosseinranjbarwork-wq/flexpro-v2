@@ -1,6 +1,6 @@
 /**
  * PLYOMETRIC TRAINING TAB - تمرین پلایومتریک
- * پارامترهای کامل: contacts, sets, height, distance, intensity, rest
+ * انتخاب حرکت + تنظیم پارامترها در همان تب
  */
 
 import React, { useState, useMemo } from 'react';
@@ -11,7 +11,7 @@ import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
 import Badge from '../../ui/Badge';
-import { Plus, Trash2, GripVertical, Zap, Clock, Target } from 'lucide-react';
+import { Plus, Trash2, Zap, Search, X } from 'lucide-react';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -30,13 +30,15 @@ interface ExerciseWithParams {
 }
 
 const PlyometricTrainingTab: React.FC<PlyometricTrainingTabProps> = ({
-  activeUser,
-  onUpdateUser
+  activeUser: _activeUser,
+  onUpdateUser: _onUpdateUser
 }) => {
-  const { currentProgram, activeDayId, addExerciseToDay, getFilteredExercises } = useWorkoutStore();
+  const { activeDayId, addExerciseToDay, getFilteredExercises } = useWorkoutStore();
   const [exercises, setExercises] = useState<ExerciseWithParams[]>([]);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [showExerciseSelector, setShowExerciseSelector] = useState(false);
   const [showParamsForm, setShowParamsForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [params, setParams] = useState<PlyometricParameters>({
     contacts: 20,
     sets: 3,
@@ -48,15 +50,25 @@ const PlyometricTrainingTab: React.FC<PlyometricTrainingTabProps> = ({
     return getFilteredExercises().filter(ex => ex.category === ExerciseCategory.PLYOMETRIC);
   }, [getFilteredExercises]);
 
-  const handleAddExercise = (exercise: Exercise) => {
+  const filteredExercises = useMemo(() => {
+    if (!searchQuery.trim()) return plyometricExercises;
+    const query = searchQuery.toLowerCase();
+    return plyometricExercises.filter(ex => 
+      ex.name.toLowerCase().includes(query) ||
+      ex.description?.toLowerCase().includes(query)
+    );
+  }, [plyometricExercises, searchQuery]);
+
+  const handleSelectExercise = (exercise: Exercise) => {
     setSelectedExercise(exercise);
+    setShowExerciseSelector(false);
+    setShowParamsForm(true);
     setParams({
       contacts: 20,
       sets: 3,
       intensity: 'medium',
       rest: 120
     });
-    setShowParamsForm(true);
   };
 
   const handleSaveExercise = () => {
@@ -127,11 +139,11 @@ const PlyometricTrainingTab: React.FC<PlyometricTrainingTabProps> = ({
             تمرین پلایومتریک
           </h2>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
-            تمرینات انفجاری برای بهبود قدرت و سرعت
+            انتخاب حرکت و تنظیم پارامترهای تمرین پلایومتریک
           </p>
         </div>
         <Button
-          onClick={() => setShowParamsForm(true)}
+          onClick={() => setShowExerciseSelector(true)}
           className="bg-gradient-to-r from-yellow-600 to-orange-600"
         >
           <Plus className="w-4 h-4 ml-2" />
@@ -139,160 +151,156 @@ const PlyometricTrainingTab: React.FC<PlyometricTrainingTabProps> = ({
         </Button>
       </div>
 
-      {/* Parameters Form Modal */}
-      {showParamsForm && (
+      {/* Exercise Selector Modal */}
+      {showExerciseSelector && (
         <Card className="border-2 border-yellow-500 shadow-xl">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>تنظیم پارامترهای پلایومتریک</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowParamsForm(false);
-                  setSelectedExercise(null);
-                }}
-              >
-                ×
+            <div className="flex items-center justify-between">
+              <CardTitle>انتخاب حرکت پلایومتریک</CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setShowExerciseSelector(false)}>
+                <X className="w-4 h-4" />
               </Button>
-            </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {/* Search */}
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <Input
+                  placeholder="جستجوی حرکت پلایومتریک..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pr-10"
+                />
+              </div>
+            </div>
+
+            {/* Exercise List */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-96 overflow-y-auto">
+              {filteredExercises.map(ex => (
+                <Button
+                  key={ex.id}
+                  variant="outline"
+                  onClick={() => handleSelectExercise(ex)}
+                  className="justify-start text-right h-auto p-3"
+                >
+                  <div className="flex-1 text-right">
+                    <div className="font-semibold">{translateExerciseName(ex.name)}</div>
+                    <div className="text-xs text-slate-500 mt-1">
+                      {ex.description?.substring(0, 50)}...
+                    </div>
+                  </div>
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Parameters Form */}
+      {showParamsForm && selectedExercise && (
+        <Card className="border-2 border-yellow-500 shadow-xl">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>تنظیم پارامترهای {translateExerciseName(selectedExercise.name)}</CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => { setShowParamsForm(false); setSelectedExercise(null); }}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Exercise Selection */}
-            {!selectedExercise && (
+            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+              <h3 className="font-bold text-lg mb-2">{translateExerciseName(selectedExercise.name)}</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400">{selectedExercise.description}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>انتخاب حرکت پلایومتریک</Label>
-                <div className="grid grid-cols-2 gap-2 mt-2 max-h-60 overflow-y-auto">
-                  {plyometricExercises.map(ex => (
-                    <Button
-                      key={ex.id}
-                      variant="outline"
-                      onClick={() => handleAddExercise(ex)}
-                      className="justify-start text-right"
-                    >
-                      {translateExerciseName(ex.name)}
-                    </Button>
-                  ))}
-                </div>
+                <Label htmlFor="contacts">تعداد برخورد</Label>
+                <Input
+                  id="contacts"
+                  type="number"
+                  value={params.contacts}
+                  onChange={(e) => setParams({ ...params, contacts: parseInt(e.target.value) || 0 })}
+                  min="1"
+                />
               </div>
-            )}
-
-            {/* Parameters */}
-            {selectedExercise && (
-              <>
-                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                  <h3 className="font-bold text-lg mb-2">{translateExerciseName(selectedExercise.name)}</h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {selectedExercise.description}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Contacts */}
-                  <div>
-                    <Label htmlFor="contacts" className="flex items-center gap-2">
-                      <Target className="w-4 h-4" />
-                      تعداد تماس با زمین
-                    </Label>
-                    <Input
-                      id="contacts"
-                      type="number"
-                      value={params.contacts}
-                      onChange={(e) => setParams({ ...params, contacts: parseInt(e.target.value) || 0 })}
-                      min="1"
-                    />
-                  </div>
-
-                  {/* Sets */}
-                  <div>
-                    <Label htmlFor="sets">ست‌ها</Label>
-                    <Input
-                      id="sets"
-                      type="number"
-                      value={params.sets}
-                      onChange={(e) => setParams({ ...params, sets: parseInt(e.target.value) || 0 })}
-                      min="1"
-                      max="10"
-                    />
-                  </div>
-
-                  {/* Height */}
-                  <div>
-                    <Label htmlFor="height">ارتفاع جعبه (سانتی‌متر)</Label>
-                    <Input
-                      id="height"
-                      type="number"
-                      value={params.height || ''}
-                      onChange={(e) => setParams({ ...params, height: parseInt(e.target.value) || undefined })}
-                      placeholder="اختیاری"
-                    />
-                  </div>
-
-                  {/* Distance */}
-                  <div>
-                    <Label htmlFor="distance">مسافت پرش (متر)</Label>
-                    <Input
-                      id="distance"
-                      type="number"
-                      value={params.distance || ''}
-                      onChange={(e) => setParams({ ...params, distance: parseFloat(e.target.value) || undefined })}
-                      placeholder="اختیاری"
-                    />
-                  </div>
-
-                  {/* Intensity */}
-                  <div>
-                    <Label htmlFor="intensity">شدت</Label>
-                    <select
-                      id="intensity"
-                      value={params.intensity}
-                      onChange={(e) => setParams({ ...params, intensity: e.target.value as 'low' | 'medium' | 'high' })}
-                      className="w-full mt-2 p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800"
-                    >
-                      <option value="low">کم</option>
-                      <option value="medium">متوسط</option>
-                      <option value="high">زیاد</option>
-                    </select>
-                  </div>
-
-                  {/* Rest */}
-                  <div>
-                    <Label htmlFor="rest" className="flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      استراحت (ثانیه)
-                    </Label>
-                    <Input
-                      id="rest"
-                      type="number"
-                      value={params.rest}
-                      onChange={(e) => setParams({ ...params, rest: parseInt(e.target.value) || 0 })}
-                      min="0"
-                    />
-                  </div>
-                </div>
-
-                {/* Notes */}
+              <div>
+                <Label htmlFor="sets">ست‌ها</Label>
+                <Input
+                  id="sets"
+                  type="number"
+                  value={params.sets}
+                  onChange={(e) => setParams({ ...params, sets: parseInt(e.target.value) || 0 })}
+                  min="1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="intensity">شدت</Label>
+                <select
+                  id="intensity"
+                  value={params.intensity}
+                  onChange={(e) => setParams({ ...params, intensity: e.target.value as 'low' | 'medium' | 'high' })}
+                  className="w-full mt-2 p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800"
+                >
+                  <option value="low">کم</option>
+                  <option value="medium">متوسط</option>
+                  <option value="high">زیاد</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="rest">استراحت (ثانیه)</Label>
+                <Input
+                  id="rest"
+                  type="number"
+                  value={params.rest}
+                  onChange={(e) => setParams({ ...params, rest: parseInt(e.target.value) || 0 })}
+                  min="0"
+                />
+              </div>
+              {params.height !== undefined && (
                 <div>
-                  <Label htmlFor="notes">یادداشت</Label>
-                  <textarea
-                    id="notes"
-                    value={params.notes || ''}
-                    onChange={(e) => setParams({ ...params, notes: e.target.value })}
-                    className="w-full mt-2 p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800"
-                    rows={3}
-                    placeholder="یادداشت‌های اضافی..."
+                  <Label htmlFor="height">ارتفاع جعبه (سانتی‌متر)</Label>
+                  <Input
+                    id="height"
+                    type="number"
+                    value={params.height}
+                    onChange={(e) => setParams({ ...params, height: parseInt(e.target.value) || undefined })}
+                    min="0"
                   />
                 </div>
+              )}
+              {params.distance !== undefined && (
+                <div>
+                  <Label htmlFor="distance">مسافت (متر)</Label>
+                  <Input
+                    id="distance"
+                    type="number"
+                    value={params.distance}
+                    onChange={(e) => setParams({ ...params, distance: parseInt(e.target.value) || undefined })}
+                    min="0"
+                  />
+                </div>
+              )}
+            </div>
 
-                <Button
-                  onClick={handleSaveExercise}
-                  className="w-full bg-gradient-to-r from-yellow-600 to-orange-600"
-                >
-                  <Plus className="w-4 h-4 ml-2" />
-                  افزودن به برنامه
-                </Button>
-              </>
-            )}
+            <div>
+              <Label htmlFor="notes">یادداشت</Label>
+              <textarea
+                id="notes"
+                value={params.notes || ''}
+                onChange={(e) => setParams({ ...params, notes: e.target.value })}
+                className="w-full mt-2 p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800"
+                rows={3}
+                placeholder="یادداشت‌های اضافی..."
+              />
+            </div>
+
+            <Button onClick={handleSaveExercise} className="w-full bg-gradient-to-r from-yellow-600 to-orange-600">
+              <Plus className="w-4 h-4 ml-2" />
+              افزودن به برنامه
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -306,7 +314,7 @@ const PlyometricTrainingTab: React.FC<PlyometricTrainingTabProps> = ({
                 <Zap className="w-16 h-16 mx-auto mb-4 text-slate-300" />
                 <p className="text-slate-500">هنوز حرکت پلایومتریک اضافه نشده است</p>
                 <Button
-                  onClick={() => setShowParamsForm(true)}
+                  onClick={() => setShowExerciseSelector(true)}
                   className="mt-4 bg-gradient-to-r from-yellow-600 to-orange-600"
                 >
                   <Plus className="w-4 h-4 ml-2" />
@@ -319,6 +327,8 @@ const PlyometricTrainingTab: React.FC<PlyometricTrainingTabProps> = ({
                   key={item.id}
                   item={item}
                   onDelete={handleDeleteExercise}
+                  getIntensityColor={getIntensityColor}
+                  getIntensityLabel={getIntensityLabel}
                 />
               ))
             )}
@@ -333,9 +343,11 @@ const PlyometricTrainingTab: React.FC<PlyometricTrainingTabProps> = ({
 interface SortableExerciseRowProps {
   item: ExerciseWithParams;
   onDelete: (id: string) => void;
+  getIntensityColor: (intensity: string) => string;
+  getIntensityLabel: (intensity: string) => string;
 }
 
-const SortableExerciseRow: React.FC<SortableExerciseRowProps> = ({ item, onDelete }) => {
+const SortableExerciseRow: React.FC<SortableExerciseRowProps> = ({ item, onDelete, getIntensityColor, getIntensityLabel }) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: item.id
   });
@@ -345,24 +357,6 @@ const SortableExerciseRow: React.FC<SortableExerciseRowProps> = ({ item, onDelet
     transition
   };
 
-  const getIntensityColor = (intensity: string) => {
-    switch (intensity) {
-      case 'low': return 'bg-green-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'high': return 'bg-red-500';
-      default: return 'bg-slate-500';
-    }
-  };
-
-  const getIntensityLabel = (intensity: string) => {
-    switch (intensity) {
-      case 'low': return 'کم';
-      case 'medium': return 'متوسط';
-      case 'high': return 'زیاد';
-      default: return 'متوسط';
-    }
-  };
-
   return (
     <Card ref={setNodeRef} style={style} className="hover:shadow-lg transition-shadow">
       <CardContent className="p-4">
@@ -370,9 +364,9 @@ const SortableExerciseRow: React.FC<SortableExerciseRowProps> = ({ item, onDelet
           <button
             {...attributes}
             {...listeners}
-            className="cursor-grab active:cursor-grabbing p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+            className="cursor-grab active:cursor-grabbing p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded mt-1"
           >
-            <GripVertical className="w-5 h-5 text-slate-400" />
+            <Plus className="w-5 h-5 text-slate-400 rotate-45" />
           </button>
 
           <div className="flex-1">
@@ -396,41 +390,42 @@ const SortableExerciseRow: React.FC<SortableExerciseRowProps> = ({ item, onDelet
             {/* Parameters Display */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
               <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg">
-                <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">تماس با زمین</div>
-                <div className="font-bold text-lg">{item.parameters.contacts}</div>
-              </div>
-              <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
                 <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">ست‌ها</div>
                 <div className="font-bold text-lg">{item.parameters.sets}</div>
               </div>
-              {item.parameters.height && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                  <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">ارتفاع</div>
-                  <div className="font-bold text-lg">{item.parameters.height} cm</div>
-                </div>
-              )}
-              {item.parameters.distance && (
-                <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-                  <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">مسافت</div>
-                  <div className="font-bold text-lg">{item.parameters.distance} m</div>
-                </div>
-              )}
+              <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
+                <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">برخورد</div>
+                <div className="font-bold text-lg">{item.parameters.contacts}</div>
+              </div>
               <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg">
                 <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">شدت</div>
                 <Badge className={`${getIntensityColor(item.parameters.intensity)} text-white`}>
                   {getIntensityLabel(item.parameters.intensity)}
                 </Badge>
               </div>
-              <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg">
-                <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">استراحت</div>
-                <div className="font-bold text-lg">{item.parameters.rest}s</div>
-              </div>
+              {item.parameters.rest && (
+                <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg">
+                  <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">استراحت</div>
+                  <div className="font-bold text-lg">{item.parameters.rest}ث</div>
+                </div>
+              )}
+              {item.parameters.height && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                  <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">ارتفاع</div>
+                  <div className="font-bold text-lg">{item.parameters.height}cm</div>
+                </div>
+              )}
+              {item.parameters.distance && (
+                <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                  <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">مسافت</div>
+                  <div className="font-bold text-lg">{item.parameters.distance}m</div>
+                </div>
+              )}
             </div>
-
             {item.parameters.notes && (
-              <div className="mt-3 p-2 bg-slate-50 dark:bg-slate-800 rounded text-sm">
-                <strong>یادداشت:</strong> {item.parameters.notes}
-              </div>
+              <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+                📝 {item.parameters.notes}
+              </p>
             )}
           </div>
         </div>
@@ -440,6 +435,3 @@ const SortableExerciseRow: React.FC<SortableExerciseRowProps> = ({ item, onDelet
 };
 
 export default PlyometricTrainingTab;
-
-
-

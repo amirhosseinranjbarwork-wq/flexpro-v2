@@ -57,7 +57,7 @@ export function useExercises() {
   });
 }
 
-// Fallback data when Supabase is not available
+// DEPRECATED: This fallback data is no longer used - use useFoods hook instead
 const fallbackFoods = [
   {
     "id": "chicken_breast_grilled",
@@ -429,53 +429,9 @@ const fallbackFoods = [
   }
 ];
 
-export function useFoods() {
-  return useQuery({
-    queryKey: ['foods'],
-    queryFn: async () => {
-      if (!supabase || !isSupabaseEnabled) {
-        if (import.meta.env.DEV) {
-          console.warn('Supabase not available, using fallback data');
-        }
-        return fallbackFoods;
-      }
+// DEPRECATED: useFoods function removed - use the useFoods hook from hooks/useFoods.ts instead
 
-      try {
-        const { data, error } = await supabase
-          .from('foods')
-          .select('*')
-          .order('name');
-
-        if (error) {
-          if (import.meta.env.DEV) {
-            console.warn('Supabase error, using fallback data:', error.message);
-          }
-          return fallbackFoods;
-        }
-
-        if (!data || data.length === 0) {
-          if (import.meta.env.DEV) {
-            console.warn('No foods data from Supabase, using fallback data');
-          }
-          return fallbackFoods;
-        }
-
-        return data;
-      } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-        if (import.meta.env.DEV) {
-          console.warn('useFoods error, using fallback data:', errorMessage);
-        }
-        return fallbackFoods;
-      }
-    },
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
-    retry: 1,
-  });
-}
-
-// Fallback data when Supabase is not available
+// DEPRECATED: This fallback data is no longer used - use useSupplements hook instead
 const fallbackSupplements = [
   {
     "id": "whey_protein",
@@ -551,48 +507,4 @@ const fallbackSupplements = [
   }
 ];
 
-export function useSupplements() {
-  return useQuery({
-    queryKey: ['supplements'],
-    queryFn: async () => {
-      if (!supabase || !isSupabaseEnabled) {
-        if (import.meta.env.DEV) {
-          console.warn('Supabase not available, using fallback data');
-        }
-        return fallbackSupplements;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('supplements')
-          .select('*')
-          .order('name');
-
-        if (error) {
-          if (import.meta.env.DEV) {
-            console.warn('Supabase error, using fallback data:', error.message);
-          }
-          return fallbackSupplements;
-        }
-
-        if (!data || data.length === 0) {
-          if (import.meta.env.DEV) {
-            console.warn('No supplements data from Supabase, using fallback data');
-          }
-          return fallbackSupplements;
-        }
-
-        return data;
-      } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-        if (import.meta.env.DEV) {
-          console.warn('useSupplements error, using fallback data:', errorMessage);
-        }
-        return fallbackSupplements;
-      }
-    },
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
-    retry: 1,
-  });
-}
+// DEPRECATED: useSupplements function removed - use the useSupplements hook from hooks/useSupplements.ts instead
