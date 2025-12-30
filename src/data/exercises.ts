@@ -931,16 +931,17 @@ export const exercises: Exercise[] = [
   },
 
   // ===== CARDIO EXERCISES =====
+  // دستگاه‌های هوازی
   {
-    id: 'cardio_treadmill_run',
-    name: 'دویدن روی تردمیل',
-    nameEn: 'Treadmill Running',
+    id: 'cardio_treadmill',
+    name: 'تردمیل (Treadmill)',
+    nameEn: 'Treadmill',
     muscleGroup: 'قلبی',
     equipment: 'دستگاه',
     type: 'cardio',
     mechanics: 'aerobic',
     difficulty: 'beginner',
-    description: 'تمرین کاردیو عالی برای بهبود استقامت قلبی و سوزاندن کالری',
+    description: 'دستگاه هوازی برای دویدن و پیاده‌روی',
     instructions: [
       'روی تردمیل قرار بگیرید',
       'سرعت مناسب را انتخاب کنید',
@@ -957,18 +958,76 @@ export const exercises: Exercise[] = [
       'خم کردن بدن به سمت جلو',
       'نگاه کردن به پایین'
     ],
-    variations: [
-      'دویدن با شیب',
-      'دویدن اینتروال',
-      'پیاده‌روی سریع'
-    ],
+    variations: [],
     primaryMuscles: [],
     secondaryMuscles: [],
     caloriesPerHour: 500
   },
   {
-    id: 'cardio_bike_stationary',
-    name: 'دوچرخه ثابت',
+    id: 'cardio_treadmill_incline',
+    name: 'تردمیل با شیب (Incline Treadmill)',
+    nameEn: 'Incline Treadmill',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'beginner',
+    description: 'تردمیل با شیب برای افزایش شدت تمرین',
+    instructions: [
+      'روی تردمیل قرار بگیرید',
+      'شیب مناسب را تنظیم کنید',
+      'با حفظ ریتم منظم بدوید',
+      'زمان و سرعت را کنترل کنید'
+    ],
+    tips: [
+      'نفس را منظم نگه دارید',
+      'پاهای خود را ریتمیک حرکت دهید',
+      'شیب را به تدریج افزایش دهید'
+    ],
+    commonMistakes: [
+      'چسبیدن به دستگیره‌ها',
+      'خم کردن بدن به سمت جلو',
+      'شیب بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: [],
+    caloriesPerHour: 600
+  },
+  {
+    id: 'cardio_treadmill_flat',
+    name: 'تردمیل بدون شیب (Flat Treadmill)',
+    nameEn: 'Flat Treadmill',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'beginner',
+    description: 'تردمیل بدون شیب برای تمرینات پایه',
+    instructions: [
+      'روی تردمیل قرار بگیرید',
+      'سرعت مناسب را انتخاب کنید',
+      'با حفظ ریتم منظم بدوید',
+      'زمان و سرعت را کنترل کنید'
+    ],
+    tips: [
+      'نفس را منظم نگه دارید',
+      'پاهای خود را ریتمیک حرکت دهید',
+      'از گرم کردن قبل شروع استفاده کنید'
+    ],
+    commonMistakes: [
+      'چسبیدن به دستگیره‌ها',
+      'خم کردن بدن به سمت جلو',
+      'نگاه کردن به پایین'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: [],
+    caloriesPerHour: 500
+  },
+  {
+    id: 'cardio_stationary_bike',
+    name: 'دوچرخه ثابت (Stationary Bike)',
     nameEn: 'Stationary Bike',
     muscleGroup: 'قلبی',
     equipment: 'دستگاه',
@@ -992,14 +1051,692 @@ export const exercises: Exercise[] = [
       'چسبیدن به دستگیره‌ها',
       'استفاده از مقاومت بیش از حد'
     ],
-    variations: [
-      'دوچرخه اسپینینگ',
-      'دوچرخه کوهستان',
-      'دوچرخه ایستاده'
-    ],
+    variations: [],
     primaryMuscles: [],
     secondaryMuscles: ['Quadriceps', 'Hamstrings', 'Gluteus Maximus'],
     caloriesPerHour: 400
+  },
+  {
+    id: 'cardio_seated_bike',
+    name: 'دوچرخه ثابت نشسته (Seated Bike)',
+    nameEn: 'Seated Bike',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'beginner',
+    description: 'دوچرخه ثابت با صندلی برای تمرینات راحت‌تر',
+    instructions: [
+      'روی صندلی دوچرخه بنشینید',
+      'پاها را روی پدال‌ها قرار دهید',
+      'مقاومت مناسب را انتخاب کنید',
+      'با ریتم منظم رکاب بزنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از برنامه‌های اینتروال استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'چسبیدن به دستگیره‌ها',
+      'استفاده از مقاومت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: ['Quadriceps', 'Hamstrings', 'Gluteus Maximus'],
+    caloriesPerHour: 350
+  },
+  {
+    id: 'cardio_upright_bike',
+    name: 'دوچرخه ثابت ایستاده (Upright Bike)',
+    nameEn: 'Upright Bike',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'beginner',
+    description: 'دوچرخه ثابت ایستاده برای تمرینات شدیدتر',
+    instructions: [
+      'روی دوچرخه ایستاده قرار بگیرید',
+      'پاها را روی پدال‌ها قرار دهید',
+      'مقاومت مناسب را انتخاب کنید',
+      'با ریتم منظم رکاب بزنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از برنامه‌های اینتروال استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'چسبیدن به دستگیره‌ها',
+      'استفاده از مقاومت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: ['Quadriceps', 'Hamstrings', 'Gluteus Maximus'],
+    caloriesPerHour: 450
+  },
+  {
+    id: 'cardio_spinning_bike',
+    name: 'دوچرخه اسپینینگ (Spinning Bike)',
+    nameEn: 'Spinning Bike',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'intermediate',
+    description: 'دوچرخه اسپینینگ برای تمرینات اینتروال شدید',
+    instructions: [
+      'روی دوچرخه اسپینینگ قرار بگیرید',
+      'پاها را روی پدال‌ها قرار دهید',
+      'مقاومت مناسب را انتخاب کنید',
+      'با ریتم منظم رکاب بزنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از برنامه‌های اینتروال استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'چسبیدن به دستگیره‌ها',
+      'استفاده از مقاومت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: ['Quadriceps', 'Hamstrings', 'Gluteus Maximus'],
+    caloriesPerHour: 550
+  },
+  {
+    id: 'cardio_elliptical',
+    name: 'الپتیکال (Elliptical)',
+    nameEn: 'Elliptical',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'beginner',
+    description: 'دستگاه الپتیکال برای تمرینات کم‌ضربه',
+    instructions: [
+      'روی دستگاه الپتیکال قرار بگیرید',
+      'پاها را روی پدال‌ها قرار دهید',
+      'مقاومت مناسب را انتخاب کنید',
+      'با ریتم منظم حرکت کنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از دستگیره‌ها استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'چسبیدن بیش از حد به دستگیره‌ها',
+      'استفاده از مقاومت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: ['Quadriceps', 'Hamstrings', 'Gluteus Maximus'],
+    caloriesPerHour: 400
+  },
+  {
+    id: 'cardio_elliptical_arms',
+    name: 'الپتیکال با دسته (Elliptical with Arms)',
+    nameEn: 'Elliptical with Arms',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'beginner',
+    description: 'الپتیکال با دستگیره برای تمرینات کامل بدن',
+    instructions: [
+      'روی دستگاه الپتیکال قرار بگیرید',
+      'پاها را روی پدال‌ها قرار دهید',
+      'دستگیره‌ها را بگیرید',
+      'با ریتم منظم حرکت کنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از دستگیره‌ها استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'چسبیدن بیش از حد به دستگیره‌ها',
+      'استفاده از مقاومت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: ['Quadriceps', 'Hamstrings', 'Gluteus Maximus', 'Shoulders'],
+    caloriesPerHour: 450
+  },
+  {
+    id: 'cardio_elliptical_no_arms',
+    name: 'الپتیکال بدون دسته (Elliptical without Arms)',
+    nameEn: 'Elliptical without Arms',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'beginner',
+    description: 'الپتیکال بدون دستگیره برای تمرینات پایین‌تنه',
+    instructions: [
+      'روی دستگاه الپتیکال قرار بگیرید',
+      'پاها را روی پدال‌ها قرار دهید',
+      'دستگیره‌ها را رها کنید',
+      'با ریتم منظم حرکت کنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'تعادل را حفظ کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'از دست دادن تعادل',
+      'استفاده از مقاومت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: ['Quadriceps', 'Hamstrings', 'Gluteus Maximus'],
+    caloriesPerHour: 400
+  },
+  {
+    id: 'cardio_rowing',
+    name: 'روئینگ (Rowing Machine)',
+    nameEn: 'Rowing Machine',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'intermediate',
+    description: 'دستگاه روئینگ برای تمرینات کامل بدن',
+    instructions: [
+      'روی دستگاه روئینگ بنشینید',
+      'پاها را روی پدال‌ها قرار دهید',
+      'دستگیره را بگیرید',
+      'با ریتم منظم پارو بزنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از تکنیک صحیح استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'استفاده از دست‌ها بیش از پاها',
+      'استفاده از مقاومت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: ['Quadriceps', 'Hamstrings', 'Gluteus Maximus', 'Back', 'Shoulders'],
+    caloriesPerHour: 500
+  },
+  {
+    id: 'cardio_rowing_low',
+    name: 'روئینگ با مقاومت کم',
+    nameEn: 'Rowing Machine Low Resistance',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'beginner',
+    description: 'روئینگ با مقاومت کم برای تمرینات استقامتی',
+    instructions: [
+      'روی دستگاه روئینگ بنشینید',
+      'مقاومت را روی کم تنظیم کنید',
+      'با ریتم منظم پارو بزنید',
+      'زمان را کنترل کنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از تکنیک صحیح استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'استفاده از دست‌ها بیش از پاها',
+      'سرعت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: ['Quadriceps', 'Hamstrings', 'Gluteus Maximus', 'Back', 'Shoulders'],
+    caloriesPerHour: 400
+  },
+  {
+    id: 'cardio_rowing_medium',
+    name: 'روئینگ با مقاومت متوسط',
+    nameEn: 'Rowing Machine Medium Resistance',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'intermediate',
+    description: 'روئینگ با مقاومت متوسط برای تمرینات متعادل',
+    instructions: [
+      'روی دستگاه روئینگ بنشینید',
+      'مقاومت را روی متوسط تنظیم کنید',
+      'با ریتم منظم پارو بزنید',
+      'زمان را کنترل کنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از تکنیک صحیح استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'استفاده از دست‌ها بیش از پاها',
+      'سرعت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: ['Quadriceps', 'Hamstrings', 'Gluteus Maximus', 'Back', 'Shoulders'],
+    caloriesPerHour: 500
+  },
+  {
+    id: 'cardio_rowing_high',
+    name: 'روئینگ با مقاومت بالا',
+    nameEn: 'Rowing Machine High Resistance',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'advanced',
+    description: 'روئینگ با مقاومت بالا برای تمرینات شدید',
+    instructions: [
+      'روی دستگاه روئینگ بنشینید',
+      'مقاومت را روی بالا تنظیم کنید',
+      'با ریتم منظم پارو بزنید',
+      'زمان را کنترل کنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از تکنیک صحیح استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'استفاده از دست‌ها بیش از پاها',
+      'سرعت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: ['Quadriceps', 'Hamstrings', 'Gluteus Maximus', 'Back', 'Shoulders'],
+    caloriesPerHour: 600
+  },
+  {
+    id: 'cardio_stepper',
+    name: 'استپر (Stepper)',
+    nameEn: 'Stepper',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'beginner',
+    description: 'دستگاه استپر برای تمرینات پایین‌تنه',
+    instructions: [
+      'روی دستگاه استپر قرار بگیرید',
+      'پاها را روی پدال‌ها قرار دهید',
+      'مقاومت مناسب را انتخاب کنید',
+      'با ریتم منظم بالا و پایین بروید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از دستگیره‌ها برای تعادل استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'چسبیدن بیش از حد به دستگیره‌ها',
+      'استفاده از مقاومت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: ['Quadriceps', 'Hamstrings', 'Gluteus Maximus', 'Calves'],
+    caloriesPerHour: 400
+  },
+  {
+    id: 'cardio_stepper_low',
+    name: 'استپر با مقاومت کم',
+    nameEn: 'Stepper Low Resistance',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'beginner',
+    description: 'استپر با مقاومت کم برای تمرینات استقامتی',
+    instructions: [
+      'روی دستگاه استپر قرار بگیرید',
+      'مقاومت را روی کم تنظیم کنید',
+      'با ریتم منظم بالا و پایین بروید',
+      'زمان را کنترل کنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از دستگیره‌ها برای تعادل استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'چسبیدن بیش از حد به دستگیره‌ها',
+      'سرعت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: ['Quadriceps', 'Hamstrings', 'Gluteus Maximus', 'Calves'],
+    caloriesPerHour: 350
+  },
+  {
+    id: 'cardio_stepper_medium',
+    name: 'استپر با مقاومت متوسط',
+    nameEn: 'Stepper Medium Resistance',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'intermediate',
+    description: 'استپر با مقاومت متوسط برای تمرینات متعادل',
+    instructions: [
+      'روی دستگاه استپر قرار بگیرید',
+      'مقاومت را روی متوسط تنظیم کنید',
+      'با ریتم منظم بالا و پایین بروید',
+      'زمان را کنترل کنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از دستگیره‌ها برای تعادل استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'چسبیدن بیش از حد به دستگیره‌ها',
+      'سرعت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: ['Quadriceps', 'Hamstrings', 'Gluteus Maximus', 'Calves'],
+    caloriesPerHour: 450
+  },
+  {
+    id: 'cardio_stepper_high',
+    name: 'استپر با مقاومت بالا',
+    nameEn: 'Stepper High Resistance',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'advanced',
+    description: 'استپر با مقاومت بالا برای تمرینات شدید',
+    instructions: [
+      'روی دستگاه استپر قرار بگیرید',
+      'مقاومت را روی بالا تنظیم کنید',
+      'با ریتم منظم بالا و پایین بروید',
+      'زمان را کنترل کنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از دستگیره‌ها برای تعادل استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'چسبیدن بیش از حد به دستگیره‌ها',
+      'سرعت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: ['Quadriceps', 'Hamstrings', 'Gluteus Maximus', 'Calves'],
+    caloriesPerHour: 550
+  },
+  {
+    id: 'cardio_skierg',
+    name: 'اسکی فضایی (SkiErg)',
+    nameEn: 'SkiErg',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'intermediate',
+    description: 'دستگاه اسکی فضایی برای تمرینات بالاتنه',
+    instructions: [
+      'روی دستگاه اسکی فضایی قرار بگیرید',
+      'دستگیره‌ها را بگیرید',
+      'مقاومت مناسب را انتخاب کنید',
+      'با ریتم منظم حرکت کنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از تکنیک صحیح استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'استفاده از دست‌ها بیش از حد',
+      'استفاده از مقاومت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: ['Back', 'Shoulders', 'Arms'],
+    caloriesPerHour: 500
+  },
+  {
+    id: 'cardio_skierg_low',
+    name: 'اسکی فضایی با مقاومت کم',
+    nameEn: 'SkiErg Low Resistance',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'beginner',
+    description: 'اسکی فضایی با مقاومت کم برای تمرینات استقامتی',
+    instructions: [
+      'روی دستگاه اسکی فضایی قرار بگیرید',
+      'مقاومت را روی کم تنظیم کنید',
+      'با ریتم منظم حرکت کنید',
+      'زمان را کنترل کنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از تکنیک صحیح استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'استفاده از دست‌ها بیش از حد',
+      'سرعت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: ['Back', 'Shoulders', 'Arms'],
+    caloriesPerHour: 400
+  },
+  {
+    id: 'cardio_skierg_medium',
+    name: 'اسکی فضایی با مقاومت متوسط',
+    nameEn: 'SkiErg Medium Resistance',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'intermediate',
+    description: 'اسکی فضایی با مقاومت متوسط برای تمرینات متعادل',
+    instructions: [
+      'روی دستگاه اسکی فضایی قرار بگیرید',
+      'مقاومت را روی متوسط تنظیم کنید',
+      'با ریتم منظم حرکت کنید',
+      'زمان را کنترل کنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از تکنیک صحیح استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'استفاده از دست‌ها بیش از حد',
+      'سرعت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: ['Back', 'Shoulders', 'Arms'],
+    caloriesPerHour: 500
+  },
+  {
+    id: 'cardio_skierg_high',
+    name: 'اسکی فضایی با مقاومت بالا',
+    nameEn: 'SkiErg High Resistance',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'advanced',
+    description: 'اسکی فضایی با مقاومت بالا برای تمرینات شدید',
+    instructions: [
+      'روی دستگاه اسکی فضایی قرار بگیرید',
+      'مقاومت را روی بالا تنظیم کنید',
+      'با ریتم منظم حرکت کنید',
+      'زمان را کنترل کنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از تکنیک صحیح استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'استفاده از دست‌ها بیش از حد',
+      'سرعت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: ['Back', 'Shoulders', 'Arms'],
+    caloriesPerHour: 600
+  },
+  {
+    id: 'cardio_aerobic',
+    name: 'آیروبیک (Aerobic Machine)',
+    nameEn: 'Aerobic Machine',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'beginner',
+    description: 'دستگاه آیروبیک برای تمرینات هوازی',
+    instructions: [
+      'روی دستگاه آیروبیک قرار بگیرید',
+      'مقاومت مناسب را انتخاب کنید',
+      'با ریتم منظم حرکت کنید',
+      'زمان را کنترل کنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از تکنیک صحیح استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'استفاده از مقاومت بیش از حد',
+      'سرعت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: [],
+    caloriesPerHour: 400
+  },
+  {
+    id: 'cardio_aerobic_low',
+    name: 'آیروبیک با مقاومت کم',
+    nameEn: 'Aerobic Machine Low Resistance',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'beginner',
+    description: 'آیروبیک با مقاومت کم برای تمرینات استقامتی',
+    instructions: [
+      'روی دستگاه آیروبیک قرار بگیرید',
+      'مقاومت را روی کم تنظیم کنید',
+      'با ریتم منظم حرکت کنید',
+      'زمان را کنترل کنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از تکنیک صحیح استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'استفاده از مقاومت بیش از حد',
+      'سرعت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: [],
+    caloriesPerHour: 350
+  },
+  {
+    id: 'cardio_aerobic_medium',
+    name: 'آیروبیک با مقاومت متوسط',
+    nameEn: 'Aerobic Machine Medium Resistance',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'intermediate',
+    description: 'آیروبیک با مقاومت متوسط برای تمرینات متعادل',
+    instructions: [
+      'روی دستگاه آیروبیک قرار بگیرید',
+      'مقاومت را روی متوسط تنظیم کنید',
+      'با ریتم منظم حرکت کنید',
+      'زمان را کنترل کنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از تکنیک صحیح استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'استفاده از مقاومت بیش از حد',
+      'سرعت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: [],
+    caloriesPerHour: 450
+  },
+  {
+    id: 'cardio_aerobic_high',
+    name: 'آیروبیک با مقاومت بالا',
+    nameEn: 'Aerobic Machine High Resistance',
+    muscleGroup: 'قلبی',
+    equipment: 'دستگاه',
+    type: 'cardio',
+    mechanics: 'aerobic',
+    difficulty: 'advanced',
+    description: 'آیروبیک با مقاومت بالا برای تمرینات شدید',
+    instructions: [
+      'روی دستگاه آیروبیک قرار بگیرید',
+      'مقاومت را روی بالا تنظیم کنید',
+      'با ریتم منظم حرکت کنید',
+      'زمان را کنترل کنید'
+    ],
+    tips: [
+      'پشت را صاف نگه دارید',
+      'نفس را منظم نگه دارید',
+      'از تکنیک صحیح استفاده کنید'
+    ],
+    commonMistakes: [
+      'خم کردن بدن به سمت جلو',
+      'استفاده از مقاومت بیش از حد',
+      'سرعت بیش از حد'
+    ],
+    variations: [],
+    primaryMuscles: [],
+    secondaryMuscles: [],
+    caloriesPerHour: 550
   },
 
   // ===== WARMUP EXERCISES =====
@@ -1068,5 +1805,22 @@ export const exercises: Exercise[] = [
     executionTime: 30
   }
 ];
+
+// Import corrective, warmup, cooldown, and cardio exercises
+import { correctiveExercises } from './correctiveExercises';
+import { warmupExercises, cooldownExercises } from './warmupCooldown';
+import { cardioExercises } from './cardioExercises';
+
+// Add cardio exercises
+exercises.push(...cardioExercises);
+
+// Add corrective exercises
+exercises.push(...correctiveExercises);
+
+// Add warmup exercises
+exercises.push(...warmupExercises);
+
+// Add cooldown exercises
+exercises.push(...cooldownExercises);
 
 export default exercises;

@@ -9,6 +9,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from '@dnd-kit/utilities';
 import type { User } from '../types/index';
 import { SCIENTIFIC_FOODS } from '../data/scientific-foods';
+import { foodData as newFoodData } from '../data/foodDataHelper';
 import { useApp } from '../context/AppContext';
 import { useData } from '../context/DataContext';
 import EmptyState from './ui/EmptyState';
@@ -109,6 +110,11 @@ const DietPanel: React.FC<DietPanelProps> = (props) => {
   }
 
   const foodData = useMemo((): Record<string, Record<string, FoodInfo>> | null => {
+    // Priority: 1. New food data, 2. Supabase data, 3. Scientific foods
+    if (newFoodData && Object.keys(newFoodData).length > 0) {
+      return newFoodData;
+    }
+    
     // Use Supabase data if available, otherwise use scientific foods
     const dataSource = foodsData && foodsData.length > 0 ? foodsData : SCIENTIFIC_FOODS.map(food => ({
       category: food.category,

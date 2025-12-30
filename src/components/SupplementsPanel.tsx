@@ -5,6 +5,7 @@ import { useApp } from '../context/AppContext';
 import type { User } from '../types/index';
 import { useSupplements } from '../hooks/useSupplements';
 import { ULTIMATE_SUPPLEMENTS } from '../data/ultimate-supplements';
+import { supplements as newSupplements } from '../data/supplements';
 
 interface SupplementsPanelProps {
   activeUser: User;
@@ -23,6 +24,11 @@ const SupplementsPanel: React.FC<SupplementsPanelProps> = ({ activeUser, onUpdat
 
   // لیست مکمل‌ها (fallback برای کمپتیبیلیتی)
   const supplementsData = useMemo(() => {
+    // Priority: 1. New supplements data, 2. Supabase data, 3. Ultimate supplements, 4. Fallback
+    if (newSupplements && newSupplements.length > 0) {
+      return newSupplements.map(s => s.name);
+    }
+    
     // Use Supabase data if available, otherwise use ultimate supplements
     if (supplementsFromDB && supplementsFromDB.length > 0) {
       return supplementsFromDB.map((s: any) => s.name);

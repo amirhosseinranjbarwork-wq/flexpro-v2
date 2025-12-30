@@ -1,24 +1,29 @@
+/**
+ * Supplements Database
+ * Converted from data for develop/data/supplementsData.js
+ */
+
 export interface Supplement {
   id: string;
   name: string;
-  nameEn: string;
+  nameEn?: string;
   category: string;
   type: string;
   form: 'پودر' | 'کپسول' | 'قرص' | 'مایع' | 'ژل' | 'شربت';
-  dosage: {
+  dosage?: {
     amount: number;
     unit: string;
     timing: string[];
     frequency: string;
   };
-  benefits: string[];
-  ingredients: string[];
+  benefits?: string[];
+  ingredients?: string[];
   sideEffects?: string[];
   contraindications?: string[];
   interactions?: string[];
   qualityStandards?: string[];
-  researchRating: 1 | 2 | 3 | 4 | 5; // 1=محدود, 5=قوی
-  costLevel: 'کم' | 'متوسط' | 'بالا';
+  researchRating?: 1 | 2 | 3 | 4 | 5;
+  costLevel?: 'کم' | 'متوسط' | 'بالا';
   vegan?: boolean;
   allergens?: string[];
   storage?: string;
@@ -26,761 +31,307 @@ export interface Supplement {
   manufacturer?: string;
 }
 
-export const supplements: Supplement[] = [
-  // ===== PROTEIN SUPPLEMENTS =====
-  {
-    id: 'whey_protein_isolate',
-    name: 'پروتئین وی ایزوله',
-    nameEn: 'Whey Protein Isolate',
-    category: 'پروتئین',
-    type: 'پروتئین وی',
-    form: 'پودر',
-    dosage: {
-      amount: 25,
-      unit: 'گرم',
-      timing: ['بعد از تمرین', 'بین وعده‌ها', 'صبح'],
-      frequency: '۱-۳ بار در روز'
-    },
-    benefits: [
-      'رشد و ترمیم عضلات',
-      'افزایش توده عضلانی',
-      'بهبود ریکاوری',
-      'حفاظت از عضلات',
-      'افزایش قدرت'
-    ],
-    ingredients: [
-      'پروتئین وی ایزوله',
-      'لاکتوز کم',
-      'چربی کم',
-      'کربوهیدرات کم'
-    ],
-    sideEffects: [
-      'ناراحتی معده (در موارد نادر)',
-      'اسهال (در مصرف بیش از حد)',
-      'حساسیت به لاکتوز'
-    ],
-    contraindications: [
-      'حساسیت به لبنیات',
-      'مشکلات کلیوی (در مصرف بیش از حد)'
-    ],
-    interactions: [
-      'ممکن است جذب برخی داروها را کاهش دهد'
-    ],
-    qualityStandards: [
-      'NSF Certified for Sport',
-      'Informed Choice',
-      'GMP Certified'
-    ],
-    researchRating: 5,
-    costLevel: 'متوسط',
-    vegan: false,
-    allergens: ['لبنیات'],
-    storage: 'در جای خشک و خنک',
-    shelfLife: '۲۴ ماه'
-  },
-  {
-    id: 'whey_protein_concentrate',
-    name: 'پروتئین وی کنسانتره',
-    nameEn: 'Whey Protein Concentrate',
-    category: 'پروتئین',
-    type: 'پروتئین وی',
-    form: 'پودر',
-    dosage: {
-      amount: 30,
-      unit: 'گرم',
-      timing: ['بعد از تمرین', 'بین وعده‌ها'],
-      frequency: '۱-۲ بار در روز'
-    },
-    benefits: [
-      'رشد عضلات',
-      'افزایش توده عضلانی',
-      'بهبود ریکاوری',
-      'حفاظت از عضلات'
-    ],
-    ingredients: [
-      'پروتئین وی کنسانتره',
-      'لاکتوز',
-      'چربی',
-      'کربوهیدرات'
-    ],
-    sideEffects: [
-      'ناراحتی معده',
-      'گاز معده',
-      'حساسیت به لاکتوز'
-    ],
-    researchRating: 4,
-    costLevel: 'کم',
-    vegan: false,
-    allergens: ['لبنیات']
-  },
-  {
-    id: 'plant_protein_blend',
-    name: 'پروتئین گیاهی ترکیبی',
-    nameEn: 'Plant Protein Blend',
-    category: 'پروتئین',
-    type: 'پروتئین گیاهی',
-    form: 'پودر',
-    dosage: {
-      amount: 30,
-      unit: 'گرم',
-      timing: ['بعد از تمرین', 'صبح', 'بین وعده‌ها'],
-      frequency: '۱-۲ بار در روز'
-    },
-    benefits: [
-      'رشد عضلات برای گیاهخواران',
-      'پروتئین کامل',
-      'فیبر بالا',
-      'کم کالری'
-    ],
-    ingredients: [
-      'پروتئین نخود',
-      'پروتئین برنج',
-      'پروتئین کتان',
-      'پروتئین کنف'
-    ],
-    researchRating: 4,
-    costLevel: 'متوسط',
-    vegan: true,
-    allergens: []
-  },
+// Helper function to create supplement from name
+function createSupplement(name: string, category: string, type: string): Supplement {
+  const id = name.toLowerCase().replace(/\s+/g, '_').replace(/[()]/g, '').replace(/\//g, '_');
+  return {
+    id,
+    name,
+    category,
+    type,
+    form: name.includes('پودر') || name.includes('پروتئین') || name.includes('گینر') ? 'پودر' : 
+          name.includes('کپسول') ? 'کپسول' : 
+          name.includes('قرص') ? 'قرص' : 
+          name.includes('مایع') ? 'مایع' : 
+          name.includes('ژل') ? 'ژل' : 
+          name.includes('شربت') ? 'شربت' : 'کپسول',
+    vegan: !name.includes('وی') && !name.includes('کازئین') && !name.includes('گوشت') && !name.includes('تخم') && !name.includes('ماهی'),
+    allergens: name.includes('وی') || name.includes('کازئین') ? ['لبنیات'] : 
+               name.includes('ماهی') ? ['ماهی'] : []
+  };
+}
 
-  // ===== CREATINE =====
-  {
-    id: 'creatine_monohydrate',
-    name: 'کراتین مونوهیدرات',
-    nameEn: 'Creatine Monohydrate',
-    category: 'قدرت و عملکرد',
-    type: 'کراتین',
-    form: 'پودر',
-    dosage: {
-      amount: 5,
-      unit: 'گرم',
-      timing: ['هر زمان از روز', 'بعد از تمرین'],
-      frequency: 'روزانه'
-    },
-    benefits: [
-      'افزایش قدرت عضلانی',
-      'بهبود عملکرد HIIT',
-      'افزایش حجم عضلات',
-      'بهبود ریکاوری',
-      'افزایش انرژی ATP'
-    ],
-    ingredients: [
-      'کراتین مونوهیدرات خالص'
-    ],
-    sideEffects: [
-      'ورم موقتی عضلات',
-      'ناراحتی معده (در موارد نادر)'
-    ],
-    contraindications: [
-      'مشکلات کلیوی',
-      'کم آبی بدن'
-    ],
-    qualityStandards: [
-      'USP Verified',
-      'NSF Certified'
-    ],
-    researchRating: 5,
-    costLevel: 'کم',
-    vegan: true,
-    allergens: [],
-    storage: 'در جای خشک'
-  },
-  {
-    id: 'creatine_hcl',
-    name: 'کراتین HCL',
-    nameEn: 'Creatine HCl',
-    category: 'قدرت و عملکرد',
-    type: 'کراتین',
-    form: 'کپسول',
-    dosage: {
-      amount: 1,
-      unit: 'گرم',
-      timing: ['هر زمان از روز'],
-      frequency: 'روزانه'
-    },
-    benefits: [
-      'جذب بهتر',
-      'کمتر ناراحتی معده',
-      'افزایش قدرت'
-    ],
-    ingredients: [
-      'کراتین هیدروکلراید'
-    ],
-    researchRating: 4,
-    costLevel: 'بالا',
-    vegan: true
-  },
-
-  // ===== PRE-WORKOUT =====
-  {
-    id: 'c4_original',
-    name: 'C4 Original',
-    nameEn: 'C4 Original',
-    category: 'قبل تمرین',
-    type: 'استیمولانت',
-    form: 'پودر',
-    dosage: {
-      amount: 6,
-      unit: 'گرم',
-      timing: ['۲۰-۳۰ دقیقه قبل از تمرین'],
-      frequency: 'قبل از تمرین'
-    },
-    benefits: [
-      'افزایش انرژی',
-      'بهبود تمرکز',
-      'افزایش قدرت',
-      'بهبود پام عضلانی'
-    ],
-    ingredients: [
-      'بتا آلانین',
-      'سیترولین مالات',
-      'آرژنین',
-      'کافئین',
-      'تیروزین'
-    ],
-    sideEffects: [
-      'پارستزی (گزگز پوست)',
-      'افزایش ضربان قلب',
-      'عصبی بودن',
-      'بی‌خوابی'
-    ],
-    contraindications: [
-      'مشکلات قلبی',
-      'حساسیت به کافئین',
-      'بارداری'
-    ],
-    researchRating: 4,
-    costLevel: 'متوسط',
-    vegan: true
-  },
-  {
-    id: 'beta_alanine',
-    name: 'بتا آلانین',
-    nameEn: 'Beta-Alanine',
-    category: 'قبل تمرین',
-    type: 'پافر اسید لاکتیک',
-    form: 'پودر',
-    dosage: {
-      amount: 3,
-      unit: 'گرم',
-      timing: ['قبل از تمرین', 'هر زمان'],
-      frequency: 'روزانه'
-    },
-    benefits: [
-      'افزایش کارنوزین عضلانی',
-      'بهبود تحمل تمرین شدید',
-      'کاهش خستگی عضلانی',
-      'افزایش قدرت'
-    ],
-    ingredients: [
-      'بتا آلانین خالص'
-    ],
-    sideEffects: [
-      'پارستزی (گزگز پوست) - طبیعی'
-    ],
-    researchRating: 5,
-    costLevel: 'کم',
-    vegan: true,
-    allergens: []
-  },
-  {
-    id: 'citrulline_malate',
-    name: 'سیترولین مالات',
-    nameEn: 'Citrulline Malate',
-    category: 'قبل تمرین',
-    type: 'افزایش پام',
-    form: 'پودر',
-    dosage: {
-      amount: 6,
-      unit: 'گرم',
-      timing: ['۲۰-۳۰ دقیقه قبل از تمرین'],
-      frequency: 'قبل از تمرینات سنگین'
-    },
-    benefits: [
-      'افزایش تولید اکسید نیتریک',
-      'بهبود پام عضلانی',
-      'کاهش خستگی',
-      'بهبود ریکاوری'
-    ],
-    ingredients: [
-      'سیترولین مالات'
-    ],
-    researchRating: 4,
-    costLevel: 'متوسط',
-    vegan: true
-  },
-
-  // ===== BCAAs =====
-  {
-    id: 'bcaa_2_1_1',
-    name: 'BCAA 2:1:1',
-    nameEn: 'BCAA 2:1:1',
-    category: 'آمینو اسید',
-    type: 'BCAA',
-    form: 'پودر',
-    dosage: {
-      amount: 5,
-      unit: 'گرم',
-      timing: ['طی تمرین', 'بعد از تمرین', 'صبح'],
-      frequency: '۱-۳ بار در روز'
-    },
-    benefits: [
-      'کاهش شکست عضلانی',
-      'بهبود ریکاوری',
-      'افزایش سنتز پروتئین',
-      'کاهش DOMS'
-    ],
-    ingredients: [
-      'لوسین',
-      'ایزولوسین',
-      'والین'
-    ],
-    researchRating: 4,
-    costLevel: 'متوسط',
-    vegan: true
-  },
-  {
-    id: 'glutamine',
-    name: 'گلوتامین',
-    nameEn: 'Glutamine',
-    category: 'آمینو اسید',
-    type: 'گلوتامین',
-    form: 'پودر',
-    dosage: {
-      amount: 5,
-      unit: 'گرم',
-      timing: ['بعد از تمرین', 'صبح'],
-      frequency: 'روزانه'
-    },
-    benefits: [
-      'پشتیبانی سیستم ایمنی',
-      'بهبود ریکاوری',
-      'حفاظت از عضلات',
-      'سلامت روده'
-    ],
-    ingredients: [
-      'گلوتامین خالص'
-    ],
-    researchRating: 4,
-    costLevel: 'کم',
-    vegan: true
-  },
-
-  // ===== FAT BURNERS =====
-  {
-    id: 'caffeine_anhydrous',
-    name: 'کافئین آنهیدروس',
-    nameEn: 'Caffeine Anhydrous',
-    category: 'چاقی سوزی',
-    type: 'استیمولانت',
-    form: 'کپسول',
-    dosage: {
-      amount: 200,
-      unit: 'میلی‌گرم',
-      timing: ['صبح', 'قبل از تمرین'],
-      frequency: 'روزانه'
-    },
-    benefits: [
-      'افزایش متابولیسم',
-      'بهبود تمرکز',
-      'افزایش انرژی',
-      'افزایش چربی سوزی'
-    ],
-    ingredients: [
-      'کافئین خالص'
-    ],
-    sideEffects: [
-      'افزایش ضربان قلب',
-      'عصبی بودن',
-      'بی‌خوابی',
-      'افزایش فشار خون'
-    ],
-    contraindications: [
-      'مشکلات قلبی',
-      'حساسیت به کافئین',
-      'بارداری'
-    ],
-    researchRating: 5,
-    costLevel: 'کم',
-    vegan: true
-  },
-  {
-    id: 'green_tea_extract',
-    name: 'استخراج چای سبز',
-    nameEn: 'Green Tea Extract',
-    category: 'چاقی سوزی',
-    type: 'آنتی‌اکسیدان',
-    form: 'کپسول',
-    dosage: {
-      amount: 500,
-      unit: 'میلی‌گرم',
-      timing: ['با غذا', 'روزانه'],
-      frequency: '۲-۳ بار در روز'
-    },
-    benefits: [
-      'افزایش متابولیسم',
-      'آنتی‌اکسیدان قوی',
-      'حمایت از سلامت قلب',
-      'بهبود چربی سوزی'
-    ],
-    ingredients: [
-      'استخراج چای سبز',
-      'EGCG'
-    ],
-    sideEffects: [
-      'ناراحتی معده',
-      'بی‌خوابی'
-    ],
-    researchRating: 4,
-    costLevel: 'متوسط',
-    vegan: true
-  },
-
-  // ===== VITAMINS & MINERALS =====
-  {
-    id: 'vitamin_d3',
-    name: 'ویتامین D3',
-    nameEn: 'Vitamin D3',
-    category: 'ویتامین',
-    type: 'ویتامین D',
-    form: 'کپسول',
-    dosage: {
-      amount: 2000,
-      unit: 'IU',
-      timing: ['صبح با غذا'],
-      frequency: 'روزانه'
-    },
-    benefits: [
-      'استخوان‌های قوی',
-      'پشتیبانی سیستم ایمنی',
-      'بهبود خلق و خو',
-      'افزایش قدرت عضلانی'
-    ],
-    ingredients: [
-      'ویتامین D3 (کلکسی فرول)'
-    ],
-    sideEffects: [
-      'مسمومیت (در مصرف بیش از حد)'
-    ],
-    researchRating: 5,
-    costLevel: 'کم',
-    vegan: false,
-    allergens: []
-  },
-  {
-    id: 'zinc_picolinate',
-    name: 'روی پیکولینات',
-    nameEn: 'Zinc Picolinate',
-    category: 'معدن',
-    type: 'روی',
-    form: 'کپسول',
-    dosage: {
-      amount: 15,
-      unit: 'میلی‌گرم',
-      timing: ['شام'],
-      frequency: 'روزانه'
-    },
-    benefits: [
-      'پشتیبانی سیستم ایمنی',
-      'سلامت پوست',
-      'تولید تستوسترون',
-      'بهبود ریکاوری'
-    ],
-    ingredients: [
-      'روی پیکولینات'
-    ],
-    sideEffects: [
-      'ناراحتی معده',
-      'تهوع'
-    ],
-    contraindications: [
-      'مصرف همزمان با آنتی‌بیوتیک‌ها'
-    ],
-    researchRating: 4,
-    costLevel: 'کم',
-    vegan: true
-  },
-  {
-    id: 'magnesium_glycinate',
-    name: 'منیزیم گلیسینات',
-    nameEn: 'Magnesium Glycinate',
-    category: 'معدن',
-    type: 'منیزیم',
-    form: 'کپسول',
-    dosage: {
-      amount: 400,
-      unit: 'میلی‌گرم',
-      timing: ['شب قبل خواب'],
-      frequency: 'روزانه'
-    },
-    benefits: [
-      'بهبود خواب',
-      'کاهش استرس',
-      'ریلکسیشن عضلانی',
-      'سلامت قلب'
-    ],
-    ingredients: [
-      'منیزیم گلیسینات'
-    ],
-    sideEffects: [
-      'اسهال (در دوز بالا)'
-    ],
-    researchRating: 4,
-    costLevel: 'متوسط',
-    vegan: true
-  },
-
-  // ===== JOINT & RECOVERY =====
-  {
-    id: 'fish_oil',
-    name: 'روغن ماهی',
-    nameEn: 'Fish Oil',
-    category: 'مفصل و ریکاوری',
-    type: 'امگا-۳',
-    form: 'کپسول',
-    dosage: {
-      amount: 1000,
-      unit: 'میلی‌گرم',
-      timing: ['با غذا'],
-      frequency: '۲-۳ بار در روز'
-    },
-    benefits: [
-      'کاهش التهاب',
-      'سلامت مفاصل',
-      'پشتیبانی قلب',
-      'بهبود خلق و خو'
-    ],
-    ingredients: [
-      'روغن ماهی',
-      'EPA',
-      'DHA'
-    ],
-    sideEffects: [
-      'طعم ماهی',
-      'ناراحتی معده',
-      'رقیق شدن خون'
-    ],
-    contraindications: [
-      'رقیق کننده‌های خون',
-      'حساسیت به ماهی'
-    ],
-    researchRating: 5,
-    costLevel: 'متوسط',
-    vegan: false,
-    allergens: ['ماهی']
-  },
-  {
-    id: 'glucosamine_chondroitin',
-    name: 'گلوکوزامین و کندروئیتین',
-    nameEn: 'Glucosamine & Chondroitin',
-    category: 'مفصل و ریکاوری',
-    type: 'مفصل',
-    form: 'کپسول',
-    dosage: {
-      amount: 1500,
-      unit: 'میلی‌گرم گلوکوزامین',
-      timing: ['با غذا'],
-      frequency: 'روزانه'
-    },
-    benefits: [
-      'حمایت از غضروف',
-      'کاهش درد مفاصل',
-      'بهبود تحرک',
-      'حمایت از بافت همبند'
-    ],
-    ingredients: [
-      'گلوکوزامین سولفات',
-      'کندروئیتین سولفات'
-    ],
-    sideEffects: [
-      'ناراحتی معده',
-      'حساسیت پوستی'
-    ],
-    researchRating: 3,
-    costLevel: 'متوسط',
-    vegan: false
-  },
-
-  // ===== SLEEP & RECOVERY =====
-  {
-    id: 'melatonin',
-    name: 'ملاتونین',
-    nameEn: 'Melatonin',
-    category: 'خواب و ریکاوری',
-    type: 'ملاتونین',
-    form: 'قرص',
-    dosage: {
-      amount: 3,
-      unit: 'میلی‌گرم',
-      timing: ['۳۰ دقیقه قبل خواب'],
-      frequency: 'در صورت نیاز'
-    },
-    benefits: [
-      'بهبود کیفیت خواب',
-      'تنظیم ریتم شبانه‌روزی',
-      'کاهش زمان به خواب رفتن'
-    ],
-    ingredients: [
-      'ملاتونین'
-    ],
-    sideEffects: [
-      'خواب‌آلودگی روز بعد',
-      'سردرد',
-      'تهوع'
-    ],
-    contraindications: [
-      'بارداری',
-      'شیردهی',
-      'دیابت'
-    ],
-    researchRating: 4,
-    costLevel: 'کم',
-    vegan: true
-  },
-  {
-    id: 'magnesium_l_threonate',
-    name: 'منیزیم L-ترئونات',
-    nameEn: 'Magnesium L-Threonate',
-    category: 'خواب و ریکاوری',
-    type: 'منیزیم',
-    form: 'کپسول',
-    dosage: {
-      amount: 300,
-      unit: 'میلی‌گرم',
-      timing: ['شب'],
-      frequency: 'روزانه'
-    },
-    benefits: [
-      'عبور سد خونی-مغزی',
-      'بهبود خواب',
-      'پشتیبانی شناختی',
-      'کاهش استرس'
-    ],
-    ingredients: [
-      'منیزیم L-ترئونات'
-    ],
-    researchRating: 3,
-    costLevel: 'بالا',
-    vegan: true
-  },
-
-  // ===== TESTOSTERONE SUPPORT =====
-  {
-    id: 'zma_complex',
-    name: 'کمپلکس ZMA',
-    nameEn: 'ZMA Complex',
-    category: 'تستوسترون',
-    type: 'معدنی',
-    form: 'کپسول',
-    dosage: {
-      amount: 1,
-      unit: 'کپسول',
-      timing: ['شب قبل خواب'],
-      frequency: 'روزانه'
-    },
-    benefits: [
-      'افزایش تستوسترون',
-      'بهبود ریکاوری',
-      'بهبود خواب',
-      'افزایش قدرت'
-    ],
-    ingredients: [
-      'روی',
-      'منیزیم',
-      'ویتامین B6'
-    ],
-    researchRating: 3,
-    costLevel: 'متوسط',
-    vegan: true
-  },
-  {
-    id: 'd_aspartic_acid',
-    name: 'اسید D-آسپارتیک',
-    nameEn: 'D-Aspartic Acid',
-    category: 'تستوسترون',
-    type: 'آمینو اسید',
-    form: 'کپسول',
-    dosage: {
-      amount: 3000,
-      unit: 'میلی‌گرم',
-      timing: ['صبح'],
-      frequency: 'روزانه'
-    },
-    benefits: [
-      'افزایش تستوسترون طبیعی',
-      'بهبود باروری',
-      'افزایش انرژی'
-    ],
-    ingredients: [
-      'اسید D-آسپارتیک'
-    ],
-    researchRating: 3,
-    costLevel: 'متوسط',
-    vegan: true
-  },
-
-  // ===== WOMEN'S HEALTH =====
-  {
-    id: 'iron_bisglycinate',
-    name: 'آهن بیس‌گلیسینات',
-    nameEn: 'Iron Bisglycinate',
-    category: 'سلامت زنان',
-    type: 'آهن',
-    form: 'کپسول',
-    dosage: {
-      amount: 18,
-      unit: 'میلی‌گرم',
-      timing: ['صبح با ویتامین C'],
-      frequency: 'روزانه'
-    },
-    benefits: [
-      'پیشگیری از کم خونی',
-      'حمل اکسیژن بهتر',
-      'افزایش انرژی',
-      'پشتیبانی قاعدگی'
-    ],
-    ingredients: [
-      'آهن بیس‌گلیسینات',
-      'ویتامین C'
-    ],
-    sideEffects: [
-      'یبوست',
-      'تهوع',
-      'مشکلات گوارشی'
-    ],
-    researchRating: 4,
-    costLevel: 'متوسط',
-    vegan: true
-  },
-  {
-    id: 'calcium_magnesium_zinc',
-    name: 'کلسیم، منیزیم، روی',
-    nameEn: 'Calcium Magnesium Zinc',
-    category: 'سلامت زنان',
-    type: 'معدنی',
-    form: 'قرص',
-    dosage: {
-      amount: 1,
-      unit: 'قرص',
-      timing: ['شب'],
-      frequency: 'روزانه'
-    },
-    benefits: [
-      'استخوان‌های قوی',
-      'بهبود خواب',
-      'پشتیبانی هورمونی',
-      'کاهش PMS'
-    ],
-    ingredients: [
-      'سیترات کلسیم',
-      'منیزیم سیترات',
-      'روی پیکولینات'
-    ],
-    researchRating: 3,
-    costLevel: 'کم',
-    vegan: true
-  }
+// Supplements data from the original file
+const supplementsDataRaw = [
+  // پروتئین‌ها
+  "پروتئین وی (Whey Protein)",
+  "پروتئین وی ایزوله (Whey Isolate)",
+  "پروتئین وی کنسانتره (Whey Concentrate)",
+  "پروتئین وی هیدرولیزه (Whey Hydrolysate)",
+  "پروتئین کازئین (Casein Protein)",
+  "پروتئین کازئین میسلار (Micellar Casein)",
+  "پروتئین تخم مرغ (Egg Protein)",
+  "پروتئین گوشت (Beef Protein)",
+  "پروتئین سویا (Soy Protein)",
+  "پروتئین نخود (Pea Protein)",
+  "پروتئین برنج (Rice Protein)",
+  "پروتئین کنف (Hemp Protein)",
+  "پروتئین گیاهی ترکیبی (Plant Blend)",
+  "گینر (Mass Gainer)",
+  "گینر کم‌قند (Low-Sugar Mass Gainer)",
+  "گینر پرکربوهیدرات (High-Carb Mass Gainer)",
+  
+  // کراتین
+  "کراتین مونوهیدرات (Creatine Monohydrate)",
+  "کراتین اتیل استر (Creatine Ethyl Ester)",
+  "کراتین هیدروکلراید (Creatine HCl)",
+  "کراتین بافر شده (Buffered Creatine)",
+  "کراتین مایکرو (Micronized Creatine)",
+  "کراتین مایع (Liquid Creatine)",
+  
+  // آمینو اسیدها
+  "BCAA (اسیدهای آمینه شاخه‌دار)",
+  "BCAA 2:1:1",
+  "BCAA 4:1:1",
+  "BCAA 8:1:1",
+  "EAA (اسیدهای آمینه ضروری)",
+  "گلوتامین (Glutamine)",
+  "گلوتامین پپتید (Glutamine Peptide)",
+  "آرژنین (L-Arginine)",
+  "سیترولین (Citrulline)",
+  "سیترولین مالات (Citrulline Malate)",
+  "تائورین (Taurine)",
+  "گلیسین (Glycine)",
+  "آلانین (Alanine)",
+  "بتا آلانین (Beta-Alanine)",
+  "HMB (هیدروکسی متیل بوتیرات)",
+  "لوسین (Leucine)",
+  "ایزولوسین (Isoleucine)",
+  "والین (Valine)",
+  
+  // پری و پست ورک‌اوت
+  "پمپ/پری ورک اوت (Pre-Workout)",
+  "پری ورک‌اوت بدون کافئین (Stim-Free Pre-Workout)",
+  "پری ورک‌اوت با کافئین بالا (High-Caffeine Pre-Workout)",
+  "پست ورک‌اوت (Post-Workout)",
+  "ریکاوری (Recovery)",
+  "نوتریشن پست ورک‌اوت (Post-Workout Nutrition)",
+  
+  // ویتامین‌ها و مینرال‌ها
+  "مولتی ویتامین مینرال",
+  "مولتی ویتامین مردان",
+  "مولتی ویتامین زنان",
+  "مولتی ویتامین ورزشکاران",
+  "ویتامین D3",
+  "ویتامین D3 + K2",
+  "ویتامین C",
+  "ویتامین C با رهاسازی تدریجی",
+  "ویتامین E",
+  "ویتامین A",
+  "ویتامین K",
+  "ویتامین B کمپلکس",
+  "ویتامین B1 (تیامین)",
+  "ویتامین B2 (ریبوفلاوین)",
+  "ویتامین B3 (نیاسین)",
+  "ویتامین B5 (پانتوتنیک اسید)",
+  "ویتامین B6",
+  "ویتامین B7 (بیوتین)",
+  "ویتامین B9 (فولیک اسید)",
+  "ویتامین B12",
+  "زینک (Zinc)",
+  "زینک پیکولینات",
+  "زینک گلوکونات",
+  "منیزیم (Magnesium)",
+  "منیزیم گلیسینات",
+  "منیزیم سیترات",
+  "منیزیم اکسید",
+  "آهن (Iron)",
+  "کلسیم (Calcium)",
+  "فسفر (Phosphorus)",
+  "سلنیوم (Selenium)",
+  "کروم (Chromium)",
+  "مس (Copper)",
+  "منگنز (Manganese)",
+  "مولیبدن (Molybdenum)",
+  "ید (Iodine)",
+  
+  // چربی‌های سالم
+  "امگا 3 (Omega-3)",
+  "روغن ماهی (Fish Oil)",
+  "روغن کریل (Krill Oil)",
+  "DHA",
+  "EPA",
+  "ALA (آلفا لینولنیک اسید)",
+  "CLA (کونژوگه لینولئیک اسید)",
+  "MCT Oil",
+  "روغن نارگیل",
+  
+  // چربی سوزها
+  "ال-کارنیتین (L-Carnitine)",
+  "ال-کارنیتین ال-تارتارات",
+  "ال-کارنیتین فومارات",
+  "گرین تی اکسید (Green Tea Extract)",
+  "کافئین (Caffeine)",
+  "کافئین آنهیدروس",
+  "کافئین با رهاسازی تدریجی",
+  "گوارانا",
+  "یوهیمبین (Yohimbine)",
+  "سینفرین (Synephrine)",
+  "کپسایسین (Capsaicin)",
+  "ال-تیروزین (L-Tyrosine)",
+  "ال-فنیل آلانین (L-Phenylalanine)",
+  
+  // هورمون‌ها و تستوسترون
+  "تریبولوس (Tribulus)",
+  "فنوگریک (Fenugreek)",
+  "اشواگاندا (Ashwagandha)",
+  "گینسنگ (Ginseng)",
+  "مکا (Maca)",
+  "هورن گوآت (Horny Goat Weed)",
+  "DHEA",
+  "D-آسپارتیک اسید (D-Aspartic Acid)",
+  
+  // گوارش و آنزیم‌ها
+  "پروبیوتیک",
+  "پریبیوتیک",
+  "آنزیم‌های گوارشی",
+  "بروملین",
+  "پاپائین",
+  "لاکتاز",
+  "لیپاز",
+  "آمیلاز",
+  "پروتئاز",
+  
+  // کلاژن و مفاصل
+  "کلاژن (Collagen)",
+  "کلاژن هیدرولیزه",
+  "کلاژن نوع 1",
+  "کلاژن نوع 2",
+  "گلوکوزامین",
+  "کندرویتین",
+  "MSM",
+  "هیالورونیک اسید",
+  "کورکومین (Curcumin)",
+  "زردچوبه",
+  "بوسولیا",
+  
+  // خواب و آرامش
+  "ملاتونین (Melatonin)",
+  "گلیسین",
+  "منیزیم (برای خواب)",
+  "ال-تریپتوفان (L-Tryptophan)",
+  "5-HTP",
+  "والرین (Valerian)",
+  "کامومیل",
+  "لاوندر",
+  
+  // انرژی و استقامت
+  "کوآنزیم Q10",
+  "ال-کارنیتین (برای انرژی)",
+  "ریبوز",
+  "بتا آلانین (برای استقامت)",
+  "سیترولین (برای استقامت)",
+  "بیت آلانین",
+  
+  // آنتی‌اکسیدان‌ها
+  "رسوراترول",
+  "کوآنزیم Q10",
+  "آلفا لیپوئیک اسید",
+  "گلوتاتیون",
+  "آستاگزانتین",
+  "لیکوپن",
+  "کوئرستین",
+  
+  // گیاهان دارویی
+  "جینسینگ",
+  "اشواگاندا",
+  "رودیولا",
+  "مکا",
+  "تریبولوس",
+  "فنوگریک",
+  "هورن گوآت",
+  "تونگکات علی",
+  "یوهیمبین",
+  
+  // الکترولیت‌ها
+  "الکترولیت",
+  "سدیم",
+  "پتاسیم",
+  "منیزیم (الکترولیت)",
+  "کلراید",
+  "بیکربنات سدیم",
+  
+  // فیبر
+  "پسیلیوم",
+  "گلوکومانان",
+  "اینولین",
+  "فیبر محلول",
+  "فیبر نامحلول",
+  
+  // سایر
+  "کلاژن پپتید",
+  "ال-گلوتاتیون",
+  "NAC (N-Acetyl Cysteine)",
+  "ال-سیستئین",
+  "کولین",
+  "اینوزیتول",
+  "PQQ",
+  "NAD+",
+  "رسوراترول",
+  "کورکومین",
+  "EGCG",
+  "کاتچین",
+  "پلی فنول",
+  "فلاونوئید",
+  "آنتوسیانین",
+  "کاروتنوئید",
+  "لوتئین",
+  "زآگزانتین",
+  "بتا کاروتن"
 ];
+
+// Convert to Supplement array
+export const supplements: Supplement[] = supplementsDataRaw.map(name => {
+  // Determine category and type based on name
+  let category = 'سایر';
+  let type = 'عمومی';
+  
+  if (name.includes('پروتئین') || name.includes('گینر')) {
+    category = 'پروتئین';
+    type = name.includes('وی') ? 'پروتئین وی' : 
+           name.includes('کازئین') ? 'کازئین' : 
+           name.includes('گیاهی') ? 'پروتئین گیاهی' : 'پروتئین';
+  } else if (name.includes('کراتین')) {
+    category = 'قدرت و عملکرد';
+    type = 'کراتین';
+  } else if (name.includes('BCAA') || name.includes('EAA') || name.includes('گلوتامین') || name.includes('آرژنین') || name.includes('سیترولین') || name.includes('آمینو')) {
+    category = 'آمینو اسید';
+    type = name.includes('BCAA') ? 'BCAA' : 
+           name.includes('EAA') ? 'EAA' : 
+           name.includes('گلوتامین') ? 'گلوتامین' : 'آمینو اسید';
+  } else if (name.includes('پری') || name.includes('پست') || name.includes('ورک اوت') || name.includes('ریکاوری')) {
+    category = 'قبل تمرین';
+    type = name.includes('پری') ? 'پری ورک‌اوت' : 'پست ورک‌اوت';
+  } else if (name.includes('ویتامین') || name.includes('زینک') || name.includes('منیزیم') || name.includes('آهن') || name.includes('کلسیم') || name.includes('مولتی')) {
+    category = 'ویتامین و مینرال';
+    type = name.includes('ویتامین') ? 'ویتامین' : 'مینرال';
+  } else if (name.includes('امگا') || name.includes('روغن ماهی') || name.includes('MCT') || name.includes('CLA')) {
+    category = 'چربی سالم';
+    type = 'امگا-۳';
+  } else if (name.includes('کارنیتین') || name.includes('چربی سوز') || name.includes('کافئین') || name.includes('گرین تی')) {
+    category = 'چاقی سوزی';
+    type = 'چربی سوز';
+  } else if (name.includes('تستوسترون') || name.includes('تریبولوس') || name.includes('اشواگاندا') || name.includes('گینسنگ')) {
+    category = 'تستوسترون';
+    type = 'هورمون';
+  } else if (name.includes('پروبیوتیک') || name.includes('آنزیم') || name.includes('گوارش')) {
+    category = 'گوارش';
+    type = 'آنزیم';
+  } else if (name.includes('کلاژن') || name.includes('گلوکوزامین') || name.includes('مفصل')) {
+    category = 'مفصل و ریکاوری';
+    type = 'مفصل';
+  } else if (name.includes('خواب') || name.includes('ملاتونین') || name.includes('آرامش')) {
+    category = 'خواب و ریکاوری';
+    type = 'خواب';
+  } else if (name.includes('الکترولیت')) {
+    category = 'الکترولیت';
+    type = 'الکترولیت';
+  } else if (name.includes('فیبر')) {
+    category = 'فیبر';
+    type = 'فیبر';
+  }
+  
+  return createSupplement(name, category, type);
+});
 
 export default supplements;
