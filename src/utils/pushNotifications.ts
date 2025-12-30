@@ -76,23 +76,9 @@ export class PushNotificationManager {
     return false;
   }
 
-  // Send subscription to backend
+  // Send subscription to backend (localStorage)
   async saveSubscriptionToBackend(subscription: PushSubscription): Promise<void> {
-    // Skip if Supabase is not enabled
-    if (!isSupabaseEnabled || !supabase) {
-      console.warn('Supabase not enabled, skipping push subscription save');
-      // Save to localStorage as fallback
-      const subscriptionData: PushSubscriptionData = {
-        endpoint: subscription.endpoint,
-        keys: {
-          p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')!))),
-          auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')!)))
-        }
-      };
-      localStorage.setItem('flexpro_push_subscription', JSON.stringify(subscriptionData));
-      return;
-    }
-
+    // Save to localStorage (offline mode)
     const subscriptionData: PushSubscriptionData = {
       endpoint: subscription.endpoint,
       keys: {
@@ -100,30 +86,11 @@ export class PushNotificationManager {
         auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')!)))
       }
     };
-
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      // Save subscription to user profile or dedicated table
-      const { error } = await supabase
-        .from('user_push_subscriptions')
-        .upsert({
-          user_id: user.id,
-          subscription: subscriptionData,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
-
-      if (error) {
-        throw error;
-      }
-    } catch (error) {
-      console.warn('Failed to save subscription to Supabase, saving locally:', error);
       localStorage.setItem('flexpro_push_subscription', JSON.stringify(subscriptionData));
+    } catch (error) {
+      console.warn('Failed to save subscription to localStorage:', error);
     }
   }
 
@@ -147,7 +114,7 @@ export class PushNotificationManager {
     }
   }
 
-  // Send push notification via Supabase Edge Function
+  // Send push notification (browser notification)
   async sendNotification(message: {
     title: string;
     body: string;
@@ -155,32 +122,25 @@ export class PushNotificationManager {
     userId?: string;
     actions?: Array<{ action: string; title: string }>;
   }): Promise<void> {
-    // Skip if Supabase is not enabled
-    if (!isSupabaseEnabled || !supabase) {
-      console.warn('Supabase not enabled, showing browser notification instead');
-      // Fallback to browser notification
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(message.title, {
+    // Use browser notification (offline mode)
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        const notification = new Notification(message.title, {
           body: message.body,
           icon: '/pwa-192x192.svg',
         });
+        
+        if (message.url) {
+          notification.onclick = () => {
+            window.open(message.url, '_blank');
+            notification.close();
+          };
+        }
+      } catch (error) {
+        console.error('Failed to show notification:', error);
       }
       return;
     }
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        throw new Error('User not authenticated');
-      }
-
-      const { error } = await supabase.functions.invoke('send-push-notification', {
-        body: message,
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
 
       if (error) {
         throw error;

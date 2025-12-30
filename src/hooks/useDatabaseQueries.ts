@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-// Supabase removed - using local API
+import { searchExercises, searchFoods, getAllExercises, getAllFoods, getExercisesByType, getExercisesByMuscleGroup, getFoodsByCategory, getFoodCategories, getMuscleGroups } from '../lib/database';
 import type { Exercise, Food, ExerciseSearchParams, FoodSearchParams } from '../types/database';
 
 /**
@@ -10,19 +10,8 @@ export const useExercisesQuery = (searchParams?: ExerciseSearchParams) => {
   return useQuery({
     queryKey: ['exercises', searchParams],
     queryFn: async () => {
-      if (!supabase) return [];
-
-      // Use RPC function for search with full-text support
-      const { data, error } = await supabase.rpc('search_exercises', {
-        search_query: searchParams?.query || '',
-        muscle_group_filter: searchParams?.muscle_group || null,
-        type_filter: searchParams?.type || null,
-        limit_count: searchParams?.limit || 100,
-        offset_count: searchParams?.offset || 0,
-      });
-
-      if (error) throw error;
-      return data as Exercise[];
+      const result = await searchExercises(searchParams || {});
+      return result.data as Exercise[];
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
@@ -36,16 +25,8 @@ export const useFoodsQuery = (searchParams?: FoodSearchParams) => {
   return useQuery({
     queryKey: ['foods', searchParams],
     queryFn: async () => {
-      if (!supabase) return [];
-
-      const { data, error } = await supabase.rpc('search_foods', {
-        search_query: searchParams?.query || '',
-        limit_count: searchParams?.limit || 100,
-        offsetcount: searchParams?.offset || 0,
-      });
-
-      if (error) throw error;
-      return data as Food[];
+      const result = await searchFoods(searchParams || {});
+      return result.data as Food[];
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
@@ -59,16 +40,7 @@ export const useExercisesByType = (type: 'resistance' | 'cardio' | 'corrective' 
   return useQuery({
     queryKey: ['exercises', 'by-type', type],
     queryFn: async () => {
-      if (!supabase) return [];
-
-      const { data, error } = await supabase
-        .from('exercises')
-        .select('*')
-        .eq('type', type)
-        .order('name', { ascending: true });
-
-      if (error) throw error;
-      return data as Exercise[];
+      return await getExercisesByType(type);
     },
     staleTime: 15 * 60 * 1000, // 15 minutes
     gcTime: 60 * 60 * 1000, // 1 hour
@@ -82,16 +54,8 @@ export const useExercisesByMuscleGroup = (muscleGroup: string) => {
   return useQuery({
     queryKey: ['exercises', 'by-muscle', muscleGroup],
     queryFn: async () => {
-      if (!supabase || !muscleGroup) return [];
-
-      const { data, error } = await supabase
-        .from('exercises')
-        .select('*')
-        .eq('muscle_group', muscleGroup)
-        .order('name', { ascending: true });
-
-      if (error) throw error;
-      return data as Exercise[];
+      if (!muscleGroup) return [];
+      return await getExercisesByMuscleGroup(muscleGroup);
     },
     enabled: !!muscleGroup, // Only run query if muscleGroup is provided
     staleTime: 15 * 60 * 1000,
@@ -106,16 +70,8 @@ export const useFoodsByCategory = (category: string) => {
   return useQuery({
     queryKey: ['foods', 'by-category', category],
     queryFn: async () => {
-      if (!supabase || !category) return [];
-
-      const { data, error } = await supabase
-        .from('foods')
-        .select('*')
-        .eq('category', category)
-        .order('name', { ascending: true });
-
-      if (error) throw error;
-      return data as Food[];
+      if (!category) return [];
+      return await getFoodsByCategory(category);
     },
     enabled: !!category,
     staleTime: 15 * 60 * 1000,
@@ -130,18 +86,7 @@ export const useFoodCategories = () => {
   return useQuery({
     queryKey: ['food-categories'],
     queryFn: async () => {
-      if (!supabase) return [];
-
-      const { data, error } = await supabase
-        .from('foods')
-        .select('category', { count: 'exact' })
-        .order('category', { ascending: true });
-
-      if (error) throw error;
-      
-      // Get unique categories
-      const categories = Array.from(new Set(data?.map(item => item.category) || []));
-      return categories as string[];
+      return await getFoodCategories();
     },
     staleTime: 1 * 60 * 60 * 1000, // 1 hour
     gcTime: 2 * 60 * 60 * 1000, // 2 hours
@@ -155,18 +100,7 @@ export const useExerciseMuscleGroups = () => {
   return useQuery({
     queryKey: ['exercise-muscle-groups'],
     queryFn: async () => {
-      if (!supabase) return [];
-
-      const { data, error } = await supabase
-        .from('exercises')
-        .select('muscle_group', { count: 'exact' })
-        .order('muscle_group', { ascending: true });
-
-      if (error) throw error;
-      
-      // Get unique muscle groups
-      const groups = Array.from(new Set(data?.map(item => item.muscle_group) || []));
-      return groups as string[];
+      return await getMuscleGroups();
     },
     staleTime: 1 * 60 * 60 * 1000,
     gcTime: 2 * 60 * 60 * 1000,

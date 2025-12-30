@@ -54,24 +54,8 @@ export const useTemplates = () => {
   return useQuery({
     queryKey: ['templates'],
     queryFn: async () => {
-      // Use local data if Supabase is not enabled
-      if (!isSupabaseEnabled || !supabase) {
-        return getLocalTemplates().filter(t => t.is_full_program);
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('templates')
-          .select('*')
-          .eq('is_full_program', true)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data as TemplateData[];
-      } catch (error) {
-        console.warn('Supabase fetch failed, using local templates:', error);
-        return getLocalTemplates().filter(t => t.is_full_program);
-      }
+      // Use local data (offline mode)
+      return getLocalTemplates().filter(t => t.is_full_program);
     },
   });
 };
@@ -83,25 +67,8 @@ export const useUserTemplates = (userId: string) => {
   return useQuery({
     queryKey: ['templates', userId],
     queryFn: async () => {
-      // Use local data if Supabase is not enabled
-      if (!isSupabaseEnabled || !supabase) {
-        return getLocalTemplates().filter(t => t.created_by === userId && t.is_full_program);
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('templates')
-          .select('*')
-          .eq('created_by', userId)
-          .eq('is_full_program', true)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data as TemplateData[];
-      } catch (error) {
-        console.warn('Supabase fetch failed, using local templates:', error);
-        return getLocalTemplates().filter(t => t.created_by === userId && t.is_full_program);
-      }
+      // Use local data (offline mode)
+      return getLocalTemplates().filter(t => t.created_by === userId && t.is_full_program);
     },
     enabled: !!userId,
   });
@@ -120,34 +87,12 @@ export const useSaveTemplate = () => {
       full_week_data: Record<string, any>;
       created_by: string;
     }) => {
-      // Use local storage if Supabase is not enabled
-      if (!isSupabaseEnabled || !supabase) {
-        const saved = saveLocalTemplate({
-          ...templateData,
-          is_full_program: true,
-        });
-        return saved;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('templates')
-          .insert({
-            ...templateData,
-            is_full_program: true,
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        return data;
-      } catch (error) {
-        console.warn('Supabase save failed, saving locally:', error);
-        return saveLocalTemplate({
-          ...templateData,
-          is_full_program: true,
-        });
-      }
+      // Use local storage (offline mode)
+      const saved = saveLocalTemplate({
+        ...templateData,
+        is_full_program: true,
+      });
+      return saved;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['templates'] });
@@ -168,28 +113,8 @@ export const useLoadTemplate = () => {
       fullWeekData: Record<string, any>;
     }) => {
       // In local mode, just return success (plan update handled elsewhere)
-      if (!isSupabaseEnabled || !supabase) {
-        console.log('Template loaded in local mode');
-        return data;
-      }
-
-      try {
-        // Update user's plan in the profiles table
-        const { error } = await supabase
-          .from('profiles')
-          .update({
-            plans: {
-              workouts: data.fullWeekData,
-            },
-          })
-          .eq('id', data.clientId);
-
-        if (error) throw error;
-        return data;
-      } catch (error) {
-        console.warn('Supabase update failed:', error);
-        return data; // Still return data for local mode compatibility
-      }
+      console.log('Template loaded in local mode');
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
@@ -205,23 +130,8 @@ export const useDeleteTemplate = () => {
 
   return useMutation({
     mutationFn: async (templateId: string) => {
-      // Use local storage if Supabase is not enabled
-      if (!isSupabaseEnabled || !supabase) {
-        deleteLocalTemplate(templateId);
-        return;
-      }
-
-      try {
-        const { error } = await supabase
-          .from('templates')
-          .delete()
-          .eq('id', templateId);
-
-        if (error) throw error;
-      } catch (error) {
-        console.warn('Supabase delete failed, deleting locally:', error);
-        deleteLocalTemplate(templateId);
-      }
+      // Use local storage (offline mode)
+      deleteLocalTemplate(templateId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['templates'] });

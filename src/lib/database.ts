@@ -148,295 +148,84 @@ function searchLocalFoods(params: FoodSearchParams): FoodSearchResult[] {
 // ========== Food Operations ==========
 
 export async function searchFoods(params: FoodSearchParams): Promise<PaginatedResponse<FoodSearchResult>> {
-  // Use local data if Supabase is not enabled
-  if (!isSupabaseEnabled || !supabase) {
-    const allResults = searchLocalFoods(params);
-    const limit = params.limit || 20;
-    const offset = params.offset || 0;
-    const paginatedResults = allResults.slice(offset, offset + limit);
-    
-    return {
-      data: paginatedResults,
-      count: paginatedResults.length,
-      hasMore: allResults.length > offset + limit,
-      nextOffset: offset + paginatedResults.length
-    };
-  }
-
-  try {
-    const { data, error } = await supabase.rpc('search_foods', {
-      search_query: params.query,
-      limit_count: params.limit || 20,
-      offset_count: params.offset || 0
-    });
-
-    if (error) throw error;
-
-    const results = data as FoodSearchResult[];
-    return {
-      data: results,
-      count: results.length,
-      hasMore: results.length === (params.limit || 20),
-      nextOffset: params.offset ? params.offset + results.length : results.length
-    };
-  } catch (error) {
-    console.warn('Supabase search failed, using local data:', error);
-    const allResults = searchLocalFoods(params);
-    const limit = params.limit || 20;
-    const offset = params.offset || 0;
-    const paginatedResults = allResults.slice(offset, offset + limit);
-    
-    return {
-      data: paginatedResults,
-      count: paginatedResults.length,
-      hasMore: allResults.length > offset + limit,
-      nextOffset: offset + paginatedResults.length
-    };
-  }
+  // Use local data (offline mode)
+  const allResults = searchLocalFoods(params);
+  const limit = params.limit || 20;
+  const offset = params.offset || 0;
+  const paginatedResults = allResults.slice(offset, offset + limit);
+  
+  return {
+    data: paginatedResults,
+    count: paginatedResults.length,
+    hasMore: allResults.length > offset + limit,
+    nextOffset: offset + paginatedResults.length
+  };
 }
 
 export async function getAllFoods(): Promise<Food[]> {
-  // Use local data if Supabase is not enabled
-  if (!isSupabaseEnabled || !supabase) {
-    return localFoods.map(convertLocalFoodToDB);
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('foods')
-      .select('*')
-      .order('category', { ascending: true })
-      .order('name', { ascending: true });
-
-    if (error) throw error;
-    return data as Food[];
-  } catch (error) {
-    console.warn('Supabase getAllFoods failed, using local data:', error);
-    return localFoods.map(convertLocalFoodToDB);
-  }
+  // Use local data (offline mode)
+  return localFoods.map(convertLocalFoodToDB);
 }
 
 export async function getFoodsByCategory(category: string): Promise<Food[]> {
-  // Use local data if Supabase is not enabled
-  if (!isSupabaseEnabled || !supabase) {
-    return localFoods
-      .filter(food => food.category === category)
-      .map(convertLocalFoodToDB);
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('foods')
-      .select('*')
-      .eq('category', category)
-      .order('name', { ascending: true });
-
-    if (error) throw error;
-    return data as Food[];
-  } catch (error) {
-    console.warn('Supabase getFoodsByCategory failed, using local data:', error);
-    return localFoods
-      .filter(food => food.category === category)
-      .map(convertLocalFoodToDB);
-  }
+  // Use local data (offline mode)
+  return localFoods
+    .filter(food => food.category === category)
+    .map(convertLocalFoodToDB);
 }
 
 // ========== Exercise Operations ==========
 
 export async function searchExercises(params: ExerciseSearchParams): Promise<PaginatedResponse<ExerciseSearchResult>> {
-  // Use local data if Supabase is not enabled
-  if (!isSupabaseEnabled || !supabase) {
-    const allResults = searchLocalExercises(params);
-    const limit = params.limit || 20;
-    const offset = params.offset || 0;
-    const paginatedResults = allResults.slice(offset, offset + limit);
-    
-    return {
-      data: paginatedResults,
-      count: paginatedResults.length,
-      hasMore: allResults.length > offset + limit,
-      nextOffset: offset + paginatedResults.length
-    };
-  }
-
-  try {
-    const { data, error } = await supabase.rpc('search_exercises', {
-      search_query: params.query,
-      muscle_group_filter: params.muscle_group || null,
-      type_filter: params.type || null,
-      limit_count: params.limit || 20,
-      offset_count: params.offset || 0
-    });
-
-    if (error) throw error;
-
-    const results = data as ExerciseSearchResult[];
-    return {
-      data: results,
-      count: results.length,
-      hasMore: results.length === (params.limit || 20),
-      nextOffset: params.offset ? params.offset + results.length : results.length
-    };
-  } catch (error) {
-    console.warn('Supabase search failed, using local data:', error);
-    const allResults = searchLocalExercises(params);
-    const limit = params.limit || 20;
-    const offset = params.offset || 0;
-    const paginatedResults = allResults.slice(offset, offset + limit);
-    
-    return {
-      data: paginatedResults,
-      count: paginatedResults.length,
-      hasMore: allResults.length > offset + limit,
-      nextOffset: offset + paginatedResults.length
-    };
-  }
+  // Use local data (offline mode)
+  const allResults = searchLocalExercises(params);
+  const limit = params.limit || 20;
+  const offset = params.offset || 0;
+  const paginatedResults = allResults.slice(offset, offset + limit);
+  
+  return {
+    data: paginatedResults,
+    count: paginatedResults.length,
+    hasMore: allResults.length > offset + limit,
+    nextOffset: offset + paginatedResults.length
+  };
 }
 
 export async function getAllExercises(): Promise<Exercise[]> {
-  // Use local data if Supabase is not enabled
-  if (!isSupabaseEnabled || !supabase) {
-    return localExercises.map(convertLocalExerciseToDB);
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('exercises')
-      .select('*')
-      .order('muscle_group', { ascending: true })
-      .order('name', { ascending: true });
-
-    if (error) throw error;
-    return data as Exercise[];
-  } catch (error) {
-    console.warn('Supabase getAllExercises failed, using local data:', error);
-    return localExercises.map(convertLocalExerciseToDB);
-  }
+  // Use local data (offline mode)
+  return localExercises.map(convertLocalExerciseToDB);
 }
 
 export async function getExercisesByMuscleGroup(muscleGroup: string): Promise<Exercise[]> {
-  // Use local data if Supabase is not enabled
-  if (!isSupabaseEnabled || !supabase) {
-    return localExercises
-      .filter(ex => ex.muscleGroup === muscleGroup)
-      .map(convertLocalExerciseToDB);
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('exercises')
-      .select('*')
-      .eq('muscle_group', muscleGroup)
-      .order('name', { ascending: true });
-
-    if (error) throw error;
-    return data as Exercise[];
-  } catch (error) {
-    console.warn('Supabase getExercisesByMuscleGroup failed, using local data:', error);
-    return localExercises
-      .filter(ex => ex.muscleGroup === muscleGroup)
-      .map(convertLocalExerciseToDB);
-  }
+  // Use local data (offline mode)
+  return localExercises
+    .filter(ex => ex.muscleGroup === muscleGroup)
+    .map(convertLocalExerciseToDB);
 }
 
 export async function getExercisesByType(type: string): Promise<Exercise[]> {
-  // Use local data if Supabase is not enabled
-  if (!isSupabaseEnabled || !supabase) {
-    return localExercises
-      .filter(ex => ex.type === type)
-      .map(convertLocalExerciseToDB);
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('exercises')
-      .select('*')
-      .eq('type', type)
-      .order('name', { ascending: true });
-
-    if (error) throw error;
-    return data as Exercise[];
-  } catch (error) {
-    console.warn('Supabase getExercisesByType failed, using local data:', error);
-    return localExercises
-      .filter(ex => ex.type === type)
-      .map(convertLocalExerciseToDB);
-  }
+  // Use local data (offline mode)
+  return localExercises
+    .filter(ex => ex.type === type)
+    .map(convertLocalExerciseToDB);
 }
 
 // ========== Utility Functions ==========
 
 export async function getFoodCategories(): Promise<string[]> {
-  // Use local data if Supabase is not enabled
-  if (!isSupabaseEnabled || !supabase) {
-    const categories = [...new Set(localFoods.map(food => food.category))];
-    return categories.sort();
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('foods')
-      .select('category')
-      .order('category');
-
-    if (error) throw error;
-
-    // Get unique categories
-    const categories = [...new Set(data.map(item => item.category))];
-    return categories;
-  } catch (error) {
-    console.warn('Supabase getFoodCategories failed, using local data:', error);
-    const categories = [...new Set(localFoods.map(food => food.category))];
-    return categories.sort();
-  }
+  // Use local data (offline mode)
+  const categories = [...new Set(localFoods.map(food => food.category))];
+  return categories.sort();
 }
 
 export async function getMuscleGroups(): Promise<string[]> {
-  // Use local data if Supabase is not enabled
-  if (!isSupabaseEnabled || !supabase) {
-    const groups = [...new Set(localExercises.map(ex => ex.muscleGroup))];
-    return groups.sort();
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('exercises')
-      .select('muscle_group')
-      .order('muscle_group');
-
-    if (error) throw error;
-
-    // Get unique muscle groups
-    const groups = [...new Set(data.map(item => item.muscle_group))];
-    return groups;
-  } catch (error) {
-    console.warn('Supabase getMuscleGroups failed, using local data:', error);
-    const groups = [...new Set(localExercises.map(ex => ex.muscleGroup))];
-    return groups.sort();
-  }
+  // Use local data (offline mode)
+  const groups = [...new Set(localExercises.map(ex => ex.muscleGroup))];
+  return groups.sort();
 }
 
 export async function getExerciseTypes(): Promise<string[]> {
-  // Use local data if Supabase is not enabled
-  if (!isSupabaseEnabled || !supabase) {
-    const types = [...new Set(localExercises.map(ex => ex.type))];
-    return types.sort();
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('exercises')
-      .select('type')
-      .order('type');
-
-    if (error) throw error;
-
-    // Get unique types
-    const types = [...new Set(data.map(item => item.type))];
-    return types;
-  } catch (error) {
-    console.warn('Supabase getExerciseTypes failed, using local data:', error);
-    const types = [...new Set(localExercises.map(ex => ex.type))];
-    return types.sort();
-  }
+  // Use local data (offline mode)
+  const types = [...new Set(localExercises.map(ex => ex.type))];
+  return types.sort();
 }

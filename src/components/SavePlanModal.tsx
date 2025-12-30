@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSaveTemplate } from '../hooks/useTemplates';
-// Supabase removed - using local API
+import { useAuth } from '../context/AuthContext';
 import SuccessMessage from './ui/SuccessMessage';
 import ErrorMessage from './ui/ErrorMessage';
 
@@ -20,6 +20,7 @@ const SavePlanModal: React.FC<SavePlanModalProps> = ({ isOpen, onClose, fullWeek
   const [description, setDescription] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const { user } = useAuth();
   const saveTemplateMutation = useSaveTemplate();
 
   const handleSave = async () => {
@@ -28,48 +29,35 @@ const SavePlanModal: React.FC<SavePlanModalProps> = ({ isOpen, onClose, fullWeek
       return;
     }
 
-    // In local mode, save to localStorage
-    if (!isSupabaseEnabled || !supabase) {
-      try {
-        const templates = JSON.parse(localStorage.getItem('flexpro_templates') || '[]');
-        const newTemplate = {
-          id: `template-${Date.now()}`,
-          name: name.trim(),
-          description: description.trim(),
-          full_week_data: fullWeekData,
-          created_by: 'local-user',
-          created_at: new Date().toISOString(),
-        };
-        templates.push(newTemplate);
-        localStorage.setItem('flexpro_templates', JSON.stringify(templates));
-        
-        setSuccessMessage('برنامه با موفقیت ذخیره شد (حالت محلی)');
-        setTimeout(() => {
-          setName('');
-          setDescription('');
-          setSuccessMessage('');
-          onClose();
-        }, 2000);
-      } catch (error) {
-        setErrorMessage('خطا در ذخیره برنامه');
-      }
-      return;
-    }
-
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setErrorMessage('کاربر یافت نشد');
-        return;
-      }
-
-      await saveTemplateMutation.mutateAsync({
+      // Save to localStorage (offline mode)
+      const templates = JSON.parse(localStorage.getItem('flexpro_templates') || '[]');
+      const newTemplate = {
+        id: `template-${Date.now()}`,
         name: name.trim(),
         description: description.trim(),
         full_week_data: fullWeekData,
-        created_by: user.id,
-      });
-
+        created_by: user?.id || 'local-user',
+        created_at: new Date().toISOString(),
+      };
+      templates.push(newTemplate);
+      localStorage.setItem('flexpro_templates', JSON.stringify(templates));
+      
+      // Also try to save via API if available
+      if (user?.id) {
+        try {
+          await saveTemplateMutation.mutateAsync({
+            name: name.trim(),
+            description: description.trim(),
+            full_week_data: fullWeekData,
+            created_by: user.id,
+          });
+        } catch (apiError) {
+          // API failed but localStorage save succeeded, so continue
+          console.warn('API save failed, but localStorage save succeeded:', apiError);
+        }
+      }
+      
       setSuccessMessage('برنامه با موفقیت ذخیره شد');
       setTimeout(() => {
         setName('');
@@ -78,7 +66,7 @@ const SavePlanModal: React.FC<SavePlanModalProps> = ({ isOpen, onClose, fullWeek
         onClose();
       }, 2000);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'خطای نامشخص');
+      setErrorMessage(error instanceof Error ? error.message : 'خطا در ذخیره برنامه');
     }
   };
 

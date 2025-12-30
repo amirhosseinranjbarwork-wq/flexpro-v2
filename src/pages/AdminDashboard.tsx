@@ -48,62 +48,61 @@ const AdminDashboard: React.FC = () => {
   const [banReason, setBanReason] = useState('');
   const queryClient = useQueryClient();
 
-  // Fetch all users
+  // Fetch all users from localStorage
   const { data: users, isLoading: usersLoading, error: usersError } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
-      // Use mock data if Supabase is not enabled
-      if (!isSupabaseEnabled || !supabase) {
-        console.warn('Supabase not enabled, using mock data for Admin Dashboard');
-        return MOCK_USERS;
-      }
-
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data as UserData[];
+        // Load from localStorage
+        const cached = localStorage.getItem('flexProMaxData_v15');
+        if (cached) {
+          const data = JSON.parse(cached);
+          if (data.users && Array.isArray(data.users)) {
+            return data.users.map((u: any) => ({
+              id: u.id,
+              email: u.email || '',
+              full_name: u.name || u.full_name || '',
+              role: u.role || 'client',
+              is_banned: u.is_banned || false,
+              created_at: u.created_at || new Date().toISOString()
+            })) as UserData[];
+          }
+        }
+        return MOCK_USERS;
       } catch (error) {
-        console.warn('Supabase fetch failed, using mock data:', error);
+        console.warn('Failed to load users from localStorage:', error);
         return MOCK_USERS;
       }
     },
   });
 
-  // Fetch statistics
+  // Fetch statistics from localStorage
   const { data: stats } = useQuery({
     queryKey: ['admin-statistics'],
     queryFn: async () => {
-      // Use mock data if Supabase is not enabled
-      if (!isSupabaseEnabled || !supabase) {
+      try {
+        const cached = localStorage.getItem('flexProMaxData_v15');
+        if (cached) {
+          const data = JSON.parse(cached);
+          if (data.users && Array.isArray(data.users)) {
+            const allUsers = data.users;
+            const statistics: Statistics = {
+              total_users: allUsers.filter((u: any) => u.role === 'client').length,
+              total_coaches: allUsers.filter((u: any) => u.role === 'coach').length,
+              active_subscriptions: allUsers.filter((u: any) => u.role === 'coach').length,
+              banned_users: allUsers.filter((u: any) => u.is_banned === true).length,
+            };
+            return statistics;
+          }
+        }
         return {
           total_users: 0,
           total_coaches: 0,
           active_subscriptions: 0,
           banned_users: 0,
         };
-      }
-
-      try {
-        const { data: allUsers, error: usersError } = await supabase
-          .from('profiles')
-          .select('role, is_banned');
-
-        if (usersError) throw usersError;
-
-        const statistics: Statistics = {
-          total_users: allUsers?.filter(u => u.role === 'client').length || 0,
-          total_coaches: allUsers?.filter(u => u.role === 'coach').length || 0,
-          active_subscriptions: allUsers?.filter(u => u.role === 'coach').length || 0,
-          banned_users: allUsers?.filter(u => u.is_banned === true).length || 0,
-        };
-
-        return statistics;
       } catch (error) {
-        console.warn('Supabase statistics fetch failed:', error);
+        console.warn('Failed to load statistics from localStorage:', error);
         return {
           total_users: 0,
           total_coaches: 0,
@@ -114,26 +113,26 @@ const AdminDashboard: React.FC = () => {
     },
   });
 
-  // Ban user mutation
+  // Ban user mutation (localStorage)
   const banUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      // In local mode, just show a message
-      if (!isSupabaseEnabled || !supabase) {
-        toast.warning('این قابلیت فقط در حالت Supabase فعال است');
-        return;
-      }
-
       try {
-        const { error } = await supabase
-          .from('profiles')
-          .update({
-            is_banned: true,
-            ban_reason: banReason,
-            banned_at: new Date().toISOString(),
-          })
-          .eq('id', userId);
-
-        if (error) throw error;
+        const cached = localStorage.getItem('flexProMaxData_v15');
+        if (cached) {
+          const data = JSON.parse(cached);
+          if (data.users && Array.isArray(data.users)) {
+            const userIndex = data.users.findIndex((u: any) => u.id === userId);
+            if (userIndex >= 0) {
+              data.users[userIndex] = {
+                ...data.users[userIndex],
+                is_banned: true,
+                ban_reason: banReason,
+                banned_at: new Date().toISOString(),
+              };
+              localStorage.setItem('flexProMaxData_v15', JSON.stringify(data));
+            }
+          }
+        }
       } catch (error) {
         console.error('Failed to ban user:', error);
         throw error;
@@ -150,26 +149,26 @@ const AdminDashboard: React.FC = () => {
     },
   });
 
-  // Unban user mutation
+  // Unban user mutation (localStorage)
   const unbanUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      // In local mode, just show a message
-      if (!isSupabaseEnabled || !supabase) {
-        toast.warning('این قابلیت فقط در حالت Supabase فعال است');
-        return;
-      }
-
       try {
-        const { error } = await supabase
-          .from('profiles')
-          .update({
-            is_banned: false,
-            ban_reason: null,
-            banned_at: null,
-          })
-          .eq('id', userId);
-
-        if (error) throw error;
+        const cached = localStorage.getItem('flexProMaxData_v15');
+        if (cached) {
+          const data = JSON.parse(cached);
+          if (data.users && Array.isArray(data.users)) {
+            const userIndex = data.users.findIndex((u: any) => u.id === userId);
+            if (userIndex >= 0) {
+              data.users[userIndex] = {
+                ...data.users[userIndex],
+                is_banned: false,
+                ban_reason: null,
+                banned_at: null,
+              };
+              localStorage.setItem('flexProMaxData_v15', JSON.stringify(data));
+            }
+          }
+        }
       } catch (error) {
         console.error('Failed to unban user:', error);
         throw error;

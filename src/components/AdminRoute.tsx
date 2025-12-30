@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-// Supabase removed - using local API
+import { useAuth } from '../context/AuthContext';
 import { LoadingSpinner } from './index';
 
 interface AdminRouteProps {
@@ -10,53 +10,35 @@ interface AdminRouteProps {
 /**
  * AdminRoute Component
  * Protects admin pages by checking if user has is_super_admin flag
- * Supports both Supabase and Local Mock modes
+ * Uses local authentication
  */
 export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
+  const { user, profile, loading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     checkAdminStatus();
-  }, []);
+  }, [user, profile, authLoading]);
 
   const checkAdminStatus = async () => {
     try {
-      // In local mode, allow access (for development)
-      if (!isSupabaseEnabled || !supabase) {
-        console.warn('Supabase not enabled, allowing admin access in local mode');
-        setIsAdmin(true);
-        setLoading(false);
+      if (authLoading) {
         return;
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setIsAdmin(false);
         setLoading(false);
         return;
       }
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('is_super_admin')
-        .eq('id', user.id)
-        .single();
-
-      if (error || !data) {
-        setIsAdmin(false);
-      } else {
-        const profileData = data as { is_super_admin?: boolean };
-        setIsAdmin(profileData.is_super_admin === true);
-      }
+      // Check if user is admin from profile
+      const isUserAdmin = profile?.is_super_admin === true || profile?.role === 'coach';
+      setIsAdmin(isUserAdmin);
     } catch (error) {
       console.error('Error checking admin status:', error);
-      // In case of error, allow access in local mode
-      if (!isSupabaseEnabled) {
-        setIsAdmin(true);
-      } else {
-        setIsAdmin(false);
-      }
+      setIsAdmin(false);
     } finally {
       setLoading(false);
     }

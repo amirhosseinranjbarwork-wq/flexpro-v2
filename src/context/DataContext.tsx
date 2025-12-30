@@ -204,7 +204,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _isFirstRender = useRef<boolean>(true);
 
-  // Fetch data from Supabase (single source of truth)
+  // Fetch data from localStorage (offline mode)
   const refreshData = useCallback(async () => {
     if (!auth?.user?.id) {
       setUsers(getInitialUsers());

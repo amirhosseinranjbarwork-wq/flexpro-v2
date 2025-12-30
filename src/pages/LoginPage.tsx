@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useRole } from '../hooks/useRole';
 import { toast } from 'react-hot-toast';
 import { Link, useNavigate } from 'react-router-dom';
-import { getSupabaseInitError } from '../lib/supabaseClient';
+// Supabase removed - using local authentication
 import { 
   Eye, EyeOff, AlertCircle, Loader2, Activity, 
   Mail, Lock, ArrowRight, Sparkles, CheckCircle2,
@@ -35,7 +35,7 @@ const LoginPage: React.FC = () => {
 
   // TEMPORARY: Disabled Supabase error checking
   // useEffect(() => {
-  //   const initError = getSupabaseInitError();
+  // Supabase removed - using local authentication
   //   if (initError && import.meta.env.DEV) {
   //     console.warn('Supabase initialization error:', initError);
   //   }

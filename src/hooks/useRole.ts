@@ -9,8 +9,8 @@ interface UseRoleResult {
 }
 
 /**
- * Custom hook to securely derive user role from Supabase user metadata or profile
- * Never relies on localStorage for security checks
+ * Custom hook to securely derive user role from user metadata or profile
+ * Uses local authentication context
  */
 export const useRole = (): UseRoleResult => {
   const { user, profile, loading } = useAuth();
