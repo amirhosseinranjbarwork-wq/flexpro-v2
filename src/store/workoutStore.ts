@@ -16,7 +16,6 @@ import {
   MovementPattern,
   ExerciseCategory
 } from '../types/ultimate-training';
-import { ULTIMATE_EXERCISES } from '../data/ultimate-exercises';
 import { getAllUltimateExercises } from '../utils/exerciseConverter';
 import { workoutsApi } from '../services/api';
 import toast from 'react-hot-toast';
@@ -86,17 +85,20 @@ interface WorkoutStore {
 /**
  * Analyzes current day and suggests complementary exercises
  */
-// Get all exercises (new data takes priority)
+// Get all exercises (ALWAYS use new data - no fallback to old data)
 const getAllExercises = (): Exercise[] => {
   try {
     const newExercises = getAllUltimateExercises();
     if (newExercises && newExercises.length > 0) {
+      console.log(`✅ Loaded ${newExercises.length} exercises from new data`);
       return newExercises;
     }
+    console.warn('⚠️ No exercises found in new data');
+    return [];
   } catch (error) {
-    console.warn('Error loading new exercises, using fallback:', error);
+    console.error('❌ Error loading new exercises:', error);
+    return [];
   }
-  return ULTIMATE_EXERCISES;
 };
 
 const generateSmartSuggestions = (day: WorkoutDay): Exercise[] => {
@@ -289,7 +291,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
       filters: {},
       isLibraryOpen: true,
       isSidebarCollapsed: false,
-      availableExercises: getAllExercises(), // Initialize with all exercises
+      availableExercises: [], // Will be populated by getFilteredExercises
 
       // Program actions
       createProgram: (name, goalType) => {
@@ -709,8 +711,13 @@ export const useWorkoutStore = create<WorkoutStore>()(
       // Getters
       getFilteredExercises: () => {
         const { filters } = get();
-        // Get all exercises (new data takes priority)
+        // Get all exercises (ALWAYS use new data - no fallback)
         const allExercises = getAllExercises();
+        if (allExercises.length > 0) {
+          console.log(`✅ getFilteredExercises: Loaded ${allExercises.length} exercises from new data`);
+        } else {
+          console.warn('⚠️ getFilteredExercises: No exercises found!');
+        }
         // Update availableExercises in state for TrainingLayout compatibility
         set({ availableExercises: allExercises });
         // Ensure all exercises have required fields with defaults
