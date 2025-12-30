@@ -296,6 +296,145 @@ const CardioForm: React.FC<CardioFormProps> = ({
         </div>
       )}
 
+      {/* Equipment-specific parameters */}
+      {formData.exercise_name && (
+        <div className="bg-blue-500/10 border border-blue-500/30 p-4 rounded-xl space-y-3">
+          <label className="text-sm font-bold text-blue-500 flex items-center gap-2">
+            <BarChart2 size={14} />
+            تنظیمات دستگاه (اختیاری)
+          </label>
+          
+          {/* Treadmill */}
+          {(formData.exercise_name?.toLowerCase().includes('تردمیل') || 
+            formData.exercise_name?.toLowerCase().includes('treadmill') ||
+            formData.exercise_name?.toLowerCase().includes('دویدن')) && (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-[10px] text-blue-600/70">سرعت (km/h)</label>
+                <input
+                  type="number"
+                  className="input-glass w-full text-center"
+                  placeholder="8"
+                  value={formData.speed || ''}
+                  onChange={e => setFormData({ ...formData, speed: parseFloat(e.target.value) })}
+                  min={1}
+                  max={30}
+                  step={0.5}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-blue-600/70">شیب (%)</label>
+                <input
+                  type="number"
+                  className="input-glass w-full text-center"
+                  placeholder="0"
+                  value={formData.incline || ''}
+                  onChange={e => setFormData({ ...formData, incline: parseFloat(e.target.value) })}
+                  min={0}
+                  max={15}
+                  step={0.5}
+                />
+              </div>
+            </div>
+          )}
+          
+          {/* Bike */}
+          {(formData.exercise_name?.toLowerCase().includes('دوچرخه') || 
+            formData.exercise_name?.toLowerCase().includes('bike') ||
+            formData.exercise_name?.toLowerCase().includes('cycling')) && (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-[10px] text-blue-600/70">مقاومت (1-10)</label>
+                <input
+                  type="number"
+                  className="input-glass w-full text-center"
+                  placeholder="5"
+                  value={formData.resistance || ''}
+                  onChange={e => setFormData({ ...formData, resistance: parseInt(e.target.value) })}
+                  min={1}
+                  max={10}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-blue-600/70">RPM</label>
+                <input
+                  type="number"
+                  className="input-glass w-full text-center"
+                  placeholder="80"
+                  value={formData.rpm || ''}
+                  onChange={e => setFormData({ ...formData, rpm: parseInt(e.target.value) })}
+                  min={40}
+                  max={120}
+                />
+              </div>
+            </div>
+          )}
+          
+          {/* Rowing */}
+          {(formData.exercise_name?.toLowerCase().includes('روئینگ') || 
+            formData.exercise_name?.toLowerCase().includes('rowing') ||
+            formData.exercise_name?.toLowerCase().includes('rower')) && (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-[10px] text-blue-600/70">مقاومت (1-10)</label>
+                <input
+                  type="number"
+                  className="input-glass w-full text-center"
+                  placeholder="5"
+                  value={formData.resistance || ''}
+                  onChange={e => setFormData({ ...formData, resistance: parseInt(e.target.value) })}
+                  min={1}
+                  max={10}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-blue-600/70">Stroke Rate (/min)</label>
+                <input
+                  type="number"
+                  className="input-glass w-full text-center"
+                  placeholder="24"
+                  value={formData.stroke_rate || ''}
+                  onChange={e => setFormData({ ...formData, stroke_rate: parseInt(e.target.value) })}
+                  min={18}
+                  max={40}
+                />
+              </div>
+            </div>
+          )}
+          
+          {/* Elliptical */}
+          {(formData.exercise_name?.toLowerCase().includes('الپتیکال') || 
+            formData.exercise_name?.toLowerCase().includes('elliptical')) && (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-[10px] text-blue-600/70">مقاومت (1-10)</label>
+                <input
+                  type="number"
+                  className="input-glass w-full text-center"
+                  placeholder="5"
+                  value={formData.resistance || ''}
+                  onChange={e => setFormData({ ...formData, resistance: parseInt(e.target.value) })}
+                  min={1}
+                  max={10}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-blue-600/70">Stride Rate (/min)</label>
+                <input
+                  type="number"
+                  className="input-glass w-full text-center"
+                  placeholder="140"
+                  value={formData.stride_rate || ''}
+                  onChange={e => setFormData({ ...formData, stride_rate: parseInt(e.target.value) })}
+                  min={100}
+                  max={180}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Steady State Specific */}
       {['liss', 'miss', 'tempo_run'].includes(formData.cardio_method || '') && (
         <div className="bg-blue-500/10 border border-blue-500/30 p-4 rounded-xl space-y-3">

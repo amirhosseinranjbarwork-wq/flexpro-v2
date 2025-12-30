@@ -17,6 +17,7 @@ import {
   ExerciseCategory
 } from '../types/ultimate-training';
 import { ULTIMATE_EXERCISES } from '../data/ultimate-exercises';
+import { getAllUltimateExercises } from '../utils/exerciseConverter';
 import { workoutsApi } from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -36,6 +37,9 @@ interface WorkoutStore {
   // UI state
   isLibraryOpen: boolean;
   isSidebarCollapsed: boolean;
+  
+  // Available exercises (for TrainingLayout compatibility)
+  availableExercises: Exercise[];
   
   // Actions - Program
   createProgram: (name: string, goalType: WorkoutProgram['goalType']) => void;
@@ -82,10 +86,25 @@ interface WorkoutStore {
 /**
  * Analyzes current day and suggests complementary exercises
  */
+// Get all exercises (new data takes priority)
+const getAllExercises = (): Exercise[] => {
+  try {
+    const newExercises = getAllUltimateExercises();
+    if (newExercises && newExercises.length > 0) {
+      return newExercises;
+    }
+  } catch (error) {
+    console.warn('Error loading new exercises, using fallback:', error);
+  }
+  return ULTIMATE_EXERCISES;
+};
+
 const generateSmartSuggestions = (day: WorkoutDay): Exercise[] => {
+  const allExercises = getAllExercises();
+  
   if (!day || day.exercises.length === 0) {
     // No exercises yet - suggest compound movements
-    return ULTIMATE_EXERCISES.filter(ex =>
+    return allExercises.filter(ex =>
       ex.tags.includes('compound') && 
       ex.category === ExerciseCategory.RESISTANCE
     ).slice(0, 10);
@@ -112,13 +131,13 @@ const generateSmartSuggestions = (day: WorkoutDay): Exercise[] => {
 
   if (hasPush && !hasPull) {
     // Suggest pulling exercises
-    suggestions.push(...ULTIMATE_EXERCISES.filter(ex =>
+    suggestions.push(...allExercises.filter(ex =>
       ex.movementPattern === MovementPattern.HORIZONTAL_PULL ||
       ex.movementPattern === MovementPattern.VERTICAL_PULL
     ));
   } else if (hasPull && !hasPush) {
     // Suggest pushing exercises
-    suggestions.push(...ULTIMATE_EXERCISES.filter(ex =>
+    suggestions.push(...allExercises.filter(ex =>
       ex.movementPattern === MovementPattern.HORIZONTAL_PUSH ||
       ex.movementPattern === MovementPattern.VERTICAL_PUSH
     ));
@@ -126,19 +145,19 @@ const generateSmartSuggestions = (day: WorkoutDay): Exercise[] => {
 
   // 2. Suggest antagonist muscles
   if (musclesWorked.has(MuscleGroup.CHEST) && !musclesWorked.has(MuscleGroup.BACK)) {
-    suggestions.push(...ULTIMATE_EXERCISES.filter(ex =>
+    suggestions.push(...allExercises.filter(ex =>
       ex.primaryMuscles.includes(MuscleGroup.BACK)
     ));
   }
   
   if (musclesWorked.has(MuscleGroup.QUADS) && !musclesWorked.has(MuscleGroup.HAMSTRINGS)) {
-    suggestions.push(...ULTIMATE_EXERCISES.filter(ex =>
+    suggestions.push(...allExercises.filter(ex =>
       ex.primaryMuscles.includes(MuscleGroup.HAMSTRINGS)
     ));
   }
 
   if (musclesWorked.has(MuscleGroup.BICEPS) && !musclesWorked.has(MuscleGroup.TRICEPS)) {
-    suggestions.push(...ULTIMATE_EXERCISES.filter(ex =>
+    suggestions.push(...allExercises.filter(ex =>
       ex.primaryMuscles.includes(MuscleGroup.TRICEPS)
     ));
   }
@@ -151,7 +170,7 @@ const generateSmartSuggestions = (day: WorkoutDay): Exercise[] => {
   const workingUpperBody = [...musclesWorked].some(m => upperBodyMuscles.includes(m));
   
   if (workingUpperBody && !musclesWorked.has(MuscleGroup.ABS)) {
-    suggestions.push(...ULTIMATE_EXERCISES.filter(ex =>
+    suggestions.push(...allExercises.filter(ex =>
       ex.primaryMuscles.includes(MuscleGroup.ABS)
     ));
   }
@@ -270,6 +289,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
       filters: {},
       isLibraryOpen: true,
       isSidebarCollapsed: false,
+      availableExercises: getAllExercises(), // Initialize with all exercises
 
       // Program actions
       createProgram: (name, goalType) => {
@@ -689,8 +709,12 @@ export const useWorkoutStore = create<WorkoutStore>()(
       // Getters
       getFilteredExercises: () => {
         const { filters } = get();
+        // Get all exercises (new data takes priority)
+        const allExercises = getAllExercises();
+        // Update availableExercises in state for TrainingLayout compatibility
+        set({ availableExercises: allExercises });
         // Ensure all exercises have required fields with defaults
-        let exercises = ULTIMATE_EXERCISES.map(ex => ({
+        let exercises = allExercises.map(ex => ({
           ...ex,
           primaryMuscles: ex.primaryMuscles || [],
           secondaryMuscles: ex.secondaryMuscles || [],

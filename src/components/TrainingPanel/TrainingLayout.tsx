@@ -32,7 +32,10 @@ import {
   Activity
 } from 'lucide-react';
 import { useWorkoutStore } from '../../store';
-import type { ExerciseFromDB } from '../../store/workoutStore';
+import { Exercise } from '../../types/ultimate-training';
+
+// Type alias for compatibility
+type ExerciseFromDB = Exercise;
 import ExerciseLibrary from './ExerciseLibrary';
 import WorkoutCanvas from './WorkoutCanvas';
 import toast from 'react-hot-toast';

@@ -428,6 +428,46 @@ const ResistanceForm: React.FC<ResistanceFormProps> = ({
           />
           <span className="flex items-center text-xs text-[var(--text-secondary)]">ثانیه</span>
         </div>
+        <div className="flex gap-1 mt-1">
+          {[30, 60, 90, 120, 180].map(sec => (
+            <button
+              key={sec}
+              type="button"
+              onClick={() => setFormData({ ...formData, rest_seconds: sec })}
+              className={`flex-1 py-1 text-[10px] rounded-lg transition-all ${
+                formData.rest_seconds === sec
+                  ? 'bg-[var(--accent-color)] text-white'
+                  : 'bg-[var(--glass-bg)] text-[var(--text-secondary)] hover:bg-[var(--accent-color)]/20'
+              }`}
+            >
+              {sec}s
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Advanced: 1RM Percentage (optional) */}
+      <div className="space-y-1">
+        <label className="text-xs text-[var(--text-secondary)] flex items-center gap-2">
+          <Dumbbell size={12} />
+          درصد یک تکرار حداکثر (اختیاری)
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="number"
+            className="input-glass flex-1 text-center"
+            placeholder="--"
+            value={formData.one_rm_percentage || ''}
+            onChange={e => setFormData({ ...formData, one_rm_percentage: parseFloat(e.target.value) })}
+            min={30}
+            max={100}
+            step={1}
+          />
+          <span className="flex items-center text-xs text-[var(--text-secondary)]">%</span>
+        </div>
+        <p className="text-[10px] text-[var(--text-secondary)]">
+          برای برنامه‌های مبتنی بر قدرت (Powerlifting, Strength)
+        </p>
       </div>
 
       {/* System-specific inputs */}

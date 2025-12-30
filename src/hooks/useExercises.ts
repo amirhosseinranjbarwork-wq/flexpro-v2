@@ -2,8 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { exercisesApi } from '../services/api';
 import { exercises } from '../data/exercises';
 
-// Fallback data when API is not available - using first 20 comprehensive exercises
-const fallbackExercises = exercises.slice(0, 20).map(exercise => ({
+// Fallback data when API is not available - using ALL new exercises
+const fallbackExercises = exercises.map(exercise => ({
   id: exercise.id,
   name: exercise.name,
   muscle_group: exercise.muscleGroup,
@@ -11,7 +11,17 @@ const fallbackExercises = exercises.slice(0, 20).map(exercise => ({
   equipment: exercise.equipment,
   type: exercise.type,
   mechanics: exercise.mechanics,
-  description: exercise.description
+  description: exercise.description,
+  category: exercise.type === 'cardio' ? 'cardio' : 
+             exercise.type === 'warmup' ? 'warmup' :
+             exercise.type === 'cooldown' ? 'cooldown' :
+             exercise.type === 'corrective' ? 'corrective' : 'bodybuilding',
+  difficulty: exercise.difficulty,
+  primary_muscle: exercise.primaryMuscles?.[0],
+  secondary_muscles: exercise.secondaryMuscles,
+  instructions: exercise.instructions?.join('\n'),
+  tips: exercise.tips?.join('\n'),
+  common_mistakes: exercise.commonMistakes?.join('\n')
 }));
 
 export function useExercises() {

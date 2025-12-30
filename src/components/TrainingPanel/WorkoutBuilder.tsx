@@ -92,18 +92,25 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({
   const [activeMode, setActiveMode] = useState<WorkoutMode>('resistance');
   const [showModeInfo, setShowModeInfo] = useState(false);
 
-  // Filter exercises by category/type for each mode
+  // Filter exercises by category/type for each mode (improved filtering)
   const resistanceExercises = useMemo(() => 
     exercises.filter(ex => 
-      ex.category === 'bodybuilding' || 
       ex.type === 'resistance' ||
-      (!ex.category && !ex.type)
+      (ex.muscleGroup && ex.muscleGroup !== 'قلبی' && !ex.type) ||
+      ex.category === 'bodybuilding' ||
+      (!ex.category && !ex.type && ex.muscleGroup && ex.muscleGroup !== 'قلبی')
     ), [exercises]);
 
   const cardioExercises = useMemo(() => 
     exercises.filter(ex => 
-      ex.category === 'cardio' || 
-      ex.type === 'cardio'
+      ex.type === 'cardio' ||
+      ex.muscleGroup === 'قلبی' ||
+      ex.category === 'cardio' ||
+      ex.name.toLowerCase().includes('دویدن') ||
+      ex.name.toLowerCase().includes('دوچرخه') ||
+      ex.name.toLowerCase().includes('تردمیل') ||
+      ex.name.toLowerCase().includes('الپتیکال') ||
+      ex.name.toLowerCase().includes('روئینگ')
     ), [exercises]);
 
   const plyometricExercises = useMemo(() => 
@@ -111,31 +118,40 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({
       ex.type === 'plyometric' ||
       ex.name.toLowerCase().includes('جامپ') ||
       ex.name.toLowerCase().includes('پرش') ||
-      ex.name.toLowerCase().includes('باکس')
+      ex.name.toLowerCase().includes('باکس') ||
+      ex.name.toLowerCase().includes('jump') ||
+      ex.name.toLowerCase().includes('box')
     ), [exercises]);
 
   const correctiveExercises = useMemo(() => 
     exercises.filter(ex => 
-      ex.category === 'corrective' || 
       ex.type === 'corrective' ||
+      ex.category === 'corrective' ||
       ex.name.toLowerCase().includes('کشش') ||
-      ex.name.toLowerCase().includes('فوم رولر')
+      ex.name.toLowerCase().includes('فوم رولر') ||
+      ex.name.toLowerCase().includes('اصلاحی') ||
+      ex.name.toLowerCase().includes('stretch') ||
+      ex.name.toLowerCase().includes('corrective')
     ), [exercises]);
 
   const warmupExercises = useMemo(() => 
     exercises.filter(ex => 
-      ex.category === 'warmup' || 
       ex.type === 'warmup' ||
+      ex.category === 'warmup' ||
       ex.name.toLowerCase().includes('گرم') ||
-      ex.name.toLowerCase().includes('پویا')
+      ex.name.toLowerCase().includes('پویا') ||
+      ex.name.toLowerCase().includes('warmup') ||
+      ex.name.toLowerCase().includes('dynamic')
     ), [exercises]);
 
   const cooldownExercises = useMemo(() => 
     exercises.filter(ex => 
-      ex.category === 'cooldown' || 
       ex.type === 'cooldown' ||
+      ex.category === 'cooldown' ||
       ex.name.toLowerCase().includes('سرد') ||
-      ex.name.toLowerCase().includes('ایستا')
+      ex.name.toLowerCase().includes('ایستا') ||
+      ex.name.toLowerCase().includes('cooldown') ||
+      ex.name.toLowerCase().includes('static')
     ), [exercises]);
 
   // Handle adding exercise
