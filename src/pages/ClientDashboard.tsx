@@ -18,7 +18,7 @@ import {
   createProgramRequest, 
   fetchRequestsByClient, 
   updateClient 
-} from '../lib/supabaseApi';
+// Supabase removed - using local API
 import type { WorkoutItem, Client, ProgramRequest } from '../types/index';
 
 // Animated Background

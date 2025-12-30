@@ -15,7 +15,7 @@ import type {
   DataContextType,
   ProgramRequest
 } from '../types/index';
-import { supabase } from '../lib/supabaseClient';
+// Supabase removed - using local API
 import {
   searchFoods,
   searchExercises,
@@ -25,22 +25,8 @@ import {
   getMuscleGroups,
   getExerciseTypes
 } from '../lib/database';
-import {
-  fetchTemplates as fetchTemplatesRemote,
-  upsertUser as upsertUserRemote,
-  upsertTemplate as upsertTemplateRemote,
-  removeTemplate as removeTemplateRemote,
-  isSupabaseReady,
-  fetchClientsByCoach,
-  fetchWorkoutPlansByCoach,
-  upsertClient,
-  upsertWorkoutPlan,
-  deleteClient,
-  deleteWorkoutPlan,
-  fetchRequestsByCoach,
-  updateRequestStatus,
-  deleteProgramRequest
-} from '../lib/supabaseApi';
+// Supabase removed - using local API instead
+// All remote functions are now handled via API service
 import { useAuth } from './AuthContext';
 import { useUI } from './UIContext';
 
@@ -227,93 +213,39 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    if (!isSupabaseReady) {
-      // Don't overwrite local data when Supabase is not ready
-      // Keep existing local data to prevent loss of newly added users
-      console.warn('Supabase not ready, keeping local data');
-      return;
-    }
-
-    const coachId = auth.user.id;
-
+    // Load from localStorage (offline mode)
     try {
-      const [clientsResponse, plansResponse, templatesResponse, requestsResponse] = await Promise.all([
-        fetchClientsByCoach(coachId),
-        fetchWorkoutPlansByCoach(coachId),
-        fetchTemplatesRemote(coachId),
-        fetchRequestsByCoach(coachId)
-      ]);
-
-      // Handle errors gracefully
-      if (clientsResponse.error) {
-        console.error('Failed to fetch clients:', clientsResponse.error);
+      const cached = localStorage.getItem(STORAGE_KEY);
+      if (cached) {
+        const data = JSON.parse(cached);
+        if (data.users) setUsers(data.users);
+        if (data.templates) setTemplates(data.templates);
+        if (data.requests) setRequests(data.requests);
+      } else {
+        // Initialize with default data
+        setUsers(getInitialUsers());
+        setTemplates(getInitialTemplates());
+        setRequests([]);
       }
-      if (plansResponse.error) {
-        console.error('Failed to fetch workout plans:', plansResponse.error);
-      }
-      if (templatesResponse.error) {
-        console.error('Failed to fetch templates:', templatesResponse.error);
-      }
-      if (requestsResponse.error) {
-        console.error('Failed to fetch requests:', requestsResponse.error);
-      }
-
-      // Process data
-      const remoteClients = clientsResponse.data || [];
-      const remotePlans = plansResponse.data || [];
-      const remoteTemplates = templatesResponse.data || [];
-      const remoteRequests = requestsResponse.data || [];
-
-      // Map clients to users with their plans
-      const planMap = new Map(remotePlans.map((p: WorkoutPlanFromDB) => [p.client_id, p]));
-      const mappedUsers = remoteClients.map((c: Client) => mapClientToUser(c, planMap.get(c.id) as WorkoutPlanFromDB | undefined));
-
-      // Update state - merge with existing local users to preserve newly added ones
-      setUsers(prevUsers => {
-        const remoteUserIds = new Set(mappedUsers.map((u: User) => u.id));
-        const existingUsers = prevUsers.filter(u => !remoteUserIds.has(u.id));
-        const mergedUsers = [...mappedUsers, ...existingUsers];
-
-        // Cache merged data to preserve local changes
-        try {
-          const cacheData = {
-            users: mergedUsers,
-            templates: remoteTemplates,
-            requests: remoteRequests,
-            timestamp: Date.now()
-          };
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(cacheData));
-        } catch (e) {
-          console.warn('Failed to cache merged data:', e);
-        }
-
-        return mergedUsers;
-      });
-
-      setTemplates(remoteTemplates);
-      setRequests(remoteRequests);
-
     } catch (error) {
-      console.error('Critical error fetching data from Supabase:', error);
-      toast.error('خطا در بارگذاری داده‌ها از سرور');
-
-      // Keep existing local data - don't overwrite with cache
-      // The users state already contains the most recent data including newly added users
-      toast('داده‌های محلی حفظ شد - اتصال به سرور برقرار نیست', { icon: '⚠️' });
+      console.error('Error loading data from localStorage:', error);
+      setUsers(getInitialUsers());
+      setTemplates(getInitialTemplates());
+      setRequests([]);
     }
   }, [auth?.user?.id]);
 
-  // Load data when Supabase is ready and user is authenticated
+  // Load data when user is authenticated
   useEffect(() => {
-    if (isSupabaseReady && auth?.user?.id) {
+    if (auth?.user?.id) {
       refreshData();
     } else {
-      // Clear data when offline or not authenticated
+      // Clear data when not authenticated
       setUsers([]);
       setTemplates([]);
       setRequests([]);
     }
-  }, [isSupabaseReady, auth?.user?.id, refreshData]);
+  }, [auth?.user?.id, refreshData]);
 
   // Save role and account ID to localStorage
   useEffect(() => {
@@ -352,7 +284,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, 1000); // Debounced caching
 
     return () => clearTimeout(timeoutId);
-  }, [users, templates, isSupabaseReady]);
+  }, [users, templates]);
 
   const activeUser = useMemo(() => {
     if (activeUserId == null) return null;
@@ -382,37 +314,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [currentRole, currentAccountId, activeUserId]
   );
 
-  const syncUserToSupabase = useCallback(
+  // Sync user to localStorage (offline mode)
+  const syncUserToLocal = useCallback(
     (user: User) => {
-      if (!isSupabaseReady) return;
-      const coachId = auth?.user?.id;
-      if (!coachId) return;
-      const clientPayload = clientPayloadFromUser(user, coachId);
-      const planPayload = workoutPlanPayloadFromUser(user, coachId);
-      
-      // Type assertions for required fields
-      if (clientPayload.id && clientPayload.coach_id) {
-        upsertClient(clientPayload as Partial<Client> & { id: string; coach_id: string }).catch(err => {
-          if (import.meta.env.DEV) console.error('supabase client upsert', err);
-        });
+      // Save to localStorage
+      try {
+        const cached = localStorage.getItem(STORAGE_KEY);
+        const data = cached ? JSON.parse(cached) : { users: [], templates: [], requests: [] };
+        const userIndex = data.users.findIndex((u: User) => u.id === user.id);
+        if (userIndex >= 0) {
+          data.users[userIndex] = user;
+        } else {
+          data.users.push(user);
+        }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      } catch (err) {
+        if (import.meta.env.DEV) console.error('Error saving user to localStorage:', err);
       }
-      
-      if (planPayload.id && planPayload.coach_id && planPayload.client_id && planPayload.plan_data) {
-        upsertWorkoutPlan(planPayload as Partial<WorkoutPlanFromDB> & { 
-          id: string; 
-          coach_id: string; 
-          client_id: string; 
-          plan_data: UserPlans 
-        }).catch(err => {
-          if (import.meta.env.DEV) console.error('supabase plan upsert', err);
-        });
-      }
-      
-      upsertUserRemote({ ...user, coach_id: coachId }).catch(err => {
-        if (import.meta.env.DEV) console.error('supabase user upsert', err);
-      });
     },
-    [auth?.user?.id]
+    []
   );
 
   const saveUser = useCallback(
@@ -457,36 +377,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return updatedUsers;
         });
 
-        if (isSupabaseReady) {
-          // First, ensure the client has a profile record with coach_id
-          const profilePayload = {
-            id: newUser.id,
-            coach_id: coachId,
-            full_name: newUser.name,
-            email: newUser.email || null,
-            phone: newUser.phone || null,
-            profile_data: { ...newUser, plans: newUser.plans }
-          };
-
-          const clientPayload = clientPayloadFromUser(newUser, coachId);
-          const workoutPayload = workoutPlanPayloadFromUser(newUser, coachId);
-
-          const results = await Promise.allSettled([
-            // First ensure profile exists
-            supabase ? supabase.from('profiles').upsert(profilePayload as Record<string, unknown>).select() : Promise.resolve({ data: null, error: null }),
-            // Then save client data
-            upsertClient(clientPayload as Client),
-            // Save workout plan
-            upsertWorkoutPlan(workoutPayload as WorkoutPlanFromDB)
-          ]);
-
-          // Check for errors and log them, but don't revert local state
-          results.forEach((result, index) => {
-            if (result.status === 'rejected') {
-              const operation = index === 0 ? 'profile' : index === 1 ? 'client' : 'workout plan';
-              console.error(`Failed to save ${operation}:`, result.reason);
-            }
-          });
+        // Save to localStorage (offline mode)
+        try {
+          const cached = localStorage.getItem(STORAGE_KEY);
+          const data = cached ? JSON.parse(cached) : { users: [], templates: [], requests: [] };
+          const userIndex = data.users.findIndex((u: User) => u.id === newUser.id);
+          if (userIndex >= 0) {
+            data.users[userIndex] = newUser;
+          } else {
+            data.users.push(newUser);
+          }
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch (err) {
+          console.error('Error saving to localStorage:', err);
         }
 
         toast.success('اطلاعات با موفقیت ذخیره شد');
@@ -507,7 +410,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error; // Re-throw to let caller handle it
       }
     },
-    [hasPermission, auth?.user?.id, isSupabaseReady, users.length]
+    [hasPermission, auth?.user?.id, users.length]
   );
 
   const updateActiveUser = useCallback(
@@ -559,25 +462,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUsers(prev => prev.filter(u => u.id !== id));
           if (activeUserId === id) setActiveUserId(null);
 
-          // Delete from Supabase
-          if (isSupabaseReady && auth?.user?.id) {
-            const coachId = auth.user.id;
-            const planId = planIdForClient(String(id));
-
-            const [planRes, clientRes] = await Promise.all([
-              deleteWorkoutPlan(planId),
-              deleteClient(String(id))
-            ]);
-
-            if (planRes.error) {
-              console.error('Failed to delete workout plan:', planRes.error);
+          // Remove from localStorage (offline mode)
+          try {
+            const cached = localStorage.getItem(STORAGE_KEY);
+            if (cached) {
+              const data = JSON.parse(cached);
+              data.users = data.users.filter((u: User) => u.id !== id);
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
             }
-            if (clientRes.error) {
-              console.error('Failed to delete client:', clientRes.error);
-            }
-
-            toast.success('شاگرد با موفقیت حذف شد');
+          } catch (err) {
+            console.error('Error removing user from localStorage:', err);
           }
+
+          toast.success('شاگرد با موفقیت حذف شد');
         } catch (error) {
           console.error('Failed to delete user:', error);
           toast.error('خطا در حذف شاگرد');
@@ -597,13 +494,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       const newTemplate: Template = { id: Date.now(), name, workout };
       setTemplates(prev => [...prev, newTemplate]);
-      if (isSupabaseReady) {
-        const coachId = auth?.user?.id;
-        upsertTemplateRemote({ ...newTemplate, coach_id: coachId }).then(response => {
-          if (response.error && import.meta.env.DEV) {
-            console.error('supabase upsert template', response.error);
-          }
-        });
+      // Save to localStorage (offline mode)
+      try {
+        const cached = localStorage.getItem(STORAGE_KEY);
+        const data = cached ? JSON.parse(cached) : { users: [], templates: [], requests: [] };
+        data.templates.push(newTemplate);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      } catch (err) {
+        console.error('Error saving template to localStorage:', err);
       }
       toast.success('الگو ذخیره شد');
     },
@@ -617,13 +515,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       setTemplates(prev => prev.filter(t => t.id !== id));
-      if (isSupabaseReady) {
-        const coachId = auth?.user?.id;
-        removeTemplateRemote(id, coachId).then(response => {
-          if (response.error && import.meta.env.DEV) {
-            console.error('supabase delete template', response.error);
-          }
-        });
+      // Remove from localStorage (offline mode)
+      try {
+        const cached = localStorage.getItem(STORAGE_KEY);
+        if (cached) {
+          const data = JSON.parse(cached);
+          data.templates = data.templates.filter((t: Template) => t.id !== id);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+      } catch (err) {
+        console.error('Error removing template from localStorage:', err);
       }
       toast.success('الگو حذف شد');
     },
@@ -634,10 +535,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!auth?.user?.id) return;
 
     try {
-      // Update request status
-      const res = await updateRequestStatus(req.id, 'accepted', undefined, req);
-      if (res.error) {
-        toast.error('خطا در تأیید درخواست (سرور)');
+      // Update request status in localStorage (offline mode)
+      try {
+        const cached = localStorage.getItem(STORAGE_KEY);
+        if (cached) {
+          const data = JSON.parse(cached);
+          const requestIndex = data.requests.findIndex((r: ProgramRequest) => r.id === req.id);
+          if (requestIndex >= 0) {
+            data.requests[requestIndex] = { ...data.requests[requestIndex], status: 'accepted' };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          }
+        }
+      } catch (err) {
+        console.error('Error updating request:', err);
+        toast.error('خطا در تأیید درخواست');
         return;
       }
 
@@ -671,25 +582,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return [...prev, newUser];
         });
 
-        // Save to Supabase
+        // Save to localStorage (offline mode)
         await saveUser(newUserData);
-
-        // Update client and profile tables
-        if (isSupabaseReady) {
-          await upsertClient({
-            id: req.client_id,
-            coach_id: auth.user.id,
-            full_name: clientName,
-            profile_data: newUserData,
-            profile_completed: true
-          }).catch(err => {
-            if (import.meta.env.DEV) console.warn('upsertClient error', err);
-          });
-
-          if (supabase) {
-            await supabase
-              .from('profiles')
-              .upsert({
                 id: req.client_id,
                 coach_id: auth.user.id,
                 updated_at: new Date().toISOString()
@@ -717,9 +611,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!auth?.user?.id) return;
 
     try {
-      const res = await updateRequestStatus(req.id, 'rejected', undefined, req);
-      if (res.error) {
-        toast.error('خطا در رد درخواست (سرور)');
+      // Update request status in localStorage (offline mode)
+      try {
+        const cached = localStorage.getItem(STORAGE_KEY);
+        if (cached) {
+          const data = JSON.parse(cached);
+          const requestIndex = data.requests.findIndex((r: ProgramRequest) => r.id === req.id);
+          if (requestIndex >= 0) {
+            data.requests[requestIndex] = { ...data.requests[requestIndex], status: 'rejected' };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          }
+        }
+      } catch (err) {
+        console.error('Error updating request:', err);
+        toast.error('خطا در رد درخواست');
         return;
       }
 
@@ -733,8 +638,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteRequest = useCallback(async (requestId: string) => {
     try {
-      const res = await deleteProgramRequest(requestId);
-      if (res.error) {
+      // Remove from localStorage (offline mode)
+      try {
+        const cached = localStorage.getItem(STORAGE_KEY);
+        if (cached) {
+          const data = JSON.parse(cached);
+          data.requests = data.requests.filter((r: ProgramRequest) => r.id !== requestId);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+      } catch (err) {
+        console.error('Error deleting request:', err);
         toast.error('خطا در حذف درخواست');
         return;
       }

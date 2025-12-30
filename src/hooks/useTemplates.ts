@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
+// Supabase removed - using local API
 
 export interface TemplateData {
   id: string;

@@ -22,7 +22,6 @@ const PrintPanel = lazy(() => import('../components/print/PrintPanel'));
 import UserModal from '../components/UserModal';
 import type { UserId, UserInput, User } from '../types/index';
 // DEPRECATED: getOrCreateCoachCode removed - using local API instead
-// import { getOrCreateCoachCode } from '../lib/supabaseApi';
 
 // Loading Component
 const PanelLoadingFallback = () => (

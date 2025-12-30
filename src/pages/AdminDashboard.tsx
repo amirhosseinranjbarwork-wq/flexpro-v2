@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
+// Supabase removed - using local API
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';

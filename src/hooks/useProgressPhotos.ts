@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
+// Supabase removed - using local API
 import { ProgressPhoto, PhotoComparison, UseProgressPhotosReturn } from '../types/interactive';
 import { useAuth } from '../context/AuthContext';
 

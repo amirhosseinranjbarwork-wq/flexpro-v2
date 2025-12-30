@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
+// Supabase removed - using local API
 import { ExerciseSearchResult, ExerciseSearchParams } from '../types/database';
 import { searchExercises } from '../lib/database';
 

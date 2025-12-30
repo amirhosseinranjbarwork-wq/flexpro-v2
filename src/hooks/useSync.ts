@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { SyncMetadata, LocalChange } from '../types/database';
 
@@ -96,23 +95,19 @@ export function useSync(): UseSyncReturn {
   const syncNow = useCallback(async () => {
     if (!user?.id || !isOnline) return;
 
-    // Skip sync if Supabase is not enabled
-    if (!isSupabaseEnabled || !supabase) {
-      console.warn('Supabase not enabled, skipping sync');
-      // Mark all changes as synced in local mode (they're already local)
-      const storedChanges = localStorage.getItem(SYNC_STORAGE_KEY);
-      if (storedChanges) {
-        const changes: LocalChange[] = JSON.parse(storedChanges);
-        changes.forEach(change => {
-          change.synced = true;
-          change.timestamp = Date.now();
-        });
-        localStorage.setItem(SYNC_STORAGE_KEY, JSON.stringify(changes));
-        setPendingChanges(0);
-        setLastSynced(new Date());
-      }
-      return;
+    // Mark all changes as synced in local mode (they're already local)
+    const storedChanges = localStorage.getItem(SYNC_STORAGE_KEY);
+    if (storedChanges) {
+      const changes: LocalChange[] = JSON.parse(storedChanges);
+      changes.forEach(change => {
+        change.synced = true;
+        change.timestamp = Date.now();
+      });
+      localStorage.setItem(SYNC_STORAGE_KEY, JSON.stringify(changes));
+      setPendingChanges(0);
+      setLastSynced(new Date());
     }
+    return;
 
     setIsSyncing(true);
 
@@ -187,57 +182,12 @@ export function useSync(): UseSyncReturn {
 
 /**
  * Process a single change
+ * Note: In local mode, changes are already stored locally, so this is a no-op
  */
 async function processChange(change: LocalChange): Promise<void> {
-  // Skip if Supabase is not enabled
-  if (!isSupabaseEnabled || !supabase) {
-    console.warn('Supabase not enabled, skipping change processing');
-    return;
-  }
-
-  const { table, operation, data } = change;
-
-  // Skip user-specific tables that shouldn't be synced from local changes
-  // (These should only be synced from server)
-  const protectedTables = ['users', 'clients', 'workout_plans', 'program_requests'];
-
-  if (protectedTables.includes(table)) {
-    throw new Error(`Cannot sync protected table: ${table}`);
-  }
-
-  try {
-    switch (operation) {
-      case 'insert':
-        const { error: insertError } = await supabase
-          .from(table)
-          .insert(data);
-        if (insertError) throw insertError;
-        break;
-
-      case 'update':
-        const { id, ...updateData } = data;
-        const { error: updateError } = await supabase
-          .from(table)
-          .update(updateData)
-          .eq('id', id);
-        if (updateError) throw updateError;
-        break;
-
-      case 'delete':
-        const { error: deleteError } = await supabase
-          .from(table)
-          .delete()
-          .eq('id', data.id);
-        if (deleteError) throw deleteError;
-        break;
-
-      default:
-        throw new Error(`Unknown operation: ${operation}`);
-    }
-  } catch (error) {
-    console.error(`Error processing change for table ${table}:`, error);
-    throw error;
-  }
+  // In local mode, changes are already stored locally
+  // This function is kept for API compatibility but does nothing
+  console.log('Change processed locally:', change);
 }
 
 /**

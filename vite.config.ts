@@ -50,11 +50,6 @@ export default defineConfig({
             return 'vendor-ui';
           }
 
-          // Supabase client
-          if (id.includes('@supabase/supabase-js')) {
-            return 'vendor-supabase';
-          }
-
           // React Query
           if (id.includes('@tanstack/react-query')) {
             return 'vendor-query';

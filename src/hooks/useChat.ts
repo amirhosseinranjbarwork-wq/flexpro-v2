@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
+// Supabase removed - using local API
 import { Message, OptimisticMessage, UseChatReturn } from '../types/interactive';
 import { useAuth } from '../context/AuthContext';
 

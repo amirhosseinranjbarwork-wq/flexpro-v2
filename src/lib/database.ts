@@ -4,7 +4,7 @@
  * Supports both Supabase and Local Mock Data
  */
 
-import { supabase, isSupabaseEnabled } from './supabaseClient';
+// Supabase removed - using local API
 import {
   Food,
   Exercise,

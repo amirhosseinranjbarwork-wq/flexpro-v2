@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSaveTemplate } from '../hooks/useTemplates';
-import { supabase, isSupabaseEnabled } from '../lib/supabaseClient';
+// Supabase removed - using local API
 import SuccessMessage from './ui/SuccessMessage';
 import ErrorMessage from './ui/ErrorMessage';
 
